@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
@@ -29,15 +30,47 @@ func New(dir string) (*Rewriter, error) {
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedSyntax | packages.NeedTypes,
 	}, importPath)
-	if err != nil {
-		return nil, err
-	}
-	if len(pkgs) == 0 {
-		return nil, fmt.Errorf("package not found for importPath: %s", importPath)
+	if err != nil || len(pkgs) == 0 || len(pkgs[0].Errors) > 0 {
+		// Bootstrap fallback: packages.Load failed, likely because a
+		// generated dependency (e.g. the graph package) does not exist yet.
+		// Fall back to go/parser which only needs syntax, not type info.
+		return newFromParser(dir)
 	}
 
 	return &Rewriter{
 		pkg:    pkgs[0],
+		files:  map[string]string{},
+		copied: map[ast.Decl]bool{},
+	}, nil
+}
+
+// newFromParser constructs a Rewriter using go/parser.ParseDir instead of
+// packages.Load. This works even when the package's imports cannot be resolved
+// (bootstrap case) because it only does syntax-level parsing.
+func newFromParser(dir string) (*Rewriter, error) {
+	fset := token.NewFileSet()
+	pkgMap, err := parser.ParseDir(fset, dir, func(fi os.FileInfo) bool {
+		// Skip test files, matching packages.Load behavior
+		return !strings.HasSuffix(fi.Name(), "_test.go")
+	}, parser.ParseComments)
+	if err != nil {
+		// Directory might not exist yet on truly first run
+		return &Rewriter{
+			pkg:    nil,
+			files:  map[string]string{},
+			copied: map[ast.Decl]bool{},
+		}, nil
+	}
+
+	var syntax []*ast.File
+	for _, pkg := range pkgMap {
+		for _, f := range pkg.Files {
+			syntax = append(syntax, f)
+		}
+	}
+
+	return &Rewriter{
+		pkg:    &packages.Package{Fset: fset, Syntax: syntax},
 		files:  map[string]string{},
 		copied: map[ast.Decl]bool{},
 	}, nil
@@ -69,6 +102,9 @@ func (r *Rewriter) getFile(filename string) string {
 }
 
 func (r *Rewriter) GetPrevDecl(structname, methodname string) *ast.FuncDecl {
+	if r.pkg == nil {
+		return nil
+	}
 	for _, f := range r.pkg.Syntax {
 		for _, d := range f.Decls {
 			d, isFunc := d.(*ast.FuncDecl)
@@ -134,6 +170,9 @@ func (r *Rewriter) GetMethodBody(structname, methodname string) string {
 }
 
 func (r *Rewriter) MarkStructCopied(name string) {
+	if r.pkg == nil {
+		return
+	}
 	for _, f := range r.pkg.Syntax {
 		for _, d := range f.Decls {
 			d, isGen := d.(*ast.GenDecl)
@@ -159,6 +198,9 @@ func (r *Rewriter) MarkStructCopied(name string) {
 }
 
 func (r *Rewriter) ExistingImports(filename string) []Import {
+	if r.pkg == nil {
+		return nil
+	}
 	filename, err := filepath.Abs(filename)
 	if err != nil {
 		panic(err)
@@ -188,6 +230,9 @@ func (r *Rewriter) ExistingImports(filename string) []Import {
 }
 
 func (r *Rewriter) RemainingSource(filename string) string {
+	if r.pkg == nil {
+		return ""
+	}
 	filename, err := filepath.Abs(filename)
 	if err != nil {
 		panic(err)
