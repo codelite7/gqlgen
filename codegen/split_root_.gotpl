@@ -324,11 +324,21 @@ func (ec *executionContext) ResolveStreamField(ctx context.Context, objectName, 
 }
 
 func (ec *executionContext) ResolveExecutableField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, objectName, fieldName, field, obj)
+	handler, ok := shardruntime.LookupExecutableField({{ $.Scope | quote }}, objectName, fieldName)
+	if !ok {
+		panic(fmt.Sprintf("unknown executable field %s.%s", objectName, fieldName))
+	}
+
+	return handler(ctx, ec, field, obj)
 }
 
 func (ec *executionContext) ResolveExecutableStreamField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
-	return ec.ResolveStreamField(ctx, objectName, fieldName, field, obj)
+	handler, ok := shardruntime.LookupExecutableStreamField({{ $.Scope | quote }}, objectName, fieldName)
+	if !ok {
+		panic(fmt.Sprintf("unknown executable stream field %s.%s", objectName, fieldName))
+	}
+
+	return handler(ctx, ec, field, obj)
 }
 
 func (ec *executionContext) MarshalCodec(ctx context.Context, funcName string, sel ast.SelectionSet, value any) graphql.Marshaler {
@@ -397,8 +407,52 @@ func (ec *executionContext) _{{$object.Name}}(ctx context.Context, sel ast.Selec
 		{{- end }}
 }
 	{{- end }}
+	{{- else }}
+	{{- /* Non-root object dispatchers — needed by type.gotpl marshal functions */}}
+		{{ if $useFunctionSyntaxForExecutionContext -}}
+func _{{$object.Name}}(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj {{$object.Reference | ref}}) graphql.Marshaler {
+		{{- else -}}
+func (ec *executionContext) _{{$object.Name}}(ctx context.Context, sel ast.SelectionSet, obj {{$object.Reference | ref}}) graphql.Marshaler {
+		{{- end }}
+	handler, ok := shardruntime.LookupObject({{ $.Scope | quote }}, {{$object.Name | quote}})
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", {{$object.Name | quote}}))
+	}
+		{{ if $useFunctionSyntaxForExecutionContext -}}
+	return handler(ctx, ec, sel, obj)
+		{{- else -}}
+	return handler(ctx, ec, sel, obj)
+		{{- end }}
+}
 	{{- end }}
 {{- end }}
+
+{{- /* Register executable field handlers — bridges shard field wrappers to actual resolvers */}}
+func init() {
+{{- range $object := .Objects }}
+{{- range $field := $object.Fields }}
+{{- if $object.Stream }}
+	shardruntime.RegisterExecutableStreamField({{ $.Scope | quote }}, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
+		ec := oec.(*executionContext)
+		{{ if $useFunctionSyntaxForExecutionContext -}}
+		return _{{ $object.Name }}_{{ $field.Name }}(ctx, ec, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
+		{{- else -}}
+		return ec._{{ $object.Name }}_{{ $field.Name }}(ctx, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
+		{{- end }}
+	})
+{{- else }}
+	shardruntime.RegisterExecutableField({{ $.Scope | quote }}, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+		ec := oec.(*executionContext)
+		{{ if $useFunctionSyntaxForExecutionContext -}}
+		return _{{ $object.Name }}_{{ $field.Name }}(ctx, ec, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
+		{{- else -}}
+		return ec._{{ $object.Name }}_{{ $field.Name }}(ctx, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
+		{{- end }}
+	})
+{{- end }}
+{{- end }}
+{{- end }}
+}
 
 {{if .HasEmbeddableSources }}
 //go:embed{{- range $source := .AugmentedSources }}{{if $source.Embeddable}} {{$source.RelativePath|quote}}{{end}}{{- end }}

@@ -966,3 +966,141 @@ func resetCodecUnmarshalRegistryForTest() {
 	codecUnmarshalByScope = map[string]map[string]CodecUnmarshalHandler{}
 	resetCodecUnmarshalLookupSnapshotForTest()
 }
+
+func resetExecFieldRegistryForTest() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	execFieldByScope = map[string]map[string]map[string]FieldHandler{}
+	resetExecFieldLookupSnapshotForTest()
+}
+
+func resetExecStreamFieldRegistryForTest() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	execStreamFieldByScope = map[string]map[string]map[string]StreamFieldHandler{}
+	resetExecStreamFieldLookupSnapshotForTest()
+}
+
+func TestExecutableFieldRegistry(t *testing.T) {
+	resetExecFieldRegistryForTest()
+
+	called := false
+	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
+		called = true
+		return graphql.Null
+	}
+
+	if got, ok := LookupExecutableField("scope", "Mutation", "UpdateUser"); ok || got != nil {
+		t.Fatalf("unexpected executable field handler before registration: handler=%v ok=%v", got, ok)
+	}
+
+	RegisterExecutableField("scope", "Mutation", "UpdateUser", h)
+
+	got, ok := LookupExecutableField("scope", "Mutation", "UpdateUser")
+	if !ok {
+		t.Fatal("expected registered executable field handler")
+	}
+	if got == nil {
+		t.Fatal("expected non-nil executable field handler")
+	}
+
+	got(context.Background(), nil, graphql.CollectedField{}, nil)
+	if !called {
+		t.Fatal("expected executable field handler to be called")
+	}
+
+	if got, ok := LookupExecutableField("scope", "Mutation", "missing"); ok || got != nil {
+		t.Fatalf("unexpected executable field handler for missing field: handler=%v ok=%v", got, ok)
+	}
+	if got, ok := LookupExecutableField("other-scope", "Mutation", "UpdateUser"); ok || got != nil {
+		t.Fatalf("unexpected executable field handler for missing scope: handler=%v ok=%v", got, ok)
+	}
+}
+
+func TestExecutableFieldRegistryIndependentFromFieldRegistry(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetExecFieldRegistryForTest()
+
+	splitCalled := false
+	splitHandler := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
+		splitCalled = true
+		return graphql.Null
+	}
+
+	execCalled := false
+	execHandler := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
+		execCalled = true
+		return graphql.Null
+	}
+
+	// Register same key in both registries — no panic
+	RegisterField("scope", "Mutation", "UpdateUser", splitHandler)
+	RegisterExecutableField("scope", "Mutation", "UpdateUser", execHandler)
+
+	// LookupField returns the split handler
+	got, ok := LookupField("scope", "Mutation", "UpdateUser")
+	if !ok || got == nil {
+		t.Fatal("expected split field handler from LookupField")
+	}
+	got(context.Background(), nil, graphql.CollectedField{}, nil)
+	if !splitCalled {
+		t.Fatal("LookupField should return the split handler")
+	}
+	if execCalled {
+		t.Fatal("LookupField should NOT return the exec handler")
+	}
+
+	splitCalled = false
+
+	// LookupExecutableField returns the exec handler
+	got2, ok := LookupExecutableField("scope", "Mutation", "UpdateUser")
+	if !ok || got2 == nil {
+		t.Fatal("expected executable field handler from LookupExecutableField")
+	}
+	got2(context.Background(), nil, graphql.CollectedField{}, nil)
+	if !execCalled {
+		t.Fatal("LookupExecutableField should return the exec handler")
+	}
+	if splitCalled {
+		t.Fatal("LookupExecutableField should NOT return the split handler")
+	}
+}
+
+func TestExecutableFieldDuplicatePanics(t *testing.T) {
+	resetExecFieldRegistryForTest()
+
+	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
+		return graphql.Null
+	}
+
+	RegisterExecutableField("scope", "Mutation", "UpdateUser", h)
+	assertDuplicateRegistrationPanic(t, "duplicate executable field shard handler registration: scope:Mutation:UpdateUser", func() {
+		RegisterExecutableField("scope", "Mutation", "UpdateUser", h)
+	})
+}
+
+func TestExecutableStreamFieldRegistry(t *testing.T) {
+	resetExecStreamFieldRegistryForTest()
+
+	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) func(context.Context) graphql.Marshaler {
+		return func(context.Context) graphql.Marshaler {
+			return graphql.Null
+		}
+	}
+
+	if got, ok := LookupExecutableStreamField("scope", "Subscription", "onEvent"); ok || got != nil {
+		t.Fatalf("unexpected executable stream field handler before registration: handler=%v ok=%v", got, ok)
+	}
+
+	RegisterExecutableStreamField("scope", "Subscription", "onEvent", h)
+
+	got, ok := LookupExecutableStreamField("scope", "Subscription", "onEvent")
+	if !ok {
+		t.Fatal("expected registered executable stream field handler")
+	}
+	if got == nil {
+		t.Fatal("expected non-nil executable stream field handler")
+	}
+}
