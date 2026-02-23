@@ -265,7 +265,7 @@ func pruneEmptyDirs(root string) error {
 func generateSplitRootGateway(data *Data, scope string) error {
 	return templates.Render(templates.Options{
 		PackageName:     data.Config.Exec.Package,
-		Template:        splitRootTemplate + "\n" + directivesTemplate,
+		Template:        splitRootTemplate + "\n" + argsTemplate + "\n" + directivesTemplate + "\n" + fieldTemplate + "\n" + inputTemplate + "\n" + interfaceTemplate + "\n" + typeTemplate,
 		Filename:        data.Config.Exec.Filename,
 		Data:            splitRootTemplateData{Data: data, Scope: scope},
 		RegionTags:      false,
