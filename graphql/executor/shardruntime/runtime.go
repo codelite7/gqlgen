@@ -107,22 +107,35 @@ type ComplexityHandler func(
 	rawArgs map[string]any,
 ) (int, bool)
 
+type CodecMarshalHandler func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler
+
+type CodecUnmarshalHandler func(ctx context.Context, ec ObjectExecutionContext, value any) (any, error)
+
 var (
 	mu                    sync.RWMutex
 	objectByScope         = map[string]map[string]ObjectHandler{}
 	streamByScope         = map[string]map[string]StreamObjectHandler{}
-	fieldByScope          = map[string]map[string]map[string]FieldHandler{}
-	streamFieldByScope    = map[string]map[string]map[string]StreamFieldHandler{}
+	fieldByScope              = map[string]map[string]map[string]FieldHandler{}
+	streamFieldByScope        = map[string]map[string]map[string]StreamFieldHandler{}
+	execFieldByScope          = map[string]map[string]map[string]FieldHandler{}
+	execStreamFieldByScope    = map[string]map[string]map[string]StreamFieldHandler{}
 	complexityByScope     = map[string]map[string]map[string]ComplexityHandler{}
 	inputUnmarshalByScope = map[string]map[string]any{}
+	codecMarshalByScope   = map[string]map[string]CodecMarshalHandler{}
+	codecUnmarshalByScope = map[string]map[string]CodecUnmarshalHandler{}
 
 	objectLookupSnapshot           atomic.Value
 	streamObjectLookupSnapshot     atomic.Value
-	fieldLookupSnapshot            atomic.Value
-	fieldLookupSnapshotDirty       atomic.Bool
-	streamFieldLookupSnapshot      atomic.Value
+	fieldLookupSnapshot                atomic.Value
+	fieldLookupSnapshotDirty           atomic.Bool
+	streamFieldLookupSnapshot          atomic.Value
+	execFieldLookupSnapshot            atomic.Value
+	execFieldLookupSnapshotDirty       atomic.Bool
+	execStreamFieldLookupSnapshot      atomic.Value
 	complexityLookupSnapshot       atomic.Value
 	inputUnmarshalMapByScopeLookup atomic.Value
+	codecMarshalLookupSnapshot     atomic.Value
+	codecUnmarshalLookupSnapshot   atomic.Value
 )
 
 var emptyInputUnmarshalMap = map[reflect.Type]reflect.Value{}
@@ -132,8 +145,12 @@ func init() {
 	resetStreamObjectLookupSnapshotForTest()
 	resetFieldLookupSnapshotForTest()
 	resetStreamFieldLookupSnapshotForTest()
+	resetExecFieldLookupSnapshotForTest()
+	resetExecStreamFieldLookupSnapshotForTest()
 	resetComplexityLookupSnapshotForTest()
 	resetInputUnmarshalLookupSnapshotForTest()
+	resetCodecMarshalLookupSnapshotForTest()
+	resetCodecUnmarshalLookupSnapshotForTest()
 }
 
 func objectKey(scope, objectName string) string {
@@ -142,6 +159,10 @@ func objectKey(scope, objectName string) string {
 
 func fieldKey(scope, objectName, fieldName string) string {
 	return scope + "\x00" + objectName + "\x00" + fieldName
+}
+
+func codecKey(scope, funcName string) string {
+	return scope + "\x00" + funcName
 }
 
 func cloneObjectHandlers(src map[string]ObjectHandler) map[string]ObjectHandler {
@@ -169,6 +190,14 @@ func cloneInputUnmarshalMapByScope(src map[string]map[reflect.Type]reflect.Value
 }
 
 func cloneInputUnmarshalHandlers(src map[reflect.Type]reflect.Value) map[reflect.Type]reflect.Value {
+	return maps.Clone(src)
+}
+
+func cloneCodecMarshalHandlers(src map[string]CodecMarshalHandler) map[string]CodecMarshalHandler {
+	return maps.Clone(src)
+}
+
+func cloneCodecUnmarshalHandlers(src map[string]CodecUnmarshalHandler) map[string]CodecUnmarshalHandler {
 	return maps.Clone(src)
 }
 
@@ -214,6 +243,20 @@ func loadInputUnmarshalLookupSnapshot() map[string]map[reflect.Type]reflect.Valu
 	return nil
 }
 
+func loadCodecMarshalLookupSnapshot() map[string]CodecMarshalHandler {
+	if snapshot := codecMarshalLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]CodecMarshalHandler)
+	}
+	return nil
+}
+
+func loadCodecUnmarshalLookupSnapshot() map[string]CodecUnmarshalHandler {
+	if snapshot := codecUnmarshalLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]CodecUnmarshalHandler)
+	}
+	return nil
+}
+
 func resetObjectLookupSnapshotForTest() {
 	objectLookupSnapshot.Store(map[string]ObjectHandler{})
 }
@@ -231,12 +274,29 @@ func resetStreamFieldLookupSnapshotForTest() {
 	streamFieldLookupSnapshot.Store(map[string]StreamFieldHandler{})
 }
 
+func resetExecFieldLookupSnapshotForTest() {
+	execFieldLookupSnapshot.Store(map[string]FieldHandler{})
+	execFieldLookupSnapshotDirty.Store(false)
+}
+
+func resetExecStreamFieldLookupSnapshotForTest() {
+	execStreamFieldLookupSnapshot.Store(map[string]StreamFieldHandler{})
+}
+
 func resetComplexityLookupSnapshotForTest() {
 	complexityLookupSnapshot.Store(map[string]ComplexityHandler{})
 }
 
 func resetInputUnmarshalLookupSnapshotForTest() {
 	inputUnmarshalMapByScopeLookup.Store(map[string]map[reflect.Type]reflect.Value{})
+}
+
+func resetCodecMarshalLookupSnapshotForTest() {
+	codecMarshalLookupSnapshot.Store(map[string]CodecMarshalHandler{})
+}
+
+func resetCodecUnmarshalLookupSnapshotForTest() {
+	codecUnmarshalLookupSnapshot.Store(map[string]CodecUnmarshalHandler{})
 }
 
 func RegisterObject(scope, objectName string, handler ObjectHandler) {
@@ -379,6 +439,110 @@ func LookupStreamField(scope, objectName, fieldName string) (StreamFieldHandler,
 	return handler, ok
 }
 
+func loadExecFieldLookupSnapshot() map[string]FieldHandler {
+	if snapshot := execFieldLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]FieldHandler)
+	}
+	return nil
+}
+
+func loadExecStreamFieldLookupSnapshot() map[string]StreamFieldHandler {
+	if snapshot := execStreamFieldLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]StreamFieldHandler)
+	}
+	return nil
+}
+
+func RegisterExecutableField(scope, objectName, fieldName string, handler FieldHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	scopeHandlers := execFieldByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]map[string]FieldHandler{}
+		execFieldByScope[scope] = scopeHandlers
+	}
+
+	objectHandlers := scopeHandlers[objectName]
+	if objectHandlers == nil {
+		objectHandlers = map[string]FieldHandler{}
+		scopeHandlers[objectName] = objectHandlers
+	}
+
+	if _, exists := objectHandlers[fieldName]; exists {
+		panic("duplicate executable field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+	}
+	objectHandlers[fieldName] = handler
+
+	execFieldLookupSnapshotDirty.Store(true)
+}
+
+func LookupExecutableField(scope, objectName, fieldName string) (FieldHandler, bool) {
+	key := fieldKey(scope, objectName, fieldName)
+	if execFieldLookupSnapshotDirty.Load() {
+		mu.Lock()
+		if execFieldLookupSnapshotDirty.Load() {
+			rebuildExecFieldLookupSnapshotLocked()
+		}
+		mu.Unlock()
+	}
+
+	handler, ok := loadExecFieldLookupSnapshot()[key]
+	return handler, ok
+}
+
+func rebuildExecFieldLookupSnapshotLocked() {
+	totalFields := 0
+	for _, scopeHandlers := range execFieldByScope {
+		for _, objectHandlers := range scopeHandlers {
+			totalFields += len(objectHandlers)
+		}
+	}
+
+	lookup := make(map[string]FieldHandler, totalFields)
+	for scope, scopeHandlers := range execFieldByScope {
+		for objectName, objectHandlers := range scopeHandlers {
+			for fieldName, handler := range objectHandlers {
+				lookup[fieldKey(scope, objectName, fieldName)] = handler
+			}
+		}
+	}
+
+	execFieldLookupSnapshot.Store(lookup)
+	execFieldLookupSnapshotDirty.Store(false)
+}
+
+func RegisterExecutableStreamField(scope, objectName, fieldName string, handler StreamFieldHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	scopeHandlers := execStreamFieldByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]map[string]StreamFieldHandler{}
+		execStreamFieldByScope[scope] = scopeHandlers
+	}
+
+	objectHandlers := scopeHandlers[objectName]
+	if objectHandlers == nil {
+		objectHandlers = map[string]StreamFieldHandler{}
+		scopeHandlers[objectName] = objectHandlers
+	}
+
+	if _, exists := objectHandlers[fieldName]; exists {
+		panic("duplicate executable stream field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+	}
+	objectHandlers[fieldName] = handler
+
+	lookup := cloneStreamFieldHandlers(loadExecStreamFieldLookupSnapshot())
+	lookup[fieldKey(scope, objectName, fieldName)] = handler
+	execStreamFieldLookupSnapshot.Store(lookup)
+}
+
+func LookupExecutableStreamField(scope, objectName, fieldName string) (StreamFieldHandler, bool) {
+	handler, ok := loadExecStreamFieldLookupSnapshot()[fieldKey(scope, objectName, fieldName)]
+	return handler, ok
+}
+
 func RegisterComplexity(scope, objectName, fieldName string, handler ComplexityHandler) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -470,4 +634,54 @@ func ListInputUnmarshalers(scope string, _ ObjectExecutionContext) []any {
 	}
 
 	return inputUnmarshalers
+}
+
+func RegisterCodecMarshal(scope, funcName string, handler CodecMarshalHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	scopeHandlers := codecMarshalByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]CodecMarshalHandler{}
+		codecMarshalByScope[scope] = scopeHandlers
+	}
+
+	if _, exists := scopeHandlers[funcName]; exists {
+		panic("duplicate codec marshal handler registration: " + scope + ":" + funcName)
+	}
+	scopeHandlers[funcName] = handler
+
+	lookup := cloneCodecMarshalHandlers(loadCodecMarshalLookupSnapshot())
+	lookup[codecKey(scope, funcName)] = handler
+	codecMarshalLookupSnapshot.Store(lookup)
+}
+
+func LookupCodecMarshal(scope, funcName string) (CodecMarshalHandler, bool) {
+	handler, ok := loadCodecMarshalLookupSnapshot()[codecKey(scope, funcName)]
+	return handler, ok
+}
+
+func RegisterCodecUnmarshal(scope, funcName string, handler CodecUnmarshalHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	scopeHandlers := codecUnmarshalByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]CodecUnmarshalHandler{}
+		codecUnmarshalByScope[scope] = scopeHandlers
+	}
+
+	if _, exists := scopeHandlers[funcName]; exists {
+		panic("duplicate codec unmarshal handler registration: " + scope + ":" + funcName)
+	}
+	scopeHandlers[funcName] = handler
+
+	lookup := cloneCodecUnmarshalHandlers(loadCodecUnmarshalLookupSnapshot())
+	lookup[codecKey(scope, funcName)] = handler
+	codecUnmarshalLookupSnapshot.Store(lookup)
+}
+
+func LookupCodecUnmarshal(scope, funcName string) (CodecUnmarshalHandler, bool) {
+	handler, ok := loadCodecUnmarshalLookupSnapshot()[codecKey(scope, funcName)]
+	return handler, ok
 }

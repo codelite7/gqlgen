@@ -364,6 +364,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 				Ownership:        ownership,
 				FieldByLookupKey: buildFieldLookupMap(build),
 				InputByName:      buildInputLookupMap(data),
+				CodecByFunc:      buildCodecLookupMap(data),
 			},
 			RegionTags:      false,
 			GeneratedHeader: true,
