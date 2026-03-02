@@ -11,6 +11,63 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCompatibleTypes_InternalAliasNamed(t *testing.T) {
+	internalPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/internal/contacthistory",
+		"contacthistory",
+	)
+	internalTypeName := types.NewTypeName(token.NoPos, internalPkg, "Operation", nil)
+	internalNamed := types.NewNamed(internalTypeName, types.Typ[types.String], nil)
+
+	aliasPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/contacthistory",
+		"contacthistory",
+	)
+	aliasTypeName := types.NewTypeName(token.NoPos, aliasPkg, "Operation", nil)
+	alias := types.NewAlias(aliasTypeName, internalNamed)
+
+	require.NoError(t, CompatibleTypes(alias, internalNamed))
+	require.NoError(t, CompatibleTypes(internalNamed, alias))
+}
+
+func TestCompatibleTypes_InternalAliasNamedDifferentName(t *testing.T) {
+	internalPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/internal/contacthistory",
+		"contacthistory",
+	)
+	internalTypeName := types.NewTypeName(token.NoPos, internalPkg, "Operation", nil)
+	internalNamed := types.NewNamed(internalTypeName, types.Typ[types.String], nil)
+
+	aliasPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/contacthistory",
+		"contacthistory",
+	)
+	aliasTypeName := types.NewTypeName(token.NoPos, aliasPkg, "OperationAlias", nil)
+	alias := types.NewAlias(aliasTypeName, internalNamed)
+
+	require.NoError(t, CompatibleTypes(alias, internalNamed))
+	require.NoError(t, CompatibleTypes(internalNamed, alias))
+}
+
+func TestCompatibleTypes_InternalNonAliasNamed(t *testing.T) {
+	internalPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/internal/contacthistory",
+		"contacthistory",
+	)
+	internalTypeName := types.NewTypeName(token.NoPos, internalPkg, "Operation", nil)
+	internalNamed := types.NewNamed(internalTypeName, types.Typ[types.String], nil)
+
+	publicPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/contacthistory",
+		"contacthistory",
+	)
+	publicTypeName := types.NewTypeName(token.NoPos, publicPkg, "Operation", nil)
+	publicNamed := types.NewNamed(publicTypeName, types.Typ[types.String], nil)
+
+	require.Error(t, CompatibleTypes(publicNamed, internalNamed))
+	require.Error(t, CompatibleTypes(internalNamed, publicNamed))
+}
+
 func TestCompatibleTypes(t *testing.T) {
 	valid := []struct {
 		expected string
