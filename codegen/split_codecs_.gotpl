@@ -121,30 +121,20 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel
 	_ = ctx
 	{{- end }}
 	v := value.({{ $type.GO | ref }})
+	{{- $v := "v" }}
+	{{- if and $type.IsTargetNilable (not $type.IsNilable) }}
+	{{- $v = "&v" }}
+	{{- else if and (not $type.IsTargetNilable) $type.IsNilable }}
+	{{- $v = "*v" }}
+	{{- end }}
 	{{- if $type.HasEnumValues }}
-	{{- /* Enum with external marshaler: convert via reflect */}}
-	enumStr := fmt.Sprint(v)
-	res := {{ $type.Marshaler | call }}(enumStr)
+	{{- /* Enum with external marshaler: marshal as string representation */}}
+	{{- $v = printf "fmt.Sprint(%v)" $v }}
 	{{- else if $type.CastType }}
 	{{- /* Cast type: convert to target type then call marshaler */}}
-	{{- if and $type.IsTargetNilable (not $type.IsNilable) }}
-	castVal := &v
-	{{- else if and (not $type.IsTargetNilable) $type.IsNilable }}
-	castVal := *v
-	{{- else }}
-	castVal := v
+	{{- $v = printf "%v(%v)" ($type.CastType | ref) $v }}
 	{{- end }}
-	res := {{ $type.Marshaler | call }}(castVal)
-	{{- else }}
-	{{- /* Direct external marshaler call */}}
-	{{- if and $type.IsTargetNilable (not $type.IsNilable) }}
-	res := {{ $type.Marshaler | call }}(&v)
-	{{- else if and (not $type.IsTargetNilable) $type.IsNilable }}
-	res := {{ $type.Marshaler | call }}(*v)
-	{{- else }}
-	res := {{ $type.Marshaler | call }}(v)
-	{{- end }}
-	{{- end }}
+	res := {{ $type.Marshaler | call }}({{ $v }})
 	{{- if $type.GQL.NonNull }}
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
