@@ -145,15 +145,16 @@ func CompatibleTypes(expected, actual types.Type) error {
 
 	case *types.Named:
 		if actual, ok := actual.(*types.Named); ok {
-			if NormalizeVendor(
-				expected.Obj().Pkg().Path(),
-			) != NormalizeVendor(
-				actual.Obj().Pkg().Path(),
-			) {
+			expectedPkg := normalizeNamedPkgPath(expected)
+			actualPkg := normalizeNamedPkgPath(actual)
+			if expectedPkg != actualPkg {
+				if internalAliasNamedCompatible(expected, actual) {
+					return nil
+				}
 				return fmt.Errorf(
 					"package name of named type differs, %s != %s",
-					NormalizeVendor(expected.Obj().Pkg().Path()),
-					NormalizeVendor(actual.Obj().Pkg().Path()),
+					expectedPkg,
+					actualPkg,
 				)
 			}
 
@@ -179,4 +180,31 @@ func CompatibleTypes(expected, actual types.Type) error {
 	}
 
 	return fmt.Errorf("type mismatch %T != %T", expected, actual)
+}
+
+func normalizeNamedPkgPath(named *types.Named) string {
+	if named.Obj() == nil || named.Obj().Pkg() == nil {
+		return ""
+	}
+	return NormalizeVendor(named.Obj().Pkg().Path())
+}
+
+func internalAliasNamedCompatible(expected, actual *types.Named) bool {
+	if expected.Obj() == nil || actual.Obj() == nil {
+		return false
+	}
+	if !expected.Obj().IsAlias() && !actual.Obj().IsAlias() {
+		return false
+	}
+
+	expectedPkg := normalizeNamedPkgPath(expected)
+	actualPkg := normalizeNamedPkgPath(actual)
+	expectedQualified := expectedPkg + "." + expected.Obj().Name()
+	actualQualified := actualPkg + "." + actual.Obj().Name()
+
+	if !isAliasInternal(expectedQualified, actualQualified) && !isAliasInternal(actualQualified, expectedQualified) {
+		return false
+	}
+
+	return types.Identical(types.Unalias(expected.Underlying()), types.Unalias(actual.Underlying()))
 }

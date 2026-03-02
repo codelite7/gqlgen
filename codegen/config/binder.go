@@ -473,6 +473,23 @@ func (b *Binder) TypeReference(
 			return nil, err
 		}
 		t := code.Unalias(obj.Type())
+		// tForRef is the type used for ref.GO (import path / rendered symbol).
+		// In the current Go toolchain, TypeName.Type() for a type alias transparently
+		// returns the concrete underlying type. When that concrete type is in an internal
+		// package but the binding symbol (obj) is a public alias TypeName, generated.go
+		// would illegally import the internal package. tForRef re-anchors to the public
+		// alias so the generated import is the entity sub-package, not internal.
+		// hasMethod checks still use `t` (the internal type) for accurate capability detection.
+		tForRef := t
+		if tn, ok := obj.(*types.TypeName); ok && tn.IsAlias() && tn.Pkg() != nil {
+			if tNamed, ok2 := t.(*types.Named); ok2 && tNamed.Obj().Pkg() != nil {
+				tPkg := "/" + tNamed.Obj().Pkg().Path() + "/"
+				tnPkg := "/" + tn.Pkg().Path() + "/"
+				if strings.Contains(tPkg, "/internal/") && !strings.Contains(tnPkg, "/internal/") {
+					tForRef = types.NewNamed(tn, tNamed.Underlying(), nil)
+				}
+			}
+		}
 		if values := b.enumValues(def); len(values) > 0 {
 			err = b.enumReference(ref, obj, values)
 			if err != nil {
@@ -486,17 +503,17 @@ func (b *Binder) TypeReference(
 			ref.Marshaler = fun
 			ref.Unmarshaler = types.NewFunc(0, fun.Pkg(), "Unmarshal"+typeName, nil)
 		} else if hasMethod(t, "MarshalGQLContext") && hasMethod(t, "UnmarshalGQLContext") {
-			ref.GO = t
+			ref.GO = tForRef
 			ref.IsContext = true
 			ref.IsMarshaler = true
 		} else if hasMethod(t, "MarshalGQL") && hasMethod(t, "UnmarshalGQL") {
-			ref.GO = t
+			ref.GO = tForRef
 			ref.IsMarshaler = true
 		} else if underlying := basicUnderlying(t); def.IsLeafType() && underlying != nil && underlying.Kind() == types.String {
 			// TODO delete before v1. Backwards compatibility case for named types wrapping strings
 			// (see #595)
 
-			ref.GO = t
+			ref.GO = tForRef
 			ref.CastType = underlying
 
 			underlyingRef, err := b.TypeReference(&ast.Type{NamedType: "String"}, nil)
@@ -507,7 +524,7 @@ func (b *Binder) TypeReference(
 			ref.Marshaler = underlyingRef.Marshaler
 			ref.Unmarshaler = underlyingRef.Unmarshaler
 		} else {
-			ref.GO = t
+			ref.GO = tForRef
 		}
 
 		ref.Target = ref.GO
@@ -532,8 +549,12 @@ func (b *Binder) TypeReference(
 				} else {
 					continue
 				}
+				if shouldPreferBindTarget(ref.GO, bindTarget) {
+					ref.GO = bindTarget
+				}
+			} else if shouldPreferBindTarget(ref.GO, bindTarget) {
+				ref.GO = bindTarget
 			}
-			ref.GO = bindTarget
 		}
 
 		ref.PointersInUnmarshalInput = b.cfg.ReturnPointersInUnmarshalInput
@@ -542,6 +563,76 @@ func (b *Binder) TypeReference(
 	}
 
 	return nil, fmt.Errorf("%s is incompatible with %s", schemaType.Name(), bindTarget.String())
+}
+
+// shouldPreferBindTarget reports whether generated code should render bindTarget
+// instead of the model-configured type (refType).
+//
+// We keep refType when it is a public alias over an internal bindTarget from the
+// same module root. This avoids generating imports to sibling internal packages
+// (which are illegal outside the internal package parent tree), while preserving
+// type compatibility for binding decisions.
+func shouldPreferBindTarget(refType, bindTarget types.Type) bool {
+	refNamed, ok := coreNamedType(refType)
+	if !ok || refNamed.Obj() == nil || refNamed.Obj().Pkg() == nil || !refNamed.Obj().IsAlias() {
+		return true
+	}
+
+	bindNamed, ok := coreNamedType(bindTarget)
+	if !ok || bindNamed.Obj() == nil || bindNamed.Obj().Pkg() == nil {
+		return true
+	}
+
+	refPkg := refNamed.Obj().Pkg().Path()
+	bindPkg := bindNamed.Obj().Pkg().Path()
+	root, ok := internalPackageRoot(bindPkg)
+	if !ok {
+		return true
+	}
+	if isInternalPackagePath(refPkg) {
+		return true
+	}
+
+	if !(refPkg == root || strings.HasPrefix(refPkg, root+"/")) {
+		return true
+	}
+
+	if !types.Identical(types.Unalias(refNamed.Underlying()), types.Unalias(bindNamed.Underlying())) {
+		return true
+	}
+
+	return false
+}
+
+func isInternalPackagePath(pkgPath string) bool {
+	return strings.Contains(pkgPath, "/internal/") || strings.HasSuffix(pkgPath, "/internal")
+}
+
+func internalPackageRoot(pkgPath string) (string, bool) {
+	if idx := strings.Index(pkgPath, "/internal/"); idx >= 0 {
+		return pkgPath[:idx], true
+	}
+	if strings.HasSuffix(pkgPath, "/internal") {
+		return strings.TrimSuffix(pkgPath, "/internal"), true
+	}
+	return "", false
+}
+
+func coreNamedType(t types.Type) (*types.Named, bool) {
+	t = code.Unalias(t)
+	for {
+		switch tt := t.(type) {
+		case *types.Pointer:
+			t = code.Unalias(tt.Elem())
+		case *types.Slice:
+			t = code.Unalias(tt.Elem())
+		case *types.Array:
+			t = code.Unalias(tt.Elem())
+		default:
+			named, ok := t.(*types.Named)
+			return named, ok
+		}
+	}
 }
 
 func isValid(t types.Type) bool {
@@ -710,6 +801,19 @@ func (b *Binder) enumReference(
 				value.Name,
 				ref.Definition.Name,
 			)
+		}
+	}
+
+	// Re-anchor ref.GO to the public alias package when the binding symbol is a
+	// public alias over an internal type. The AssignableTo check above uses the
+	// original ref.GO (internal type), so this must happen after the loop.
+	if tn, ok := obj.(*types.TypeName); ok && tn.IsAlias() && tn.Pkg() != nil {
+		if tNamed, ok2 := t.(*types.Named); ok2 && tNamed.Obj().Pkg() != nil {
+			tPkg := "/" + tNamed.Obj().Pkg().Path() + "/"
+			tnPkg := "/" + tn.Pkg().Path() + "/"
+			if strings.Contains(tPkg, "/internal/") && !strings.Contains(tnPkg, "/internal/") {
+				ref.GO = types.NewNamed(tn, tNamed.Underlying(), nil)
+			}
 		}
 	}
 

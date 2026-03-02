@@ -429,3 +429,112 @@ func TestIsNilable(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldPreferBindTarget_InternalAlias(t *testing.T) {
+	internalPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/internal/contacthistory",
+		"contacthistory",
+	)
+	internalTypeName := types.NewTypeName(token.NoPos, internalPkg, "ContactHistoryOperation", nil)
+	internalNamed := types.NewNamed(internalTypeName, types.Typ[types.String], nil)
+
+	aliasPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/contacthistory",
+		"contacthistory",
+	)
+	aliasTypeName := types.NewTypeName(token.NoPos, aliasPkg, "Operation", nil)
+	alias := types.NewAlias(aliasTypeName, internalNamed)
+
+	require.False(t, shouldPreferBindTarget(alias, internalNamed))
+	require.True(t, shouldPreferBindTarget(internalNamed, alias))
+	require.False(t, shouldPreferBindTarget(types.NewPointer(alias), types.NewPointer(internalNamed)))
+}
+
+func TestShouldPreferBindTarget_NonAlias(t *testing.T) {
+	publicPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/contacthistory",
+		"contacthistory",
+	)
+	publicTypeName := types.NewTypeName(token.NoPos, publicPkg, "Operation", nil)
+	publicNamed := types.NewNamed(publicTypeName, types.Typ[types.String], nil)
+
+	internalPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/internal/contacthistory",
+		"contacthistory",
+	)
+	internalTypeName := types.NewTypeName(token.NoPos, internalPkg, "ContactHistoryOperation", nil)
+	internalNamed := types.NewNamed(internalTypeName, types.Typ[types.String], nil)
+
+	require.True(t, shouldPreferBindTarget(publicNamed, internalNamed))
+	require.True(t, shouldPreferBindTarget(internalNamed, publicNamed))
+}
+
+func TestTypeReference_UsesPublicAliasOverInternalBindTarget(t *testing.T) {
+	const (
+		publicPkg = "github.com/99designs/gqlgen/codegen/config/testdata/aliasroot/public"
+	)
+
+	cf := Config{}
+	cf.Packages = code.NewPackages()
+	cf.Models = TypeMap{
+		"OpEnum": TypeMapEntry{Model: []string{publicPkg + ".Operation"}},
+		"String": TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/graphql.String"}},
+	}
+	cf.Schema = gqlparser.MustLoadSchema(&ast.Source{Name: "schema", Input: `
+	enum OpEnum {
+		CREATE
+	}
+	`})
+
+	binder := cf.NewBinder()
+	modelObj, err := binder.FindObject(publicPkg, "Operation")
+	require.NoError(t, err)
+	modelTypeName, ok := modelObj.(*types.TypeName)
+	require.True(t, ok)
+	require.True(t, modelTypeName.IsAlias())
+
+	entityObj, err := binder.FindObject(publicPkg, "Entity")
+	require.NoError(t, err)
+
+	entityNamed, ok := code.Unalias(entityObj.Type()).(*types.Named)
+	require.True(t, ok)
+
+	entityStruct, ok := entityNamed.Underlying().(*types.Struct)
+	require.True(t, ok)
+
+	ref, err := binder.TypeReference(&ast.Type{NamedType: "OpEnum", NonNull: true}, entityStruct.Field(0).Type())
+	require.NoError(t, err)
+	require.Equal(t, publicPkg+".Operation", ref.GO.String())
+}
+
+func TestTypeReference_UsesPublicAliasOverInternalBindTargetWrapped(t *testing.T) {
+	const (
+		publicPkg = "github.com/99designs/gqlgen/codegen/config/testdata/aliasroot/public"
+	)
+
+	cf := Config{}
+	cf.Packages = code.NewPackages()
+	cf.Models = TypeMap{
+		"OpEnum": TypeMapEntry{Model: []string{publicPkg + ".Operation"}},
+		"String": TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/graphql.String"}},
+	}
+	cf.Schema = gqlparser.MustLoadSchema(&ast.Source{Name: "schema", Input: `
+	enum OpEnum {
+		CREATE
+	}
+	`})
+
+	binder := cf.NewBinder()
+	entityObj, err := binder.FindObject(publicPkg, "Entity")
+	require.NoError(t, err)
+
+	entityNamed, ok := code.Unalias(entityObj.Type()).(*types.Named)
+	require.True(t, ok)
+
+	entityStruct, ok := entityNamed.Underlying().(*types.Struct)
+	require.True(t, ok)
+
+	ref, err := binder.TypeReference(&ast.Type{NamedType: "OpEnum"}, entityStruct.Field(1).Type())
+	require.NoError(t, err)
+	require.Equal(t, "*"+publicPkg+".Operation", ref.GO.String())
+}
