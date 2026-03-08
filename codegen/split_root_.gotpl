@@ -323,24 +323,6 @@ func (ec *executionContext) ResolveStreamField(ctx context.Context, objectName, 
 	return handler(ctx, ec, field, nil)
 }
 
-func (ec *executionContext) ResolveExecutableField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) graphql.Marshaler {
-	handler, ok := shardruntime.LookupExecutableField({{ $.Scope | quote }}, objectName, fieldName)
-	if !ok {
-		panic(fmt.Sprintf("unknown executable field %s.%s", objectName, fieldName))
-	}
-
-	return handler(ctx, ec, field, obj)
-}
-
-func (ec *executionContext) ResolveExecutableStreamField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
-	handler, ok := shardruntime.LookupExecutableStreamField({{ $.Scope | quote }}, objectName, fieldName)
-	if !ok {
-		panic(fmt.Sprintf("unknown executable stream field %s.%s", objectName, fieldName))
-	}
-
-	return handler(ctx, ec, field, obj)
-}
-
 func (ec *executionContext) MarshalCodec(ctx context.Context, funcName string, sel ast.SelectionSet, value any) graphql.Marshaler {
 	handler, ok := shardruntime.LookupCodecMarshal({{ $.Scope | quote }}, funcName)
 	if !ok {

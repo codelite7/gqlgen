@@ -173,7 +173,7 @@ func (ec *executionContext) AddDeferred(delta int32) {
 }
 
 func (ec *executionContext) ResolveField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) graphql.Marshaler {
-	handler, ok := shardruntime.LookupField("github.com/99designs/gqlgen/codegen/testserver/splitpackages", objectName, fieldName)
+	handler, ok := localFieldResolvers[objectName+"."+fieldName]
 	if !ok {
 		panic(fmt.Sprintf("unknown field %s.%s", objectName, fieldName))
 	}
@@ -188,24 +188,6 @@ func (ec *executionContext) ResolveStreamField(ctx context.Context, objectName, 
 	}
 
 	return handler(ctx, ec, field, nil)
-}
-
-func (ec *executionContext) ResolveExecutableField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) graphql.Marshaler {
-	handler, ok := splitExecutableFieldResolvers[objectName+"."+fieldName]
-	if !ok {
-		panic(fmt.Sprintf("unknown executable field %s.%s", objectName, fieldName))
-	}
-
-	return handler(ctx, ec, field, obj)
-}
-
-func (ec *executionContext) ResolveExecutableStreamField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
-	handler, ok := splitExecutableStreamFieldResolvers[objectName+"."+fieldName]
-	if !ok {
-		panic(fmt.Sprintf("unknown executable stream field %s.%s", objectName, fieldName))
-	}
-
-	return handler(ctx, ec, field, obj)
 }
 
 func (ec *executionContext) MarshalCodec(ctx context.Context, funcName string, sel ast.SelectionSet, value any) graphql.Marshaler {
@@ -257,9 +239,9 @@ func (ec *executionContext) ResolveExecutableComplexity(ctx context.Context, obj
 	return handler(ctx, ec, childComplexity, rawArgs)
 }
 
-type splitFieldResolver func(context.Context, *executionContext, graphql.CollectedField, any) graphql.Marshaler
+type localFieldResolver func(context.Context, *executionContext, graphql.CollectedField, any) graphql.Marshaler
 
-var splitExecutableFieldResolvers = map[string]splitFieldResolver{
+var localFieldResolvers = map[string]localFieldResolver{
 	"Query.hello": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 		return ec._Query_hello(ctx, field)
 	},
@@ -270,276 +252,120 @@ var splitExecutableFieldResolvers = map[string]splitFieldResolver{
 		return ec._Query___schema(ctx, field)
 	},
 	"__Directive.name": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Directive)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Directive", obj))
-		}
-		return ec.___Directive_name(ctx, field, typedObj)
+		return ec.___Directive_name(ctx, field, obj.(*introspection.Directive))
 	},
 	"__Directive.description": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Directive)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Directive", obj))
-		}
-		return ec.___Directive_description(ctx, field, typedObj)
+		return ec.___Directive_description(ctx, field, obj.(*introspection.Directive))
 	},
 	"__Directive.isRepeatable": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Directive)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Directive", obj))
-		}
-		return ec.___Directive_isRepeatable(ctx, field, typedObj)
+		return ec.___Directive_isRepeatable(ctx, field, obj.(*introspection.Directive))
 	},
 	"__Directive.locations": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Directive)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Directive", obj))
-		}
-		return ec.___Directive_locations(ctx, field, typedObj)
+		return ec.___Directive_locations(ctx, field, obj.(*introspection.Directive))
 	},
 	"__Directive.args": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Directive)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Directive", obj))
-		}
-		return ec.___Directive_args(ctx, field, typedObj)
+		return ec.___Directive_args(ctx, field, obj.(*introspection.Directive))
 	},
 	"__EnumValue.name": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.EnumValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __EnumValue", obj))
-		}
-		return ec.___EnumValue_name(ctx, field, typedObj)
+		return ec.___EnumValue_name(ctx, field, obj.(*introspection.EnumValue))
 	},
 	"__EnumValue.description": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.EnumValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __EnumValue", obj))
-		}
-		return ec.___EnumValue_description(ctx, field, typedObj)
+		return ec.___EnumValue_description(ctx, field, obj.(*introspection.EnumValue))
 	},
 	"__EnumValue.isDeprecated": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.EnumValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __EnumValue", obj))
-		}
-		return ec.___EnumValue_isDeprecated(ctx, field, typedObj)
+		return ec.___EnumValue_isDeprecated(ctx, field, obj.(*introspection.EnumValue))
 	},
 	"__EnumValue.deprecationReason": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.EnumValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __EnumValue", obj))
-		}
-		return ec.___EnumValue_deprecationReason(ctx, field, typedObj)
+		return ec.___EnumValue_deprecationReason(ctx, field, obj.(*introspection.EnumValue))
 	},
 	"__Field.name": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Field)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Field", obj))
-		}
-		return ec.___Field_name(ctx, field, typedObj)
+		return ec.___Field_name(ctx, field, obj.(*introspection.Field))
 	},
 	"__Field.description": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Field)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Field", obj))
-		}
-		return ec.___Field_description(ctx, field, typedObj)
+		return ec.___Field_description(ctx, field, obj.(*introspection.Field))
 	},
 	"__Field.args": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Field)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Field", obj))
-		}
-		return ec.___Field_args(ctx, field, typedObj)
+		return ec.___Field_args(ctx, field, obj.(*introspection.Field))
 	},
 	"__Field.type": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Field)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Field", obj))
-		}
-		return ec.___Field_type(ctx, field, typedObj)
+		return ec.___Field_type(ctx, field, obj.(*introspection.Field))
 	},
 	"__Field.isDeprecated": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Field)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Field", obj))
-		}
-		return ec.___Field_isDeprecated(ctx, field, typedObj)
+		return ec.___Field_isDeprecated(ctx, field, obj.(*introspection.Field))
 	},
 	"__Field.deprecationReason": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Field)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Field", obj))
-		}
-		return ec.___Field_deprecationReason(ctx, field, typedObj)
+		return ec.___Field_deprecationReason(ctx, field, obj.(*introspection.Field))
 	},
 	"__InputValue.name": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.InputValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __InputValue", obj))
-		}
-		return ec.___InputValue_name(ctx, field, typedObj)
+		return ec.___InputValue_name(ctx, field, obj.(*introspection.InputValue))
 	},
 	"__InputValue.description": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.InputValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __InputValue", obj))
-		}
-		return ec.___InputValue_description(ctx, field, typedObj)
+		return ec.___InputValue_description(ctx, field, obj.(*introspection.InputValue))
 	},
 	"__InputValue.type": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.InputValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __InputValue", obj))
-		}
-		return ec.___InputValue_type(ctx, field, typedObj)
+		return ec.___InputValue_type(ctx, field, obj.(*introspection.InputValue))
 	},
 	"__InputValue.defaultValue": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.InputValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __InputValue", obj))
-		}
-		return ec.___InputValue_defaultValue(ctx, field, typedObj)
+		return ec.___InputValue_defaultValue(ctx, field, obj.(*introspection.InputValue))
 	},
 	"__InputValue.isDeprecated": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.InputValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __InputValue", obj))
-		}
-		return ec.___InputValue_isDeprecated(ctx, field, typedObj)
+		return ec.___InputValue_isDeprecated(ctx, field, obj.(*introspection.InputValue))
 	},
 	"__InputValue.deprecationReason": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.InputValue)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __InputValue", obj))
-		}
-		return ec.___InputValue_deprecationReason(ctx, field, typedObj)
+		return ec.___InputValue_deprecationReason(ctx, field, obj.(*introspection.InputValue))
 	},
 	"__Schema.description": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Schema)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Schema", obj))
-		}
-		return ec.___Schema_description(ctx, field, typedObj)
+		return ec.___Schema_description(ctx, field, obj.(*introspection.Schema))
 	},
 	"__Schema.types": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Schema)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Schema", obj))
-		}
-		return ec.___Schema_types(ctx, field, typedObj)
+		return ec.___Schema_types(ctx, field, obj.(*introspection.Schema))
 	},
 	"__Schema.queryType": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Schema)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Schema", obj))
-		}
-		return ec.___Schema_queryType(ctx, field, typedObj)
+		return ec.___Schema_queryType(ctx, field, obj.(*introspection.Schema))
 	},
 	"__Schema.mutationType": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Schema)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Schema", obj))
-		}
-		return ec.___Schema_mutationType(ctx, field, typedObj)
+		return ec.___Schema_mutationType(ctx, field, obj.(*introspection.Schema))
 	},
 	"__Schema.subscriptionType": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Schema)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Schema", obj))
-		}
-		return ec.___Schema_subscriptionType(ctx, field, typedObj)
+		return ec.___Schema_subscriptionType(ctx, field, obj.(*introspection.Schema))
 	},
 	"__Schema.directives": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Schema)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Schema", obj))
-		}
-		return ec.___Schema_directives(ctx, field, typedObj)
+		return ec.___Schema_directives(ctx, field, obj.(*introspection.Schema))
 	},
 	"__Type.kind": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_kind(ctx, field, typedObj)
+		return ec.___Type_kind(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.name": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_name(ctx, field, typedObj)
+		return ec.___Type_name(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.description": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_description(ctx, field, typedObj)
+		return ec.___Type_description(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.specifiedByURL": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_specifiedByURL(ctx, field, typedObj)
+		return ec.___Type_specifiedByURL(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.fields": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_fields(ctx, field, typedObj)
+		return ec.___Type_fields(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.interfaces": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_interfaces(ctx, field, typedObj)
+		return ec.___Type_interfaces(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.possibleTypes": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_possibleTypes(ctx, field, typedObj)
+		return ec.___Type_possibleTypes(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.enumValues": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_enumValues(ctx, field, typedObj)
+		return ec.___Type_enumValues(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.inputFields": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_inputFields(ctx, field, typedObj)
+		return ec.___Type_inputFields(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.ofType": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_ofType(ctx, field, typedObj)
+		return ec.___Type_ofType(ctx, field, obj.(*introspection.Type))
 	},
 	"__Type.isOneOf": func(ctx context.Context, ec *executionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		typedObj, ok := obj.(*introspection.Type)
-		if !ok {
-			panic(fmt.Errorf("unexpected type %T for object __Type", obj))
-		}
-		return ec.___Type_isOneOf(ctx, field, typedObj)
+		return ec.___Type_isOneOf(ctx, field, obj.(*introspection.Type))
 	},
 }
-
-type splitStreamFieldResolver func(context.Context, *executionContext, graphql.CollectedField, any) func(context.Context) graphql.Marshaler
-
-var splitExecutableStreamFieldResolvers = map[string]splitStreamFieldResolver{}
 
 type splitCodecMarshalResolver func(context.Context, *executionContext, ast.SelectionSet, any) graphql.Marshaler
 

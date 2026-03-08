@@ -16,20 +16,6 @@ import (
 // ObjectExecutionContext defines the runtime surface required by generated object shards.
 type ObjectExecutionContext interface {
 	GetOperationContext() *graphql.OperationContext
-	ResolveExecutableField(
-		ctx context.Context,
-		objectName string,
-		fieldName string,
-		field graphql.CollectedField,
-		obj any,
-	) graphql.Marshaler
-	ResolveExecutableStreamField(
-		ctx context.Context,
-		objectName string,
-		fieldName string,
-		field graphql.CollectedField,
-		obj any,
-	) func(context.Context) graphql.Marshaler
 	MarshalCodec(
 		ctx context.Context,
 		funcName string,
@@ -125,8 +111,6 @@ var (
 	streamByScope         = map[string]map[string]StreamObjectHandler{}
 	fieldByScope              = map[string]map[string]map[string]FieldHandler{}
 	streamFieldByScope        = map[string]map[string]map[string]StreamFieldHandler{}
-	execFieldByScope          = map[string]map[string]map[string]FieldHandler{}
-	execStreamFieldByScope    = map[string]map[string]map[string]StreamFieldHandler{}
 	complexityByScope     = map[string]map[string]map[string]ComplexityHandler{}
 	inputUnmarshalByScope = map[string]map[string]any{}
 	codecMarshalByScope      = map[string]map[string]CodecMarshalHandler{}
@@ -140,9 +124,6 @@ var (
 	fieldLookupSnapshot                atomic.Value
 	fieldLookupSnapshotDirty           atomic.Bool
 	streamFieldLookupSnapshot          atomic.Value
-	execFieldLookupSnapshot            atomic.Value
-	execFieldLookupSnapshotDirty       atomic.Bool
-	execStreamFieldLookupSnapshot      atomic.Value
 	complexityLookupSnapshot       atomic.Value
 	inputUnmarshalMapByScopeLookup atomic.Value
 	codecMarshalLookupSnapshot         atomic.Value
@@ -159,8 +140,6 @@ func init() {
 	resetStreamObjectLookupSnapshotForTest()
 	resetFieldLookupSnapshotForTest()
 	resetStreamFieldLookupSnapshotForTest()
-	resetExecFieldLookupSnapshotForTest()
-	resetExecStreamFieldLookupSnapshotForTest()
 	resetComplexityLookupSnapshotForTest()
 	resetInputUnmarshalLookupSnapshotForTest()
 	resetCodecMarshalLookupSnapshotForTest()
@@ -289,15 +268,6 @@ func resetFieldLookupSnapshotForTest() {
 
 func resetStreamFieldLookupSnapshotForTest() {
 	streamFieldLookupSnapshot.Store(map[string]StreamFieldHandler{})
-}
-
-func resetExecFieldLookupSnapshotForTest() {
-	execFieldLookupSnapshot.Store(map[string]FieldHandler{})
-	execFieldLookupSnapshotDirty.Store(false)
-}
-
-func resetExecStreamFieldLookupSnapshotForTest() {
-	execStreamFieldLookupSnapshot.Store(map[string]StreamFieldHandler{})
 }
 
 func resetComplexityLookupSnapshotForTest() {
@@ -453,110 +423,6 @@ func RegisterStreamField(scope, objectName, fieldName string, handler StreamFiel
 
 func LookupStreamField(scope, objectName, fieldName string) (StreamFieldHandler, bool) {
 	handler, ok := loadStreamFieldLookupSnapshot()[fieldKey(scope, objectName, fieldName)]
-	return handler, ok
-}
-
-func loadExecFieldLookupSnapshot() map[string]FieldHandler {
-	if snapshot := execFieldLookupSnapshot.Load(); snapshot != nil {
-		return snapshot.(map[string]FieldHandler)
-	}
-	return nil
-}
-
-func loadExecStreamFieldLookupSnapshot() map[string]StreamFieldHandler {
-	if snapshot := execStreamFieldLookupSnapshot.Load(); snapshot != nil {
-		return snapshot.(map[string]StreamFieldHandler)
-	}
-	return nil
-}
-
-func RegisterExecutableField(scope, objectName, fieldName string, handler FieldHandler) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	scopeHandlers := execFieldByScope[scope]
-	if scopeHandlers == nil {
-		scopeHandlers = map[string]map[string]FieldHandler{}
-		execFieldByScope[scope] = scopeHandlers
-	}
-
-	objectHandlers := scopeHandlers[objectName]
-	if objectHandlers == nil {
-		objectHandlers = map[string]FieldHandler{}
-		scopeHandlers[objectName] = objectHandlers
-	}
-
-	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate executable field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
-	}
-	objectHandlers[fieldName] = handler
-
-	execFieldLookupSnapshotDirty.Store(true)
-}
-
-func LookupExecutableField(scope, objectName, fieldName string) (FieldHandler, bool) {
-	key := fieldKey(scope, objectName, fieldName)
-	if execFieldLookupSnapshotDirty.Load() {
-		mu.Lock()
-		if execFieldLookupSnapshotDirty.Load() {
-			rebuildExecFieldLookupSnapshotLocked()
-		}
-		mu.Unlock()
-	}
-
-	handler, ok := loadExecFieldLookupSnapshot()[key]
-	return handler, ok
-}
-
-func rebuildExecFieldLookupSnapshotLocked() {
-	totalFields := 0
-	for _, scopeHandlers := range execFieldByScope {
-		for _, objectHandlers := range scopeHandlers {
-			totalFields += len(objectHandlers)
-		}
-	}
-
-	lookup := make(map[string]FieldHandler, totalFields)
-	for scope, scopeHandlers := range execFieldByScope {
-		for objectName, objectHandlers := range scopeHandlers {
-			for fieldName, handler := range objectHandlers {
-				lookup[fieldKey(scope, objectName, fieldName)] = handler
-			}
-		}
-	}
-
-	execFieldLookupSnapshot.Store(lookup)
-	execFieldLookupSnapshotDirty.Store(false)
-}
-
-func RegisterExecutableStreamField(scope, objectName, fieldName string, handler StreamFieldHandler) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	scopeHandlers := execStreamFieldByScope[scope]
-	if scopeHandlers == nil {
-		scopeHandlers = map[string]map[string]StreamFieldHandler{}
-		execStreamFieldByScope[scope] = scopeHandlers
-	}
-
-	objectHandlers := scopeHandlers[objectName]
-	if objectHandlers == nil {
-		objectHandlers = map[string]StreamFieldHandler{}
-		scopeHandlers[objectName] = objectHandlers
-	}
-
-	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate executable stream field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
-	}
-	objectHandlers[fieldName] = handler
-
-	lookup := cloneStreamFieldHandlers(loadExecStreamFieldLookupSnapshot())
-	lookup[fieldKey(scope, objectName, fieldName)] = handler
-	execStreamFieldLookupSnapshot.Store(lookup)
-}
-
-func LookupExecutableStreamField(scope, objectName, fieldName string) (StreamFieldHandler, bool) {
-	handler, ok := loadExecStreamFieldLookupSnapshot()[fieldKey(scope, objectName, fieldName)]
 	return handler, ok
 }
 
