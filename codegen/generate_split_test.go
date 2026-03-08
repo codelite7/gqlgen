@@ -443,6 +443,7 @@ func TestSplitCodecWrappersAvoidRootPackageReferences(t *testing.T) {
 			ShardName:        "alpha",
 			Ownership:        ownership,
 			FieldByLookupKey: map[string]*Field{},
+			FieldByArgsFunc:  map[string]*Field{},
 			InputByName:      map[string]*Object{},
 			CodecByFunc: map[string]*config.TypeReference{
 				marshalKey:   ref,
@@ -488,6 +489,7 @@ func TestSplitShardObjectHandlersAvoidRootPackageReferences(t *testing.T) {
 			ShardName:        "alpha",
 			Ownership:        &splitOwnershipPlanner{},
 			FieldByLookupKey: map[string]*Field{},
+			FieldByArgsFunc:  map[string]*Field{},
 			InputByName:      map[string]*Object{},
 			CodecByFunc:      map[string]*config.TypeReference{},
 		},
@@ -505,16 +507,29 @@ func TestSplitShardObjectHandlersAvoidRootPackageReferences(t *testing.T) {
 	require.NotContains(t, text, "typedObj, ok := obj.(")
 }
 
-func TestSplitInputWrappersAvoidRootPackageReferences(t *testing.T) {
-	const rootImportPath = "example.com/project/graph"
-	rootInputType := types.NewNamed(
-		types.NewTypeName(0, types.NewPackage(rootImportPath, "graph"), "UserInput", nil),
+func TestSplitInputGeneratesFullUnmarshalBody(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
 		types.NewStruct(nil, nil),
 		nil,
 	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
 	input := &Object{
 		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
-		Type:       rootInputType,
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference: &config.TypeReference{
+					Definition: stringDef,
+					GQL:        ast.NonNullNamedType("String", nil),
+					GO:         types.Typ[types.String],
+				},
+			},
+		},
 	}
 	ownership := &splitOwnershipPlanner{
 		InputOwner: map[string]string{
@@ -544,8 +559,12 @@ func TestSplitInputWrappersAvoidRootPackageReferences(t *testing.T) {
 	require.NoError(t, err)
 
 	text := string(contents)
-	require.NotContains(t, text, rootImportPath)
-	require.Contains(t, text, "func __splitInput_UserInput(_ context.Context, obj any) (any, error)")
+	require.Contains(t, text, "func __splitInput_UserInput(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any)")
+	require.Contains(t, text, "model.UserInput")
+	require.Contains(t, text, "ec.UnmarshalCodec(ctx,")
+	require.Contains(t, text, `case "name"`)
+	require.Contains(t, text, "graphql.WithPathContext")
+	require.Contains(t, text, "it.Name = data.(string)")
 }
 
 func TestSplitRootUsesLookupField(t *testing.T) {
@@ -921,6 +940,7 @@ func TestSplitComplexityEmissionByOwner(t *testing.T) {
 			ShardName:        "alpha",
 			Ownership:        ownership,
 			FieldByLookupKey: buildFieldLookupMap(data),
+			FieldByArgsFunc:  buildArgsFuncLookupMap(data),
 		},
 		Packages: internalcode.NewPackages(),
 	})
@@ -936,6 +956,7 @@ func TestSplitComplexityEmissionByOwner(t *testing.T) {
 			ShardName:        "zeta",
 			Ownership:        ownership,
 			FieldByLookupKey: buildFieldLookupMap(data),
+			FieldByArgsFunc:  buildArgsFuncLookupMap(data),
 		},
 		Packages: internalcode.NewPackages(),
 	})
@@ -956,6 +977,191 @@ func TestSplitComplexityEmissionByOwner(t *testing.T) {
 	require.Contains(t, zetaText, "func __splitComplexity_ZetaQuery_zetaField")
 	require.Contains(t, zetaText, "return ec.ResolveExecutableComplexity(ctx, \"ZetaQuery\", \"zetaField\", childComplexity, rawArgs)")
 	require.NotContains(t, zetaText, "func __splitComplexity_AlphaQuery_alphaField")
+}
+
+func TestSplitFieldsUsesResolveFieldInsteadOfBridge(t *testing.T) {
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	stringGQL := ast.NonNullNamedType("String", nil)
+	stringGO := types.Typ[types.String]
+	stringRef := &config.TypeReference{
+		Definition: stringDef,
+		GQL:        stringGQL,
+		GO:         stringGO,
+	}
+
+	newObject := func(name, sourceFile string, fields ...*Field) *Object {
+		object := &Object{
+			Definition: &ast.Definition{
+				Name:     name,
+				Kind:     ast.Object,
+				Position: &ast.Position{Src: &ast.Source{Name: sourceFile}},
+			},
+			Type: types.NewNamed(
+				types.NewTypeName(0, types.NewPackage("example.com/model", "model"), name, nil),
+				types.NewStruct(nil, nil),
+				nil,
+			),
+		}
+		for _, f := range fields {
+			f.Object = object
+		}
+		object.Fields = fields
+		return object
+	}
+
+	// Variable field (non-resolver, non-method)
+	variableField := &Field{
+		FieldDefinition: &ast.FieldDefinition{Name: "title"},
+		TypeReference:   stringRef,
+		GoFieldName:     "Title",
+		GoFieldType:     GoFieldVariable,
+		GoReceiverName:  "obj",
+	}
+
+	// Resolver field
+	resolverField := &Field{
+		FieldDefinition: &ast.FieldDefinition{Name: "computed"},
+		TypeReference:   stringRef,
+		GoFieldName:     "Computed",
+		GoFieldType:     GoFieldMethod,
+		GoReceiverName:  "obj",
+		IsResolver:      true,
+	}
+
+	data := &Data{
+		Config: &config.Config{Exec: config.ExecConfig{FilenameTemplate: "{name}.generated.go"}},
+		Objects: Objects{
+			newObject("Article", "graph/article.graphqls", variableField, resolverField),
+		},
+	}
+
+	ownership, err := planSplitOwnership(data)
+	require.NoError(t, err)
+
+	outDir := t.TempDir()
+	fieldsPath := filepath.Join(outDir, "fields.generated.go")
+
+	err = templates.Render(templates.Options{
+		PackageName: "splitfieldstest",
+		Template:    splitFieldsTemplate + "\n{{ template \"split_fields_.gotpl\" . }}",
+		Filename:    fieldsPath,
+		Data: splitShardTemplateData{
+			Data:             data,
+			Scope:            "scope",
+			ShardName:        "article",
+			Ownership:        ownership,
+			FieldByLookupKey: buildFieldLookupMap(data),
+			FieldByArgsFunc:  buildArgsFuncLookupMap(data),
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(fieldsPath)
+	require.NoError(t, err)
+	text := string(contents)
+
+	// Verify field functions are generated
+	require.Contains(t, text, "func __splitField_Article_title")
+	require.Contains(t, text, "func __splitField_Article_computed")
+
+	// Verify new pattern: graphql.ResolveField is used
+	require.Contains(t, text, "graphql.ResolveField[any]")
+
+	// Verify old bridge pattern is NOT used
+	require.NotContains(t, text, "ec.ResolveExecutableField")
+
+	// Verify resolver field uses InvokeResolver
+	require.Contains(t, text, `ec.InvokeResolver(ctx, "Article", "Computed", obj)`)
+
+	// Verify non-resolver field uses direct access with type assertion
+	require.Contains(t, text, ".Title,")
+
+	// Verify LookupFieldContextHandler is used for field context
+	require.Contains(t, text, `ec.LookupFieldContextHandler("Article", "title")`)
+	require.Contains(t, text, `ec.LookupFieldContextHandler("Article", "computed")`)
+
+	// Verify MarshalCodec is used for marshaling
+	require.Contains(t, text, "ec.MarshalCodec(ctx,")
+}
+
+func TestSplitFieldsStreamUsesResolveFieldStream(t *testing.T) {
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	stringGQL := ast.NonNullNamedType("String", nil)
+	stringGO := types.Typ[types.String]
+	stringRef := &config.TypeReference{
+		Definition: stringDef,
+		GQL:        stringGQL,
+		GO:         stringGO,
+	}
+
+	streamObject := &Object{
+		Definition: &ast.Definition{
+			Name:     "Subscription",
+			Kind:     ast.Object,
+			Position: &ast.Position{Src: &ast.Source{Name: "graph/subscription.graphqls"}},
+		},
+		Stream: true,
+		Type: types.NewNamed(
+			types.NewTypeName(0, types.NewPackage("example.com/model", "model"), "Subscription", nil),
+			types.NewStruct(nil, nil),
+			nil,
+		),
+	}
+
+	streamField := &Field{
+		FieldDefinition: &ast.FieldDefinition{Name: "onMessage"},
+		TypeReference:   stringRef,
+		GoFieldName:     "OnMessage",
+		GoFieldType:     GoFieldMethod,
+		GoReceiverName:  "obj",
+		IsResolver:      true,
+		Object:          streamObject,
+	}
+	streamObject.Fields = []*Field{streamField}
+
+	data := &Data{
+		Config: &config.Config{Exec: config.ExecConfig{FilenameTemplate: "{name}.generated.go"}},
+		Objects: Objects{streamObject},
+	}
+
+	ownership, err := planSplitOwnership(data)
+	require.NoError(t, err)
+
+	outDir := t.TempDir()
+	fieldsPath := filepath.Join(outDir, "stream_fields.generated.go")
+
+	err = templates.Render(templates.Options{
+		PackageName: "splitstreamtest",
+		Template:    splitFieldsTemplate + "\n{{ template \"split_fields_.gotpl\" . }}",
+		Filename:    fieldsPath,
+		Data: splitShardTemplateData{
+			Data:             data,
+			Scope:            "scope",
+			ShardName:        "subscription",
+			Ownership:        ownership,
+			FieldByLookupKey: buildFieldLookupMap(data),
+			FieldByArgsFunc:  buildArgsFuncLookupMap(data),
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(fieldsPath)
+	require.NoError(t, err)
+	text := string(contents)
+
+	// Verify stream field function is generated
+	require.Contains(t, text, "func __splitStreamField_Subscription_onMessage")
+
+	// Verify new pattern: graphql.ResolveFieldStream is used
+	require.Contains(t, text, "graphql.ResolveFieldStream[any]")
+
+	// Verify old bridge pattern is NOT used
+	require.NotContains(t, text, "ec.ResolveExecutableStreamField")
+
+	// Verify InvokeResolver is used for stream resolver fields
+	require.Contains(t, text, `ec.InvokeResolver(ctx, "Subscription", "OnMessage", obj)`)
 }
 
 func TestSplitDirectiveOrderParity(t *testing.T) {
@@ -1084,6 +1290,7 @@ func TestSplitInputRegistrationEmission(t *testing.T) {
 		ShardName:        "alpha",
 		Ownership:        ownership,
 		FieldByLookupKey: buildFieldLookupMap(alphaBuild),
+		FieldByArgsFunc:  buildArgsFuncLookupMap(alphaBuild),
 		InputByName:      buildInputLookupMap(data),
 	}
 
@@ -1433,4 +1640,103 @@ func copySplitFixtureWorkspace(srcDir, dstDir string) error {
 
 		return os.WriteFile(dstPath, contents, fileInfo.Mode().Perm())
 	})
+}
+
+func TestSplitArgsTemplateEmitsUnmarshalCodec(t *testing.T) {
+	newTypeRef := func(defName string, goType types.Type, nilable bool) *config.TypeReference {
+		def := &ast.Definition{Name: defName, Kind: ast.Scalar}
+		gqlType := ast.NonNullNamedType(defName, nil)
+		if nilable {
+			gqlType = ast.NamedType(defName, nil)
+		}
+		return &config.TypeReference{
+			Definition: def,
+			GQL:        gqlType,
+			GO:         goType,
+		}
+	}
+
+	stringRef := newTypeRef("String", types.Typ[types.String], false)
+	boolRef := newTypeRef("Boolean", types.NewPointer(types.Typ[types.Bool]), true)
+
+	object := &Object{
+		Definition: &ast.Definition{
+			Name: "Query",
+			Kind: ast.Object,
+			Position: &ast.Position{
+				Src: &ast.Source{Name: "graph/schema.graphqls"},
+			},
+		},
+	}
+
+	field := &Field{
+		FieldDefinition: &ast.FieldDefinition{Name: "hello"},
+		TypeReference:   stringRef,
+		Object:          object,
+		Args: []*FieldArgument{
+			{
+				ArgumentDefinition: &ast.ArgumentDefinition{Name: "name"},
+				TypeReference:      stringRef,
+				VarName:            "Name",
+			},
+			{
+				ArgumentDefinition: &ast.ArgumentDefinition{Name: "greeting"},
+				TypeReference:      boolRef,
+				VarName:            "Greeting",
+			},
+		},
+	}
+	object.Fields = []*Field{field}
+
+	data := &Data{
+		Config:  &config.Config{},
+		Objects: Objects{object},
+	}
+
+	ownership, err := planSplitOwnership(data)
+	require.NoError(t, err)
+
+	outPath := filepath.Join(t.TempDir(), "args.generated.go")
+	err = templates.Render(templates.Options{
+		PackageName: "splitargstest",
+		Template:    splitArgsTemplate + "\n{{ template \"split_args_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:             data,
+			Scope:            "scope",
+			ShardName:        ownership.ArgsOwner[field.ArgsFunc()],
+			Ownership:        ownership,
+			FieldByLookupKey: buildFieldLookupMap(data),
+			FieldByArgsFunc:  buildArgsFuncLookupMap(data),
+			InputByName:      map[string]*Object{},
+			CodecByFunc:      map[string]*config.TypeReference{},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	text := string(contents)
+
+	// Verify the function is generated with the correct name
+	require.Contains(t, text, "func __splitArgs_field_Query_hello_args")
+
+	// Verify it uses UnmarshalCodec instead of ParseFieldArgs
+	require.Contains(t, text, "ec.UnmarshalCodec(ctx,")
+	require.NotContains(t, text, "ec.ParseFieldArgs(")
+
+	// Verify it handles the string arg
+	require.Contains(t, text, `rawArgs["name"]`)
+
+	// Verify it handles the nullable bool arg
+	require.Contains(t, text, `rawArgs["greeting"]`)
+
+	// Verify it returns args map
+	require.Contains(t, text, "return args, nil")
+
+	// Verify path context is set for error reporting
+	require.Contains(t, text, "graphql.WithPathContext")
+	require.Contains(t, text, "graphql.NewPathWithField")
 }

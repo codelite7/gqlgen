@@ -40,6 +40,9 @@ var splitInputsTemplate string
 //go:embed split_codecs_.gotpl
 var splitCodecsTemplate string
 
+//go:embed split_fieldcontext_.gotpl
+var splitFieldContextTemplate string
+
 //go:embed split_register_.gotpl
 var splitRegisterTemplate string
 
@@ -78,6 +81,7 @@ type splitShardTemplateData struct {
 	ShardName        string
 	Ownership        *splitOwnershipPlanner
 	FieldByLookupKey map[string]*Field
+	FieldByArgsFunc  map[string]*Field
 	InputByName      map[string]*Object
 	CodecByFunc      map[string]*config.TypeReference
 }
@@ -334,7 +338,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 
 		if err := templates.Render(templates.Options{
 			PackageName: pkg,
-			Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+			Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate + "\n" + splitFieldContextTemplate,
 			Filename:    shardPath,
 			Data: splitShardTemplateData{
 				Data:             build,
@@ -342,6 +346,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 				ShardName:        shardName,
 				Ownership:        ownership,
 				FieldByLookupKey: buildFieldLookupMap(build),
+				FieldByArgsFunc:  buildArgsFuncLookupMap(build),
 				InputByName:      buildInputLookupMap(data),
 				CodecByFunc:      buildCodecLookupMap(data),
 			},
@@ -363,6 +368,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 				ShardName:        shardName,
 				Ownership:        ownership,
 				FieldByLookupKey: buildFieldLookupMap(build),
+				FieldByArgsFunc:  buildArgsFuncLookupMap(build),
 				InputByName:      buildInputLookupMap(data),
 				CodecByFunc:      buildCodecLookupMap(data),
 			},
@@ -400,6 +406,19 @@ func buildFieldLookupMap(data *Data) map[string]*Field {
 	}
 
 	return fieldByLookupKey
+}
+
+func buildArgsFuncLookupMap(data *Data) map[string]*Field {
+	fieldByArgsFunc := make(map[string]*Field)
+	for _, object := range data.Objects {
+		for _, field := range object.Fields {
+			if argsFunc := field.ArgsFunc(); argsFunc != "" {
+				fieldByArgsFunc[argsFunc] = field
+			}
+		}
+	}
+
+	return fieldByArgsFunc
 }
 
 func buildInputLookupMap(data *Data) map[string]*Object {

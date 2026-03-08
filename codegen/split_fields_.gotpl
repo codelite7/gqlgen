@@ -1,22 +1,124 @@
 {{ define "split_fields_.gotpl" }}
+{{ reserveImport "fmt" }}
 {{- range $key := .Ownership.FieldOwnerKeys }}
 {{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
 {{- with $field := index $.FieldByLookupKey $key }}
 
 {{- if $field.Object.Stream }}
 
-// split_fields_.gotpl
+// split_fields_.gotpl — stream field
 func __splitStreamField_{{ $field.Object.Name }}_{{ $field.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
-	return ec.ResolveExecutableStreamField(ctx, "{{ $field.Object.Name }}", "{{ $field.Name }}", field, obj)
+	return graphql.ResolveFieldStream[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("{{ $field.Object.Name }}", "{{ $field.Name }}")
+			if !ok {
+				return nil, fmt.Errorf("no field context for {{ $field.Object.Name }}.{{ $field.Name }}")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			{{- if $field.IsResolver }}
+			return ec.InvokeResolver(ctx, "{{ $field.Object.Name }}", "{{ $field.GoFieldName }}", obj)
+			{{- else }}
+			{{- template "splitFieldAccess" $field }}
+			{{- end }}
+		},
+		// directives
+		{{- if $field.HasDirectives }}
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		},
+		{{- else }}
+		nil,
+		{{- end }}
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, {{ $field.TypeReference.MarshalFunc | quote }}, sel, v)
+		},
+		{{ not $.Config.OmitPanicHandler }}, {{ $field.TypeReference.GQL.NonNull }},
+	)
 }
 {{- else }}
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField_{{ $field.Object.Name }}_{{ $field.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "{{ $field.Object.Name }}", "{{ $field.Name }}", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("{{ $field.Object.Name }}", "{{ $field.Name }}")
+			if !ok {
+				return nil, fmt.Errorf("no field context for {{ $field.Object.Name }}.{{ $field.Name }}")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			{{- if $field.IsResolver }}
+			return ec.InvokeResolver(ctx, "{{ $field.Object.Name }}", "{{ $field.GoFieldName }}", obj)
+			{{- else }}
+			{{- template "splitFieldAccess" $field }}
+			{{- end }}
+		},
+		// directives
+		{{- if $field.HasDirectives }}
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		},
+		{{- else }}
+		nil,
+		{{- end }}
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, {{ $field.TypeReference.MarshalFunc | quote }}, sel, v)
+		},
+		{{ not $.Config.OmitPanicHandler }}, {{ $field.TypeReference.GQL.NonNull }},
+	)
 }
 {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
 {{ end }}
+{{ define "splitFieldAccess" }}
+	{{- if .IsMap }}
+			switch v := obj.({{ .Object.Reference | ref }})[{{ .Name | quote }}].(type) {
+			case {{ if .Stream }}<-chan {{ end }}{{ .TypeReference.GO | ref }}:
+				return v, nil
+			case {{ if .Stream }}<-chan {{ end }}{{ .TypeReference.Elem.GO | ref }}:
+				return &v, nil
+			case nil:
+				return ({{ .TypeReference.GO | ref }})(nil), nil
+			default:
+				return nil, fmt.Errorf("unexpected type %T for field %s", v, {{ .Name | quote }})
+			}
+	{{- else if .IsMethod }}
+			{{- if gt (len .Args) 0 }}
+			fc := graphql.GetFieldContext(ctx)
+			{{- end }}
+			{{- if .HasHaser }}
+			if !obj.({{ .Object.Reference | ref }}).{{ .HaserMethodName }}() {
+				return nil, nil
+			}
+			{{- end }}
+			{{- if .VOkFunc }}
+			v, ok := obj.({{ .Object.Reference | ref }}).{{ .GoFieldName }}({{ .CallArgs }})
+			if !ok {
+				return nil, nil
+			}
+			return v, nil
+			{{- else if .NoErr }}
+			return obj.({{ .Object.Reference | ref }}).{{ .GoFieldName }}({{ .CallArgs }}), nil
+			{{- else }}
+			return obj.({{ .Object.Reference | ref }}).{{ .GoFieldName }}({{ .CallArgs }})
+			{{- end }}
+	{{- else if .IsVariable }}
+			{{- if .HasHaser }}
+			if !obj.({{ .Object.Reference | ref }}).{{ .HaserMethodName }}() {
+				return nil, nil
+			}
+			{{- end }}
+			return obj.({{ .Object.Reference | ref }}).{{ .GoFieldName }}, nil
+	{{- end }}
+{{- end }}

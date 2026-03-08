@@ -1,12 +1,71 @@
 {{ define "split_inputs_.gotpl" }}
+{{ reserveImport "fmt" }}
 {{- range $inputName := .Ownership.InputOwnerKeys }}
 {{- if eq (index $.Ownership.InputOwner $inputName) $.ShardName }}
 {{- with $input := index $.InputByName $inputName }}
 {{- if not $input.HasUnmarshal }}
+{{- $it := "it" }}
+{{- if $input.PointersInUnmarshalInput }}
+  {{- $it = "&it" }}
+{{- end }}
 
 // split_inputs_.gotpl
-func __splitInput_{{ $input.Name }}(_ context.Context, obj any) (any, error) {
-	return obj, nil
+func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) ({{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}, error) {
+	{{- if $input.IsMap }}
+		it := make(map[string]any, len(obj.(map[string]any)))
+	{{- else }}
+		var it {{ $input.Type | ref }}
+	{{- end }}
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+	{{ range $field := $input.Fields }}
+		{{- if notNil "Default" $field }}
+			if _, present := asMap[{{ $field.Name | quote }}]; !present {
+				asMap[{{ $field.Name | quote }}] = {{ $field.Default | dump }}
+			}
+		{{- end }}
+	{{- end }}
+
+	fieldsInOrder := [...]string{ {{ range $input.Fields }}{{ quote .Name }},{{ end }} }
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		{{- range $field := $input.Fields }}
+		case {{ $field.Name | quote }}:
+			{{- $lhs := (printf "it.%s" $field.GoFieldName) }}
+			{{- if $input.IsMap }}
+				{{- $lhs = (printf "it[%q]" $field.Name) }}
+			{{- end }}
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField({{ $field.Name | quote }}))
+			data, err := ec.UnmarshalCodec(ctx, {{ $field.TypeReference.UnmarshalFunc | quote }}, v)
+			if err != nil {
+				return {{ $it }}, err
+			}
+			{{- if $field.TypeReference.IsNilable }}
+			if data != nil {
+				{{- if $field.TypeReference.IsOmittable }}
+				{{ $lhs }} = graphql.OmittableOf(data.({{ $field.TypeReference.GO | ref }}))
+				{{- else }}
+				{{ $lhs }} = data.({{ $field.TypeReference.GO | ref }})
+				{{- end }}
+			}
+			{{- else }}
+				{{- if $field.TypeReference.IsOmittable }}
+			{{ $lhs }} = graphql.OmittableOf(data.({{ $field.TypeReference.GO | ref }}))
+				{{- else }}
+			{{ $lhs }} = data.({{ $field.TypeReference.GO | ref }})
+				{{- end }}
+			{{- end }}
+		{{- end }}
+		}
+	}
+
+	return {{ $it }}, nil
 }
 {{- end }}
 {{- end }}
