@@ -435,7 +435,7 @@ func TestSplitCodecWrappersAvoidRootPackageReferences(t *testing.T) {
 	outPath := filepath.Join(t.TempDir(), "alpha.generated.go")
 	err := templates.Render(templates.Options{
 		PackageName: "alpha",
-		Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+		Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
 		Filename:    outPath,
 		Data: splitShardTemplateData{
 			Data:             &Data{Config: &config.Config{}},
@@ -478,7 +478,7 @@ func TestSplitShardObjectHandlersAvoidRootPackageReferences(t *testing.T) {
 	outPath := filepath.Join(t.TempDir(), "schema.generated.go")
 	err := templates.Render(templates.Options{
 		PackageName: "alpha",
-		Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+		Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
 		Filename:    outPath,
 		Data: splitShardTemplateData{
 			Data: &Data{

@@ -269,7 +269,7 @@ func pruneEmptyDirs(root string) error {
 func generateSplitRootGateway(data *Data, scope string) error {
 	return templates.Render(templates.Options{
 		PackageName:     data.Config.Exec.Package,
-		Template:        splitRootTemplate + "\n" + argsTemplate + "\n" + directivesTemplate + "\n" + fieldTemplate + "\n" + inputTemplate + "\n" + interfaceTemplate + "\n" + typeTemplate,
+		Template:        splitRootTemplate + "\n" + directivesTemplate + "\n" + interfaceTemplate,
 		Filename:        data.Config.Exec.Filename,
 		Data:            splitRootTemplateData{Data: data, Scope: scope},
 		RegionTags:      false,
@@ -338,7 +338,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 
 		if err := templates.Render(templates.Options{
 			PackageName: pkg,
-			Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate + "\n" + splitFieldContextTemplate,
+			Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
 			Filename:    shardPath,
 			Data: splitShardTemplateData{
 				Data:             build,
