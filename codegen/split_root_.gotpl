@@ -440,27 +440,18 @@ func (ec *executionContext) _{{$object.Name}}(ctx context.Context, sel ast.Selec
 	{{- end }}
 {{- end }}
 
-{{- /* Register executable field handlers — bridges shard field wrappers to actual resolvers */}}
+{{- /* Register resolver invokers — only for IsResolver fields */}}
 func init() {
+	scope := {{ $.Scope | quote }}
+	_ = scope
 {{- range $object := .Objects }}
 {{- range $field := $object.Fields }}
-{{- if $object.Stream }}
-	shardruntime.RegisterExecutableStreamField({{ $.Scope | quote }}, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
+{{- if $field.IsResolver }}
+	shardruntime.RegisterResolverInvoker(scope, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
-		{{ if $useFunctionSyntaxForExecutionContext -}}
-		return _{{ $object.Name }}_{{ $field.Name }}(ctx, ec, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
-		{{- else -}}
-		return ec._{{ $object.Name }}_{{ $field.Name }}(ctx, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
-		{{- end }}
-	})
-{{- else }}
-	shardruntime.RegisterExecutableField({{ $.Scope | quote }}, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		ec := oec.(*executionContext)
-		{{ if $useFunctionSyntaxForExecutionContext -}}
-		return _{{ $object.Name }}_{{ $field.Name }}(ctx, ec, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
-		{{- else -}}
-		return ec._{{ $object.Name }}_{{ $field.Name }}(ctx, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
-		{{- end }}
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.{{ucFirst $object.Name}}().{{ $field.GoFieldName }}(ctx{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }}{{ range $arg := $field.Args }}, fc.Args["{{ $arg.Name }}"].({{ $arg.TypeReference.GO | ref }}){{ end }})
 	})
 {{- end }}
 {{- end }}
