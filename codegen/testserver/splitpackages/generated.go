@@ -235,6 +235,19 @@ func (ec *executionContext) ParseFieldArgs(ctx context.Context, argsKey string, 
 	return handler(ctx, ec, rawArgs)
 }
 
+func (ec *executionContext) InvokeResolver(ctx context.Context, objectName, fieldName string, obj any) (any, error) {
+	handler, ok := shardruntime.LookupResolverInvoker("github.com/99designs/gqlgen/codegen/testserver/splitpackages", objectName, fieldName)
+	if !ok {
+		return nil, fmt.Errorf("unknown resolver invoker %s.%s", objectName, fieldName)
+	}
+
+	return handler(ctx, ec, obj)
+}
+
+func (ec *executionContext) LookupFieldContextHandler(objectName, fieldName string) (shardruntime.FieldContextHandler, bool) {
+	return shardruntime.LookupFieldContext("github.com/99designs/gqlgen/codegen/testserver/splitpackages", objectName, fieldName)
+}
+
 func (ec *executionContext) ResolveExecutableComplexity(ctx context.Context, objectName, fieldName string, childComplexity int, rawArgs map[string]any) (int, bool) {
 	handler, ok := splitExecutableComplexityResolvers[objectName+"."+fieldName]
 	if !ok {

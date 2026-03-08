@@ -67,6 +67,8 @@ type ObjectExecutionContext interface {
 		field graphql.CollectedField,
 		obj any,
 	) func(context.Context) graphql.Marshaler
+	InvokeResolver(ctx context.Context, objectName, fieldName string, obj any) (any, error)
+	LookupFieldContextHandler(objectName, fieldName string) (FieldContextHandler, bool)
 	ProcessDeferredGroup(dg graphql.DeferredGroup)
 	AddDeferred(delta int32)
 	Error(ctx context.Context, err error)
@@ -111,6 +113,12 @@ type CodecMarshalHandler func(ctx context.Context, ec ObjectExecutionContext, se
 
 type CodecUnmarshalHandler func(ctx context.Context, ec ObjectExecutionContext, value any) (any, error)
 
+type FieldContextHandler func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField) (*graphql.FieldContext, error)
+
+type ResolverInvokerHandler func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
+
+type ArgsHandler func(ctx context.Context, ec ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error)
+
 var (
 	mu                    sync.RWMutex
 	objectByScope         = map[string]map[string]ObjectHandler{}
@@ -121,8 +129,11 @@ var (
 	execStreamFieldByScope    = map[string]map[string]map[string]StreamFieldHandler{}
 	complexityByScope     = map[string]map[string]map[string]ComplexityHandler{}
 	inputUnmarshalByScope = map[string]map[string]any{}
-	codecMarshalByScope   = map[string]map[string]CodecMarshalHandler{}
-	codecUnmarshalByScope = map[string]map[string]CodecUnmarshalHandler{}
+	codecMarshalByScope      = map[string]map[string]CodecMarshalHandler{}
+	codecUnmarshalByScope    = map[string]map[string]CodecUnmarshalHandler{}
+	fieldContextByScope      = map[string]map[string]FieldContextHandler{}
+	resolverInvokerByScope   = map[string]map[string]ResolverInvokerHandler{}
+	argsByScope              = map[string]map[string]ArgsHandler{}
 
 	objectLookupSnapshot           atomic.Value
 	streamObjectLookupSnapshot     atomic.Value
@@ -134,8 +145,11 @@ var (
 	execStreamFieldLookupSnapshot      atomic.Value
 	complexityLookupSnapshot       atomic.Value
 	inputUnmarshalMapByScopeLookup atomic.Value
-	codecMarshalLookupSnapshot     atomic.Value
-	codecUnmarshalLookupSnapshot   atomic.Value
+	codecMarshalLookupSnapshot         atomic.Value
+	codecUnmarshalLookupSnapshot       atomic.Value
+	fieldContextLookupSnapshot         atomic.Value
+	resolverInvokerLookupSnapshot      atomic.Value
+	argsLookupSnapshot                 atomic.Value
 )
 
 var emptyInputUnmarshalMap = map[reflect.Type]reflect.Value{}
@@ -151,6 +165,9 @@ func init() {
 	resetInputUnmarshalLookupSnapshotForTest()
 	resetCodecMarshalLookupSnapshotForTest()
 	resetCodecUnmarshalLookupSnapshotForTest()
+	resetFieldContextLookupSnapshotForTest()
+	resetResolverInvokerLookupSnapshotForTest()
+	resetArgsLookupSnapshotForTest()
 }
 
 func objectKey(scope, objectName string) string {
@@ -683,5 +700,137 @@ func RegisterCodecUnmarshal(scope, funcName string, handler CodecUnmarshalHandle
 
 func LookupCodecUnmarshal(scope, funcName string) (CodecUnmarshalHandler, bool) {
 	handler, ok := loadCodecUnmarshalLookupSnapshot()[codecKey(scope, funcName)]
+	return handler, ok
+}
+
+// --- FieldContext registry ---
+
+func cloneFieldContextHandlers(src map[string]FieldContextHandler) map[string]FieldContextHandler {
+	return maps.Clone(src)
+}
+
+func loadFieldContextLookupSnapshot() map[string]FieldContextHandler {
+	if snapshot := fieldContextLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]FieldContextHandler)
+	}
+	return nil
+}
+
+func resetFieldContextLookupSnapshotForTest() {
+	fieldContextLookupSnapshot.Store(map[string]FieldContextHandler{})
+}
+
+func RegisterFieldContext(scope, objectName, fieldName string, handler FieldContextHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	key := objectName + "." + fieldName
+	scopeHandlers := fieldContextByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]FieldContextHandler{}
+		fieldContextByScope[scope] = scopeHandlers
+	}
+
+	if _, exists := scopeHandlers[key]; exists {
+		panic("duplicate field context handler registration: " + scope + ":" + objectName + ":" + fieldName)
+	}
+	scopeHandlers[key] = handler
+
+	lookup := cloneFieldContextHandlers(loadFieldContextLookupSnapshot())
+	lookup[fieldKey(scope, objectName, fieldName)] = handler
+	fieldContextLookupSnapshot.Store(lookup)
+}
+
+func LookupFieldContext(scope, objectName, fieldName string) (FieldContextHandler, bool) {
+	handler, ok := loadFieldContextLookupSnapshot()[fieldKey(scope, objectName, fieldName)]
+	return handler, ok
+}
+
+// --- ResolverInvoker registry ---
+
+func cloneResolverInvokerHandlers(src map[string]ResolverInvokerHandler) map[string]ResolverInvokerHandler {
+	return maps.Clone(src)
+}
+
+func loadResolverInvokerLookupSnapshot() map[string]ResolverInvokerHandler {
+	if snapshot := resolverInvokerLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]ResolverInvokerHandler)
+	}
+	return nil
+}
+
+func resetResolverInvokerLookupSnapshotForTest() {
+	resolverInvokerLookupSnapshot.Store(map[string]ResolverInvokerHandler{})
+}
+
+func RegisterResolverInvoker(scope, objectName, fieldName string, handler ResolverInvokerHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	key := objectName + "." + fieldName
+	scopeHandlers := resolverInvokerByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]ResolverInvokerHandler{}
+		resolverInvokerByScope[scope] = scopeHandlers
+	}
+
+	if _, exists := scopeHandlers[key]; exists {
+		panic("duplicate resolver invoker handler registration: " + scope + ":" + objectName + ":" + fieldName)
+	}
+	scopeHandlers[key] = handler
+
+	lookup := cloneResolverInvokerHandlers(loadResolverInvokerLookupSnapshot())
+	lookup[fieldKey(scope, objectName, fieldName)] = handler
+	resolverInvokerLookupSnapshot.Store(lookup)
+}
+
+func LookupResolverInvoker(scope, objectName, fieldName string) (ResolverInvokerHandler, bool) {
+	handler, ok := loadResolverInvokerLookupSnapshot()[fieldKey(scope, objectName, fieldName)]
+	return handler, ok
+}
+
+// --- Args registry ---
+
+func argsKey(scope, key string) string {
+	return scope + "\x00" + key
+}
+
+func cloneArgsHandlers(src map[string]ArgsHandler) map[string]ArgsHandler {
+	return maps.Clone(src)
+}
+
+func loadArgsLookupSnapshot() map[string]ArgsHandler {
+	if snapshot := argsLookupSnapshot.Load(); snapshot != nil {
+		return snapshot.(map[string]ArgsHandler)
+	}
+	return nil
+}
+
+func resetArgsLookupSnapshotForTest() {
+	argsLookupSnapshot.Store(map[string]ArgsHandler{})
+}
+
+func RegisterArgs(scope, key string, handler ArgsHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	scopeHandlers := argsByScope[scope]
+	if scopeHandlers == nil {
+		scopeHandlers = map[string]ArgsHandler{}
+		argsByScope[scope] = scopeHandlers
+	}
+
+	if _, exists := scopeHandlers[key]; exists {
+		panic("duplicate args handler registration: " + scope + ":" + key)
+	}
+	scopeHandlers[key] = handler
+
+	lookup := cloneArgsHandlers(loadArgsLookupSnapshot())
+	lookup[argsKey(scope, key)] = handler
+	argsLookupSnapshot.Store(lookup)
+}
+
+func LookupArgs(scope, key string) (ArgsHandler, bool) {
+	handler, ok := loadArgsLookupSnapshot()[argsKey(scope, key)]
 	return handler, ok
 }
