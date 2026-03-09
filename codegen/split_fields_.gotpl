@@ -19,8 +19,8 @@ func __splitStreamField_{{ $field.Object.Name }}_{{ $field.Name }}(ctx context.C
 		},
 		// resolver
 		func(ctx context.Context) (any, error) {
-			{{- if $field.IsResolver }}
-			return ec.InvokeResolver(ctx, "{{ $field.Object.Name }}", "{{ $field.GoFieldName }}", obj)
+			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+			return ec.InvokeResolver(ctx, "{{ $field.Object.Name }}", "{{ $field.Name }}", obj)
 			{{- else }}
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}
@@ -55,8 +55,8 @@ func __splitField_{{ $field.Object.Name }}_{{ $field.Name }}(ctx context.Context
 		},
 		// resolver
 		func(ctx context.Context) (any, error) {
-			{{- if $field.IsResolver }}
-			return ec.InvokeResolver(ctx, "{{ $field.Object.Name }}", "{{ $field.GoFieldName }}", obj)
+			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+			return ec.InvokeResolver(ctx, "{{ $field.Object.Name }}", "{{ $field.Name }}", obj)
 			{{- else }}
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}

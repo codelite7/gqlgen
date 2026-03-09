@@ -496,7 +496,7 @@ func InputUnmarshalMap(scope string, _ ObjectExecutionContext) map[reflect.Type]
 	return scopeHandlers
 }
 
-func ListInputUnmarshalers(scope string, _ ObjectExecutionContext) []any {
+func ListInputUnmarshalers(scope string, ec ObjectExecutionContext) []any {
 	mu.RLock()
 	defer mu.RUnlock()
 
@@ -511,9 +511,28 @@ func ListInputUnmarshalers(scope string, _ ObjectExecutionContext) []any {
 	}
 	sort.Strings(inputNames)
 
+	ecValue := reflect.ValueOf(ec)
 	inputUnmarshalers := make([]any, 0, len(scopeHandlers))
 	for _, inputName := range inputNames {
-		inputUnmarshalers = append(inputUnmarshalers, scopeHandlers[inputName])
+		fn := scopeHandlers[inputName]
+		fnValue := reflect.ValueOf(fn)
+		fnType := fnValue.Type()
+
+		// Wrap 3-arg functions (ctx, ec, obj) into 2-arg functions (ctx, obj)
+		// to maintain compatibility with BuildUnmarshalerMap/UnmarshalInputFromContext.
+		if fnType.NumIn() == 3 {
+			wrapperType := reflect.FuncOf(
+				[]reflect.Type{fnType.In(0), fnType.In(2)},
+				[]reflect.Type{fnType.Out(0), fnType.Out(1)},
+				false,
+			)
+			wrapper := reflect.MakeFunc(wrapperType, func(args []reflect.Value) []reflect.Value {
+				return fnValue.Call([]reflect.Value{args[0], ecValue, args[1]})
+			})
+			inputUnmarshalers = append(inputUnmarshalers, wrapper.Interface())
+		} else {
+			inputUnmarshalers = append(inputUnmarshalers, fn)
+		}
 	}
 
 	return inputUnmarshalers

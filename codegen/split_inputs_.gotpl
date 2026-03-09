@@ -11,6 +11,23 @@
 
 // split_inputs_.gotpl
 func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) ({{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}, error) {
+	{{- if not $input.IsMap }}
+	// If already unmarshaled to the correct type, return directly.
+	if typed, ok := obj.({{ $input.Type | ref }}); ok {
+		return {{ if $input.PointersInUnmarshalInput }}&{{ end }}typed, nil
+	}
+	if typed, ok := obj.(*{{ $input.Type | ref }}); ok {
+		{{- if $input.PointersInUnmarshalInput }}
+		return typed, nil
+		{{- else }}
+		if typed == nil {
+			var zero {{ $input.Type | ref }}
+			return zero, nil
+		}
+		return *typed, nil
+		{{- end }}
+	}
+	{{- end }}
 	{{- if $input.IsMap }}
 		it := make(map[string]any, len(obj.(map[string]any)))
 	{{- else }}
@@ -46,6 +63,11 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 			if err != nil {
 				return {{ $it }}, err
 			}
+			{{- if $field.IsResolver }}
+			if _, err := ec.InvokeResolver(ctx, {{ $input.Name | quote }}, {{ $field.Name | quote }}, []any{&it, data}); err != nil {
+				return {{ $it }}, err
+			}
+			{{- else }}
 			{{- if $field.TypeReference.IsNilable }}
 			if data != nil {
 				{{- if $field.TypeReference.IsOmittable }}
@@ -60,6 +82,7 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 				{{- else }}
 			{{ $lhs }} = data.({{ $field.TypeReference.GO | ref }})
 				{{- end }}
+			{{- end }}
 			{{- end }}
 		{{- end }}
 		}

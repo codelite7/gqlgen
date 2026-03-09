@@ -433,19 +433,50 @@ func buildInputLookupMap(data *Data) map[string]*Object {
 func buildCodecLookupMap(data *Data) map[string]*config.TypeReference {
 	codecByFunc := make(map[string]*config.TypeReference)
 	for _, ref := range data.ReferencedTypes {
-		if ref == nil {
-			continue
-		}
+		addCodecLookup(codecByFunc, ref)
+	}
 
-		if marshal := ref.MarshalFunc(); marshal != "" {
-			codecByFunc[marshal] = ref
+	// Also include types from object fields and their args.
+	for _, object := range data.Objects {
+		for _, field := range object.Fields {
+			addCodecLookup(codecByFunc, field.TypeReference)
+			for _, arg := range field.Args {
+				addCodecLookup(codecByFunc, arg.TypeReference)
+			}
 		}
-		if unmarshal := ref.UnmarshalFunc(); unmarshal != "" {
-			codecByFunc[unmarshal] = ref
+	}
+
+	// Also include types from input fields.
+	for _, input := range data.Inputs {
+		for _, field := range input.Fields {
+			addCodecLookup(codecByFunc, field.TypeReference)
 		}
 	}
 
 	return codecByFunc
+}
+
+func addCodecLookup(codecByFunc map[string]*config.TypeReference, ref *config.TypeReference) {
+	if ref == nil {
+		return
+	}
+
+	if marshal := ref.MarshalFunc(); marshal != "" {
+		if _, exists := codecByFunc[marshal]; !exists {
+			codecByFunc[marshal] = ref
+		}
+	}
+	if unmarshal := ref.UnmarshalFunc(); unmarshal != "" {
+		if _, exists := codecByFunc[unmarshal]; !exists {
+			codecByFunc[unmarshal] = ref
+		}
+	}
+
+	// Also include element types for slices/pointers, since parent codecs
+	// dispatch to element codecs via MarshalCodec/UnmarshalCodec.
+	if elem := ref.Elem(); elem != nil {
+		addCodecLookup(codecByFunc, elem)
+	}
 }
 
 func generateSplitShardImports(data *Data, shardImports []string) error {
