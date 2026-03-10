@@ -94,17 +94,17 @@ func _Query(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast
 
 // split_fields_.gotpl
 func __splitField_Query___schema(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "Query", "__schema", field, obj)
+	return ec.ResolveField(ctx, "Query", "__schema", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField_Query___type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "Query", "__type", field, obj)
+	return ec.ResolveField(ctx, "Query", "__type", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField_Query_hello(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "Query", "hello", field, obj)
+	return ec.ResolveField(ctx, "Query", "hello", field, obj)
 }
 
 // split_args_.gotpl

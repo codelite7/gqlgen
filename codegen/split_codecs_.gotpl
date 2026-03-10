@@ -106,6 +106,11 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel
 		{{- end }}
 		return graphql.Null
 	}
+	if rv.Kind() == reflect.Struct {
+		ptr := reflect.New(rv.Type())
+		ptr.Elem().Set(rv)
+		value = ptr.Interface()
+	}
 	{{- end }}
 	{{- if $type.IsMarshaler }}
 	{{- /* Type implements graphql.Marshaler interface */}}
@@ -165,6 +170,16 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel
 	if !ok {
 		panic("missing object shard handler for {{ $type.Definition.Name }}")
 	}
+	{{- if not $type.IsNilable }}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	{{- end }}
 	return handler(ctx, ec, sel, value)
 	{{- end }}
 	{{- end }}
@@ -190,6 +205,9 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, val
 	{{- else if $type.IsSlice }}
 	{{- /* Slice: coerce to list, unmarshal each element */}}
 	vSlice := graphql.CoerceList(value)
+	if len(vSlice) == 0 {
+		return ({{ $type.GO | ref }})(nil), nil
+	}
 	res := make([]any, len(vSlice))
 	for i := range vSlice {
 		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
@@ -200,15 +218,19 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, val
 		res[i] = elem
 	}
 	{{- /* Convert []any to the correct typed slice using reflect */}}
-	if len(vSlice) > 0 && res[0] != nil {
-		sliceType := reflect.SliceOf(reflect.TypeOf(res[0]))
-		typedSlice := reflect.MakeSlice(sliceType, len(res), len(res))
-		for i, elem := range res {
-			typedSlice.Index(i).Set(reflect.ValueOf(elem))
+	for _, e := range res {
+		if e != nil {
+			sliceType := reflect.SliceOf(reflect.TypeOf(e))
+			typedSlice := reflect.MakeSlice(sliceType, len(res), len(res))
+			for i, elem := range res {
+				if elem != nil {
+					typedSlice.Index(i).Set(reflect.ValueOf(elem))
+				}
+			}
+			return typedSlice.Interface(), nil
 		}
-		return typedSlice.Interface(), nil
 	}
-	return res, nil
+	return ({{ $type.GO | ref }})(nil), nil
 
 	{{- else if and $type.IsPtrToPtr (not $type.Unmarshaler) (not $type.IsMarshaler) }}
 	{{- /* Pointer-to-pointer: delegate to elem, wrap in pointer */}}
@@ -226,15 +248,9 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, val
 
 	{{- else }}
 	{{- /* Terminal types */}}
-	{{- if $type.Unmarshaler }}
-	{{- /* External unmarshaler function */}}
-	{{- if $type.HasEnumValues }}
-	tmp, err := {{ $type.Unmarshaler | call }}(value)
-	if err != nil {
-		return nil, graphql.ErrorOnPath(ctx, err)
-	}
-	return tmp, nil
-	{{- else if $type.CastType }}
+	{{- if and $type.Unmarshaler (not $type.HasEnumValues) }}
+	{{- /* External unmarshaler function (skip enums — they use IsMarshaler path below) */}}
+	{{- if $type.CastType }}
 	{{- if $type.IsContext }}
 	tmp, err := {{ $type.Unmarshaler | call }}(ctx, value)
 	{{- else }}
@@ -243,25 +259,59 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, val
 	if err != nil {
 		return nil, graphql.ErrorOnPath(ctx, err)
 	}
-	return tmp, nil
+	{{- if and $type.IsNilable $type.Elem }}
+	res := {{ $type.Elem.GO | ref }}(tmp)
+	{{- else }}
+	res := {{ $type.GO | ref }}(tmp)
+	{{- end }}
+	{{- if and (not $type.IsTargetNilable) $type.IsNilable }}
+	return &res, nil
+	{{- else if and $type.IsTargetNilable (not $type.IsNilable) }}
+	return *res, nil
+	{{- else }}
+	return res, nil
+	{{- end }}
 	{{- else }}
 	{{- if $type.IsContext }}
 	res, err := {{ $type.Unmarshaler | call }}(ctx, value)
 	{{- else }}
 	res, err := {{ $type.Unmarshaler | call }}(value)
 	{{- end }}
+	{{- if and $type.IsNilable (not $type.IsTargetNilable) }}
+	if err != nil {
+		return nil, graphql.ErrorOnPath(ctx, err)
+	}
+	return &res, nil
+	{{- else }}
 	return res, graphql.ErrorOnPath(ctx, err)
 	{{- end }}
-	{{- else if $type.IsMarshaler }}
-	{{- /* Type implements graphql.Unmarshaler interface — need reflect to create instance */}}
-	{{- if $type.IsContext }}
-	return nil, fmt.Errorf("context unmarshaler not supported in shard codecs without type reference")
-	{{- else }}
-	return nil, fmt.Errorf("interface unmarshaler not supported in shard codecs without type reference")
 	{{- end }}
+	{{- else if $type.IsMarshaler }}
+	{{- /* Type implements graphql.Unmarshaler interface — create instance and call UnmarshalGQL */}}
+	{{- if and $type.IsNilable $type.Elem }}
+	var res = new({{ $type.Elem.GO | ref }})
 	{{- else }}
-	{{- /* Input object: delegate to input unmarshaler via ec.UnmarshalCodec */}}
-	return value, nil
+	var res {{ $type.GO | ref }}
+	{{- end }}
+	{{- if $type.IsContext }}
+	err := res.UnmarshalGQLContext(ctx, value)
+	{{- else }}
+	err := res.UnmarshalGQL(value)
+	{{- end }}
+	return res, graphql.ErrorOnPath(ctx, err)
+	{{- else }}
+	{{- /* Input object: call __splitInput_ function (always in same shard package) */}}
+	res, err := __splitInput_{{ $type.Definition.Name }}(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	{{- if and $type.IsNilable (not $type.IsMap) (not $type.PointersInUnmarshalInput) }}
+	return &res, nil
+	{{- else if and (not $type.IsNilable) $type.PointersInUnmarshalInput }}
+	return *res, nil
+	{{- else }}
+	return res, nil
+	{{- end }}
 	{{- end }}
 	{{- end }}
 }

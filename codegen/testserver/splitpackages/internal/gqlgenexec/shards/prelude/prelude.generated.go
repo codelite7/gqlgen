@@ -367,192 +367,192 @@ func ___Type(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel as
 
 // split_fields_.gotpl
 func __splitField___Directive_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Directive", "args", field, obj)
+	return ec.ResolveField(ctx, "__Directive", "args", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Directive_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Directive", "description", field, obj)
+	return ec.ResolveField(ctx, "__Directive", "description", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Directive_isRepeatable(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Directive", "isRepeatable", field, obj)
+	return ec.ResolveField(ctx, "__Directive", "isRepeatable", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Directive_locations(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Directive", "locations", field, obj)
+	return ec.ResolveField(ctx, "__Directive", "locations", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Directive_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Directive", "name", field, obj)
+	return ec.ResolveField(ctx, "__Directive", "name", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___EnumValue_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__EnumValue", "deprecationReason", field, obj)
+	return ec.ResolveField(ctx, "__EnumValue", "deprecationReason", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___EnumValue_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__EnumValue", "description", field, obj)
+	return ec.ResolveField(ctx, "__EnumValue", "description", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___EnumValue_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__EnumValue", "isDeprecated", field, obj)
+	return ec.ResolveField(ctx, "__EnumValue", "isDeprecated", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___EnumValue_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__EnumValue", "name", field, obj)
+	return ec.ResolveField(ctx, "__EnumValue", "name", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Field_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Field", "args", field, obj)
+	return ec.ResolveField(ctx, "__Field", "args", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Field_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Field", "deprecationReason", field, obj)
+	return ec.ResolveField(ctx, "__Field", "deprecationReason", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Field_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Field", "description", field, obj)
+	return ec.ResolveField(ctx, "__Field", "description", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Field_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Field", "isDeprecated", field, obj)
+	return ec.ResolveField(ctx, "__Field", "isDeprecated", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Field_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Field", "name", field, obj)
+	return ec.ResolveField(ctx, "__Field", "name", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Field_type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Field", "type", field, obj)
+	return ec.ResolveField(ctx, "__Field", "type", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___InputValue_defaultValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__InputValue", "defaultValue", field, obj)
+	return ec.ResolveField(ctx, "__InputValue", "defaultValue", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___InputValue_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__InputValue", "deprecationReason", field, obj)
+	return ec.ResolveField(ctx, "__InputValue", "deprecationReason", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___InputValue_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__InputValue", "description", field, obj)
+	return ec.ResolveField(ctx, "__InputValue", "description", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___InputValue_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__InputValue", "isDeprecated", field, obj)
+	return ec.ResolveField(ctx, "__InputValue", "isDeprecated", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___InputValue_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__InputValue", "name", field, obj)
+	return ec.ResolveField(ctx, "__InputValue", "name", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___InputValue_type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__InputValue", "type", field, obj)
+	return ec.ResolveField(ctx, "__InputValue", "type", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Schema_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Schema", "description", field, obj)
+	return ec.ResolveField(ctx, "__Schema", "description", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Schema_directives(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Schema", "directives", field, obj)
+	return ec.ResolveField(ctx, "__Schema", "directives", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Schema_mutationType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Schema", "mutationType", field, obj)
+	return ec.ResolveField(ctx, "__Schema", "mutationType", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Schema_queryType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Schema", "queryType", field, obj)
+	return ec.ResolveField(ctx, "__Schema", "queryType", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Schema_subscriptionType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Schema", "subscriptionType", field, obj)
+	return ec.ResolveField(ctx, "__Schema", "subscriptionType", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Schema_types(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Schema", "types", field, obj)
+	return ec.ResolveField(ctx, "__Schema", "types", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "description", field, obj)
+	return ec.ResolveField(ctx, "__Type", "description", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_enumValues(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "enumValues", field, obj)
+	return ec.ResolveField(ctx, "__Type", "enumValues", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_fields(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "fields", field, obj)
+	return ec.ResolveField(ctx, "__Type", "fields", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_inputFields(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "inputFields", field, obj)
+	return ec.ResolveField(ctx, "__Type", "inputFields", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_interfaces(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "interfaces", field, obj)
+	return ec.ResolveField(ctx, "__Type", "interfaces", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_isOneOf(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "isOneOf", field, obj)
+	return ec.ResolveField(ctx, "__Type", "isOneOf", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_kind(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "kind", field, obj)
+	return ec.ResolveField(ctx, "__Type", "kind", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "name", field, obj)
+	return ec.ResolveField(ctx, "__Type", "name", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_ofType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "ofType", field, obj)
+	return ec.ResolveField(ctx, "__Type", "ofType", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_possibleTypes(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "possibleTypes", field, obj)
+	return ec.ResolveField(ctx, "__Type", "possibleTypes", field, obj)
 }
 
 // split_fields_.gotpl
 func __splitField___Type_specifiedByURL(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveExecutableField(ctx, "__Type", "specifiedByURL", field, obj)
+	return ec.ResolveField(ctx, "__Type", "specifiedByURL", field, obj)
 }
 
 // split_args_.gotpl
