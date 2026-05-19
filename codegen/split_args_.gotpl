@@ -1,11 +1,37 @@
 {{ define "split_args_.gotpl" }}
+{{ reserveImport "context" }}
+
+{{ reserveImport "github.com/99designs/gqlgen/graphql" }}
+{{ reserveImport "github.com/99designs/gqlgen/graphql/executor/shardruntime" }}
+
 {{- range $key := .Ownership.ArgsOwnerKeys }}
 {{- if eq (index $.Ownership.ArgsOwner $key) $.ShardName }}
+{{- with $field := index $.FieldByArgsFunc $key }}
 
-// split_args_.gotpl
+// split_args_.gotpl — args for {{ $field.Object.Name }}.{{ $field.Name }}
 func __splitArgs_{{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
-	return ec.ParseFieldArgs(ctx, "{{ $key }}", rawArgs)
+	args := map[string]any{}
+	{{- range $i, $arg := $field.Args }}
+	var arg{{ $i }} {{ $arg.TypeReference.GO | ref }}
+	if tmp, ok := rawArgs[{{ $arg.Name | quote }}]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField({{ $arg.Name | quote }}))
+		data, err := ec.UnmarshalCodec(ctx, {{ $arg.TypeReference.UnmarshalFunc | quote }}, tmp)
+		if err != nil {
+			return nil, err
+		}
+		{{- if $arg.TypeReference.IsNilable }}
+		if data != nil {
+			arg{{ $i }} = data.({{ $arg.TypeReference.GO | ref }})
+		}
+		{{- else }}
+		arg{{ $i }} = data.({{ $arg.TypeReference.GO | ref }})
+		{{- end }}
+	}
+	args[{{ $arg.Name | quote }}] = arg{{ $i }}
+	{{- end }}
+	return args, nil
 }
+{{- end }}
 {{- end }}
 {{- end }}
 {{ end }}

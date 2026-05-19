@@ -130,6 +130,22 @@ func (p *splitOwnershipPlanner) planCodecOwnership(data *Data, builds map[string
 		}
 		p.CodecOwner[codec] = smallestCodecConsumer(consumers)
 	}
+
+	// Input-type codecs call __splitInput_* which is a package-local function,
+	// so they must be co-located with their input's shard.
+	for _, key := range referencedTypeKeys {
+		ref := data.ReferencedTypes[key]
+		if ref == nil || ref.Definition == nil || ref.Definition.Kind != ast.InputObject {
+			continue
+		}
+		inputOwner := p.InputOwner[ref.Definition.Name]
+		if inputOwner == "" {
+			continue
+		}
+		if unmarshal := ref.UnmarshalFunc(); unmarshal != "" {
+			p.CodecOwner[unmarshal] = inputOwner
+		}
+	}
 }
 
 func addCodecConsumer(consumers map[string]map[string]struct{}, ref *config.TypeReference, shard string) {
@@ -150,6 +166,12 @@ func addCodecConsumer(consumers map[string]map[string]struct{}, ref *config.Type
 		}
 		consumers[unmarshal][shard] = struct{}{}
 	}
+
+	// Also track element type codecs for slices and pointers, since the
+	// parent codec dispatches to the element codec via MarshalCodec/UnmarshalCodec.
+	if elem := ref.Elem(); elem != nil {
+		addCodecConsumer(consumers, elem, shard)
+	}
 }
 
 func smallestCodecConsumer(consumers map[string]struct{}) string {
@@ -162,6 +184,13 @@ func smallestCodecConsumer(consumers map[string]struct{}) string {
 		shards = append(shards, shard)
 	}
 	sort.Strings(shards)
+
+	// Prefer real shards over "common" fallback
+	for _, s := range shards {
+		if s != "common" {
+			return s
+		}
+	}
 	return shards[0]
 }
 

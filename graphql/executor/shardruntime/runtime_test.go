@@ -967,140 +967,186 @@ func resetCodecUnmarshalRegistryForTest() {
 	resetCodecUnmarshalLookupSnapshotForTest()
 }
 
-func resetExecFieldRegistryForTest() {
+func resetFieldContextRegistryForTest() {
 	mu.Lock()
 	defer mu.Unlock()
 
-	execFieldByScope = map[string]map[string]map[string]FieldHandler{}
-	resetExecFieldLookupSnapshotForTest()
+	fieldContextByScope = map[string]map[string]FieldContextHandler{}
+	resetFieldContextLookupSnapshotForTest()
 }
 
-func resetExecStreamFieldRegistryForTest() {
+func resetResolverInvokerRegistryForTest() {
 	mu.Lock()
 	defer mu.Unlock()
 
-	execStreamFieldByScope = map[string]map[string]map[string]StreamFieldHandler{}
-	resetExecStreamFieldLookupSnapshotForTest()
+	resolverInvokerByScope = map[string]map[string]ResolverInvokerHandler{}
+	resetResolverInvokerLookupSnapshotForTest()
 }
 
-func TestExecutableFieldRegistry(t *testing.T) {
-	resetExecFieldRegistryForTest()
+func resetArgsRegistryForTest() {
+	mu.Lock()
+	defer mu.Unlock()
 
-	called := false
-	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
-		called = true
-		return graphql.Null
+	argsByScope = map[string]map[string]ArgsHandler{}
+	resetArgsLookupSnapshotForTest()
+}
+
+func TestFieldContextRegistry(t *testing.T) {
+	resetFieldContextRegistryForTest()
+
+	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField) (*graphql.FieldContext, error) {
+		return &graphql.FieldContext{}, nil
 	}
 
-	if got, ok := LookupExecutableField("scope", "Mutation", "UpdateUser"); ok || got != nil {
-		t.Fatalf("unexpected executable field handler before registration: handler=%v ok=%v", got, ok)
+	if got, ok := LookupFieldContext("scope", "Query", "name"); ok || got != nil {
+		t.Fatalf("unexpected field context handler before registration: handler=%v ok=%v", got, ok)
 	}
 
-	RegisterExecutableField("scope", "Mutation", "UpdateUser", h)
+	RegisterFieldContext("scope", "Query", "name", h)
 
-	got, ok := LookupExecutableField("scope", "Mutation", "UpdateUser")
+	got, ok := LookupFieldContext("scope", "Query", "name")
 	if !ok {
-		t.Fatal("expected registered executable field handler")
+		t.Fatal("expected registered field context handler")
 	}
 	if got == nil {
-		t.Fatal("expected non-nil executable field handler")
+		t.Fatal("expected non-nil field context handler")
 	}
 
-	got(context.Background(), nil, graphql.CollectedField{}, nil)
-	if !called {
-		t.Fatal("expected executable field handler to be called")
+	if got, ok := LookupFieldContext("scope", "Query", "missing"); ok || got != nil {
+		t.Fatalf("unexpected field context handler for missing field: handler=%v ok=%v", got, ok)
+	}
+	if got, ok := LookupFieldContext("scope", "Mutation", "name"); ok || got != nil {
+		t.Fatalf("unexpected field context handler for missing object: handler=%v ok=%v", got, ok)
+	}
+	if got, ok := LookupFieldContext("other-scope", "Query", "name"); ok || got != nil {
+		t.Fatalf("unexpected field context handler for missing scope: handler=%v ok=%v", got, ok)
 	}
 
-	if got, ok := LookupExecutableField("scope", "Mutation", "missing"); ok || got != nil {
-		t.Fatalf("unexpected executable field handler for missing field: handler=%v ok=%v", got, ok)
-	}
-	if got, ok := LookupExecutableField("other-scope", "Mutation", "UpdateUser"); ok || got != nil {
-		t.Fatalf("unexpected executable field handler for missing scope: handler=%v ok=%v", got, ok)
-	}
-}
-
-func TestExecutableFieldRegistryIndependentFromFieldRegistry(t *testing.T) {
-	resetFieldRegistryForTest()
-	resetExecFieldRegistryForTest()
-
-	splitCalled := false
-	splitHandler := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
-		splitCalled = true
-		return graphql.Null
-	}
-
-	execCalled := false
-	execHandler := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
-		execCalled = true
-		return graphql.Null
-	}
-
-	// Register same key in both registries — no panic
-	RegisterField("scope", "Mutation", "UpdateUser", splitHandler)
-	RegisterExecutableField("scope", "Mutation", "UpdateUser", execHandler)
-
-	// LookupField returns the split handler
-	got, ok := LookupField("scope", "Mutation", "UpdateUser")
-	if !ok || got == nil {
-		t.Fatal("expected split field handler from LookupField")
-	}
-	got(context.Background(), nil, graphql.CollectedField{}, nil)
-	if !splitCalled {
-		t.Fatal("LookupField should return the split handler")
-	}
-	if execCalled {
-		t.Fatal("LookupField should NOT return the exec handler")
-	}
-
-	splitCalled = false
-
-	// LookupExecutableField returns the exec handler
-	got2, ok := LookupExecutableField("scope", "Mutation", "UpdateUser")
-	if !ok || got2 == nil {
-		t.Fatal("expected executable field handler from LookupExecutableField")
-	}
-	got2(context.Background(), nil, graphql.CollectedField{}, nil)
-	if !execCalled {
-		t.Fatal("LookupExecutableField should return the exec handler")
-	}
-	if splitCalled {
-		t.Fatal("LookupExecutableField should NOT return the split handler")
-	}
-}
-
-func TestExecutableFieldDuplicatePanics(t *testing.T) {
-	resetExecFieldRegistryForTest()
-
-	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) graphql.Marshaler {
-		return graphql.Null
-	}
-
-	RegisterExecutableField("scope", "Mutation", "UpdateUser", h)
-	assertDuplicateRegistrationPanic(t, "duplicate executable field shard handler registration: scope:Mutation:UpdateUser", func() {
-		RegisterExecutableField("scope", "Mutation", "UpdateUser", h)
-	})
-}
-
-func TestExecutableStreamFieldRegistry(t *testing.T) {
-	resetExecStreamFieldRegistryForTest()
-
-	h := func(context.Context, ObjectExecutionContext, graphql.CollectedField, any) func(context.Context) graphql.Marshaler {
-		return func(context.Context) graphql.Marshaler {
-			return graphql.Null
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			t.Fatal("expected duplicate registration panic")
 		}
+		msg, ok := recovered.(string)
+		if !ok {
+			t.Fatalf("expected panic string, got %T", recovered)
+		}
+		expected := "duplicate field context handler registration: scope:Query:name"
+		if msg != expected {
+			t.Fatalf("unexpected panic message: got %q want %q", msg, expected)
+		}
+	}()
+
+	RegisterFieldContext("scope", "Query", "name", h)
+}
+
+func TestResolverInvokerRegistry(t *testing.T) {
+	resetResolverInvokerRegistryForTest()
+
+	h := func(context.Context, ObjectExecutionContext, any) (any, error) {
+		return "resolved", nil
 	}
 
-	if got, ok := LookupExecutableStreamField("scope", "Subscription", "onEvent"); ok || got != nil {
-		t.Fatalf("unexpected executable stream field handler before registration: handler=%v ok=%v", got, ok)
+	if got, ok := LookupResolverInvoker("scope", "Query", "name"); ok || got != nil {
+		t.Fatalf("unexpected resolver invoker handler before registration: handler=%v ok=%v", got, ok)
 	}
 
-	RegisterExecutableStreamField("scope", "Subscription", "onEvent", h)
+	RegisterResolverInvoker("scope", "Query", "name", h)
 
-	got, ok := LookupExecutableStreamField("scope", "Subscription", "onEvent")
+	got, ok := LookupResolverInvoker("scope", "Query", "name")
 	if !ok {
-		t.Fatal("expected registered executable stream field handler")
+		t.Fatal("expected registered resolver invoker handler")
 	}
 	if got == nil {
-		t.Fatal("expected non-nil executable stream field handler")
+		t.Fatal("expected non-nil resolver invoker handler")
 	}
+
+	result, err := got(context.Background(), nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "resolved" {
+		t.Fatalf("unexpected result: got %v want %q", result, "resolved")
+	}
+
+	if got, ok := LookupResolverInvoker("scope", "Query", "missing"); ok || got != nil {
+		t.Fatalf("unexpected resolver invoker handler for missing field: handler=%v ok=%v", got, ok)
+	}
+	if got, ok := LookupResolverInvoker("scope", "Mutation", "name"); ok || got != nil {
+		t.Fatalf("unexpected resolver invoker handler for missing object: handler=%v ok=%v", got, ok)
+	}
+	if got, ok := LookupResolverInvoker("other-scope", "Query", "name"); ok || got != nil {
+		t.Fatalf("unexpected resolver invoker handler for missing scope: handler=%v ok=%v", got, ok)
+	}
+
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			t.Fatal("expected duplicate registration panic")
+		}
+		msg, ok := recovered.(string)
+		if !ok {
+			t.Fatalf("expected panic string, got %T", recovered)
+		}
+		expected := "duplicate resolver invoker handler registration: scope:Query:name"
+		if msg != expected {
+			t.Fatalf("unexpected panic message: got %q want %q", msg, expected)
+		}
+	}()
+
+	RegisterResolverInvoker("scope", "Query", "name", h)
+}
+
+func TestArgsRegistry(t *testing.T) {
+	resetArgsRegistryForTest()
+
+	h := func(context.Context, ObjectExecutionContext, map[string]any) (map[string]any, error) {
+		return map[string]any{"parsed": true}, nil
+	}
+
+	if got, ok := LookupArgs("scope", "Query.name"); ok || got != nil {
+		t.Fatalf("unexpected args handler before registration: handler=%v ok=%v", got, ok)
+	}
+
+	RegisterArgs("scope", "Query.name", h)
+
+	got, ok := LookupArgs("scope", "Query.name")
+	if !ok {
+		t.Fatal("expected registered args handler")
+	}
+	if got == nil {
+		t.Fatal("expected non-nil args handler")
+	}
+
+	result, err := got(context.Background(), nil, map[string]any{"input": "value"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result["parsed"] != true {
+		t.Fatalf("unexpected result: got %v", result)
+	}
+
+	if got, ok := LookupArgs("scope", "Query.missing"); ok || got != nil {
+		t.Fatalf("unexpected args handler for missing key: handler=%v ok=%v", got, ok)
+	}
+	if got, ok := LookupArgs("other-scope", "Query.name"); ok || got != nil {
+		t.Fatalf("unexpected args handler for missing scope: handler=%v ok=%v", got, ok)
+	}
+
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			t.Fatal("expected duplicate registration panic")
+		}
+		msg, ok := recovered.(string)
+		if !ok {
+			t.Fatalf("expected panic string, got %T", recovered)
+		}
+		expected := "duplicate args handler registration: scope:Query.name"
+		if msg != expected {
+			t.Fatalf("unexpected panic message: got %q want %q", msg, expected)
+		}
+	}()
+
+	RegisterArgs("scope", "Query.name", h)
 }

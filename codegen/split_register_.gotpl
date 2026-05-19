@@ -20,6 +20,18 @@ func init() {
 {{- end }}
 {{- end }}
 {{- end }}
+{{- range $key := .Ownership.FieldOwnerKeys }}
+{{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
+{{- with $field := index $.FieldByLookupKey $key }}
+	shardruntime.RegisterFieldContext(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, __splitFieldContext_{{ $field.Object.Name }}_{{ $field.Name }})
+{{- end }}
+{{- end }}
+{{- end }}
+{{- range $key := .Ownership.ArgsOwnerKeys }}
+{{- if eq (index $.Ownership.ArgsOwner $key) $.ShardName }}
+	shardruntime.RegisterArgs(splitScope, {{ $key | quote }}, __splitArgs_{{ $key }})
+{{- end }}
+{{- end }}
 {{- range $inputName := .Ownership.InputOwnerKeys }}
 {{- if eq (index $.Ownership.InputOwner $inputName) $.ShardName }}
 {{- with $input := index $.InputByName $inputName }}

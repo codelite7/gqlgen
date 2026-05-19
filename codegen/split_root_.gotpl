@@ -323,24 +323,6 @@ func (ec *executionContext) ResolveStreamField(ctx context.Context, objectName, 
 	return handler(ctx, ec, field, nil)
 }
 
-func (ec *executionContext) ResolveExecutableField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) graphql.Marshaler {
-	handler, ok := shardruntime.LookupExecutableField({{ $.Scope | quote }}, objectName, fieldName)
-	if !ok {
-		panic(fmt.Sprintf("unknown executable field %s.%s", objectName, fieldName))
-	}
-
-	return handler(ctx, ec, field, obj)
-}
-
-func (ec *executionContext) ResolveExecutableStreamField(ctx context.Context, objectName, fieldName string, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
-	handler, ok := shardruntime.LookupExecutableStreamField({{ $.Scope | quote }}, objectName, fieldName)
-	if !ok {
-		panic(fmt.Sprintf("unknown executable stream field %s.%s", objectName, fieldName))
-	}
-
-	return handler(ctx, ec, field, obj)
-}
-
 func (ec *executionContext) MarshalCodec(ctx context.Context, funcName string, sel ast.SelectionSet, value any) graphql.Marshaler {
 	handler, ok := shardruntime.LookupCodecMarshal({{ $.Scope | quote }}, funcName)
 	if !ok {
@@ -361,6 +343,19 @@ func (ec *executionContext) UnmarshalCodec(ctx context.Context, funcName string,
 
 func (ec *executionContext) ParseFieldArgs(ctx context.Context, argsKey string, rawArgs map[string]any) (map[string]any, error) {
 	return rawArgs, nil
+}
+
+func (ec *executionContext) InvokeResolver(ctx context.Context, objectName, fieldName string, obj any) (any, error) {
+	handler, ok := shardruntime.LookupResolverInvoker({{ $.Scope | quote }}, objectName, fieldName)
+	if !ok {
+		return nil, fmt.Errorf("unknown resolver invoker %s.%s", objectName, fieldName)
+	}
+
+	return handler(ctx, ec, obj)
+}
+
+func (ec *executionContext) LookupFieldContextHandler(objectName, fieldName string) (shardruntime.FieldContextHandler, bool) {
+	return shardruntime.LookupFieldContext({{ $.Scope | quote }}, objectName, fieldName)
 }
 
 func (ec *executionContext) ResolveExecutableComplexity(ctx context.Context, objectName, fieldName string, childComplexity int, rawArgs map[string]any) (int, bool) {
@@ -427,26 +422,56 @@ func (ec *executionContext) _{{$object.Name}}(ctx context.Context, sel ast.Selec
 	{{- end }}
 {{- end }}
 
-{{- /* Register executable field handlers — bridges shard field wrappers to actual resolvers */}}
+{{- /* Register resolver invokers — only for IsResolver fields */}}
 func init() {
+	scope := {{ $.Scope | quote }}
+	_ = scope
 {{- range $object := .Objects }}
 {{- range $field := $object.Fields }}
-{{- if $object.Stream }}
-	shardruntime.RegisterExecutableStreamField({{ $.Scope | quote }}, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
+{{- if $field.IsResolver }}
+	shardruntime.RegisterResolverInvoker(scope, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
-		{{ if $useFunctionSyntaxForExecutionContext -}}
-		return _{{ $object.Name }}_{{ $field.Name }}(ctx, ec, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
-		{{- else -}}
-		return ec._{{ $object.Name }}_{{ $field.Name }}(ctx, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.{{ucFirst $object.Name}}().{{ $field.GoFieldName }}(ctx{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }}{{ range $arg := $field.Args }}, fc.Args["{{ $arg.Name }}"].({{ $arg.TypeReference.GO | ref }}){{ end }})
+	})
+{{- end }}
+{{- end }}
+{{- end }}
+{{- /* Register resolver invokers for introspection fields (GoReceiverName != "obj") */}}
+{{- range $object := .Objects }}
+{{- range $field := $object.Fields }}
+{{- if and (not $field.IsResolver) (ne $field.GoReceiverName "obj") }}
+	shardruntime.RegisterResolverInvoker(scope, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		{{- if gt (len $field.Args) 0 }}
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		{{- end }}
+		{{- if $field.IsMethod }}
+		return ec.{{ $field.GoFieldName }}({{ $field.CallArgs }})
+		{{- else }}
+		return ec.{{ $field.GoFieldName }}, nil
 		{{- end }}
 	})
-{{- else }}
-	shardruntime.RegisterExecutableField({{ $.Scope | quote }}, {{ $object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+{{- end }}
+{{- end }}
+{{- end }}
+{{- /* Register resolver invokers for input resolver fields */}}
+{{- range $input := .Inputs }}
+{{- range $field := $input.Fields }}
+{{- if $field.IsResolver }}
+	shardruntime.RegisterResolverInvoker(scope, {{ $input.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
-		{{ if $useFunctionSyntaxForExecutionContext -}}
-		return _{{ $object.Name }}_{{ $field.Name }}(ctx, ec, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
-		{{- else -}}
-		return ec._{{ $object.Name }}_{{ $field.Name }}(ctx, field{{ if not $object.Root }}, obj.({{ $object.Reference | ref }}){{ end }})
+		args := obj.([]any)
+		{{- if $field.TypeReference.IsNilable }}
+		var arg1 {{ $field.TypeReference.GO | ref }}
+		if args[1] != nil {
+			arg1 = args[1].({{ $field.TypeReference.GO | ref }})
+		}
+		return nil, ec.resolvers.{{ ucFirst $input.Name }}().{{ $field.GoFieldName }}(ctx, args[0].({{ $input.Reference | ref }}), arg1)
+		{{- else }}
+		return nil, ec.resolvers.{{ ucFirst $input.Name }}().{{ $field.GoFieldName }}(ctx, args[0].({{ $input.Reference | ref }}), args[1].({{ $field.TypeReference.GO | ref }}))
 		{{- end }}
 	})
 {{- end }}

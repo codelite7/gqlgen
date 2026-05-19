@@ -1,0 +1,63 @@
+{{ define "split_fieldcontext_.gotpl" }}
+{{ reserveImport "context" }}
+{{ reserveImport "fmt" }}
+{{ reserveImport "errors" }}
+
+{{ reserveImport "github.com/99designs/gqlgen/graphql" }}
+{{ reserveImport "github.com/99designs/gqlgen/graphql/executor/shardruntime" }}
+
+{{- range $key := .Ownership.FieldOwnerKeys }}
+{{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
+{{- with $field := index $.FieldByLookupKey $key }}
+
+// split_fieldcontext_.gotpl — fieldContext for {{ $field.Object.Name }}.{{ $field.Name }}
+func __splitFieldContext_{{ $field.Object.Name }}_{{ $field.Name }}({{ if not $field.Args }}_{{ else }}ctx{{ end }} context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     {{ $field.Object.Name | quote }},
+		Field:      field,
+		IsMethod:   {{ or $field.IsMethod $field.IsResolver }},
+		IsResolver: {{ $field.IsResolver }},
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			{{- if not $field.TypeReference.Definition.Fields }}
+			return nil, errors.New("field of type {{ $field.TypeReference.Definition.Name }} does not have child fields")
+			{{- else if ne $field.TypeReference.Definition.Kind "OBJECT" }}
+			return nil, errors.New("FieldContext.Child cannot be called on type {{ $field.TypeReference.Definition.Kind }}")
+			{{- else }}
+			switch field.Name {
+			{{- range $child := $field.TypeReference.Definition.Fields }}
+			case {{ $child.Name | quote }}:
+				handler, ok := ec.LookupFieldContextHandler({{ $field.TypeReference.Definition.Name | quote }}, {{ $child.Name | quote }})
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for {{ $field.TypeReference.Definition.Name }}.{{ $child.Name }}")
+				}
+				return handler(ctx, ec, field)
+			{{- end }}
+			}
+			return nil, fmt.Errorf("no field named %q was found under type {{ $field.TypeReference.Definition.Name }}", field.Name)
+			{{- end }}
+		},
+	}
+	{{- if $field.Args }}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
+	argsHandler, ok := shardruntime.LookupArgs(splitScope, {{ $field.ArgsFunc | quote }})
+	if !ok {
+		return nil, fmt.Errorf("no args handler for %q", {{ $field.ArgsFunc | quote }})
+	}
+	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	{{- end }}
+	return fc, nil
+}
+{{- end }}
+{{- end }}
+{{- end }}
+{{ end }}
