@@ -520,7 +520,7 @@ func ListInputUnmarshalers(scope string, ec ObjectExecutionContext) []any {
 
 		// Wrap 3-arg functions (ctx, ec, obj) into 2-arg functions (ctx, obj)
 		// to maintain compatibility with BuildUnmarshalerMap/UnmarshalInputFromContext.
-		if fnType.NumIn() == 3 {
+		if fnType.Kind() == reflect.Func && fnType.NumIn() == 3 {
 			wrapperType := reflect.FuncOf(
 				[]reflect.Type{fnType.In(0), fnType.In(2)},
 				[]reflect.Type{fnType.Out(0), fnType.Out(1)},

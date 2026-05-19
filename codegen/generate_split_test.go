@@ -1071,8 +1071,9 @@ func TestSplitFieldsUsesResolveFieldInsteadOfBridge(t *testing.T) {
 	// Verify old bridge pattern is NOT used
 	require.NotContains(t, text, "ec.ResolveExecutableField")
 
-	// Verify resolver field uses InvokeResolver
-	require.Contains(t, text, `ec.InvokeResolver(ctx, "Article", "Computed", obj)`)
+	// Verify resolver field uses InvokeResolver (keyed by GraphQL field name,
+	// matching RegisterResolverInvoker in split_root_.gotpl)
+	require.Contains(t, text, `ec.InvokeResolver(ctx, "Article", "computed", obj)`)
 
 	// Verify non-resolver field uses direct access with type assertion
 	require.Contains(t, text, ".Title,")
@@ -1160,8 +1161,9 @@ func TestSplitFieldsStreamUsesResolveFieldStream(t *testing.T) {
 	// Verify old bridge pattern is NOT used
 	require.NotContains(t, text, "ec.ResolveExecutableStreamField")
 
-	// Verify InvokeResolver is used for stream resolver fields
-	require.Contains(t, text, `ec.InvokeResolver(ctx, "Subscription", "OnMessage", obj)`)
+	// Verify InvokeResolver is used for stream resolver fields (keyed by
+	// GraphQL field name, matching RegisterResolverInvoker in split_root_.gotpl)
+	require.Contains(t, text, `ec.InvokeResolver(ctx, "Subscription", "onMessage", obj)`)
 }
 
 func TestSplitDirectiveOrderParity(t *testing.T) {
