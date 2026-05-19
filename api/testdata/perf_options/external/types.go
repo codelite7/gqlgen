@@ -20,4 +20,3 @@ func NewLocationInfo(country, city string, lat, lng float64) *LocationInfo {
 		Longitude: lng,
 	}
 }
-

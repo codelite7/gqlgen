@@ -1385,7 +1385,13 @@ func chdirToLocalSplitFixtureWorkspace(t *testing.T) string {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	fixturesRoot := filepath.Join(wd, "testserver")
+	// Use `_workdir/` (underscore prefix) so the Go module tooling ignores
+	// these temp dirs during package-walks. Without this, parallel api/*
+	// tests calling `go mod tidy` race with in-flight codegen test work
+	// dirs and fail with "no matching versions for query 'latest'" on
+	// generated subpackages.
+	fixturesRoot := filepath.Join(wd, "_workdir")
+	require.NoError(t, os.MkdirAll(fixturesRoot, 0o755))
 	fixtureDir := filepath.Join(wd, "..", "api", "testdata", "splitpackages")
 
 	workDir, err := os.MkdirTemp(fixturesRoot, "splitpackages-work-")

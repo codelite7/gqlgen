@@ -112,26 +112,26 @@ type CodecMarshalHandler func(ctx context.Context, ec ObjectExecutionContext, se
 type CodecUnmarshalHandler func(ctx context.Context, ec ObjectExecutionContext, value any) (any, error)
 
 var (
-	mu                    sync.RWMutex
-	objectByScope         = map[string]map[string]ObjectHandler{}
-	streamByScope         = map[string]map[string]StreamObjectHandler{}
-	fieldByScope              = map[string]map[string]map[string]FieldHandler{}
-	streamFieldByScope        = map[string]map[string]map[string]StreamFieldHandler{}
-	execFieldByScope          = map[string]map[string]map[string]FieldHandler{}
-	execStreamFieldByScope    = map[string]map[string]map[string]StreamFieldHandler{}
-	complexityByScope     = map[string]map[string]map[string]ComplexityHandler{}
-	inputUnmarshalByScope = map[string]map[string]any{}
-	codecMarshalByScope   = map[string]map[string]CodecMarshalHandler{}
-	codecUnmarshalByScope = map[string]map[string]CodecUnmarshalHandler{}
+	mu                     sync.RWMutex
+	objectByScope          = map[string]map[string]ObjectHandler{}
+	streamByScope          = map[string]map[string]StreamObjectHandler{}
+	fieldByScope           = map[string]map[string]map[string]FieldHandler{}
+	streamFieldByScope     = map[string]map[string]map[string]StreamFieldHandler{}
+	execFieldByScope       = map[string]map[string]map[string]FieldHandler{}
+	execStreamFieldByScope = map[string]map[string]map[string]StreamFieldHandler{}
+	complexityByScope      = map[string]map[string]map[string]ComplexityHandler{}
+	inputUnmarshalByScope  = map[string]map[string]any{}
+	codecMarshalByScope    = map[string]map[string]CodecMarshalHandler{}
+	codecUnmarshalByScope  = map[string]map[string]CodecUnmarshalHandler{}
 
 	objectLookupSnapshot           atomic.Value
 	streamObjectLookupSnapshot     atomic.Value
-	fieldLookupSnapshot                atomic.Value
-	fieldLookupSnapshotDirty           atomic.Bool
-	streamFieldLookupSnapshot          atomic.Value
-	execFieldLookupSnapshot            atomic.Value
-	execFieldLookupSnapshotDirty       atomic.Bool
-	execStreamFieldLookupSnapshot      atomic.Value
+	fieldLookupSnapshot            atomic.Value
+	fieldLookupSnapshotDirty       atomic.Bool
+	streamFieldLookupSnapshot      atomic.Value
+	execFieldLookupSnapshot        atomic.Value
+	execFieldLookupSnapshotDirty   atomic.Bool
+	execStreamFieldLookupSnapshot  atomic.Value
 	complexityLookupSnapshot       atomic.Value
 	inputUnmarshalMapByScopeLookup atomic.Value
 	codecMarshalLookupSnapshot     atomic.Value

@@ -23,4 +23,3 @@ type Session struct {
 	Connections []*Connection
 	Active      bool
 }
-
