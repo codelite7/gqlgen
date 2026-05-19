@@ -120,9 +120,35 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	{{- if not .Config.OmitComplexity }}
-	handler, ok := shardruntime.LookupComplexity({{ $.Scope | quote }}, typeName, field)
-	if ok {
-		return handler(ctx, &ec, childComplexity, rawArgs)
+	switch typeName + "." + field {
+	{{ range $object := .Objects }}
+		{{ if not $object.IsReserved }}
+			{{ range $_, $fields := $object.UniqueFields }}
+				{{- $len := len $fields }}
+				{{- range $i, $field := $fields }}
+					{{- $last := eq (add $i 1) $len }}
+					{{- if not $field.IsReserved }}
+						{{- if eq $i 0 }}case {{ end }}"{{$object.Name}}.{{$field.Name}}"{{ if not $last }},{{ else }}:
+						if e.complexity.{{ucFirst $object.Name }}.{{$field.GoFieldName}} == nil {
+						break
+						}
+						{{ if $field.Args }}
+							argsHandler, ok := shardruntime.LookupArgs({{ $.Scope | quote }}, {{ $field.ArgsFunc | quote }})
+							if !ok {
+							return 0, false
+							}
+							args, err := argsHandler(ctx, &ec, rawArgs)
+							if err != nil {
+							return 0, false
+							}
+						{{ end }}
+						return e.complexity.{{ucFirst $object.Name}}.{{$field.GoFieldName}}(childComplexity{{if $field.Args}}, {{$field.ComplexityArgs}} {{ end }}), true
+						{{ end }}
+					{{- end }}
+				{{- end }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
 	}
 	{{- end }}
 	return 0, false
@@ -279,14 +305,14 @@ func (ec *executionContext) processDeferredGroup(dg graphql.DeferredGroup) {
 	}()
 }
 
-func (ec *executionContext) introspectSchema() (*introspection.Schema, error) {
+func (ec *executionContext) IntrospectSchema() (*introspection.Schema, error) {
 	if ec.DisableIntrospection {
 		return nil, errors.New("introspection disabled")
 	}
 	return introspection.WrapSchema(ec.Schema()), nil
 }
 
-func (ec *executionContext) introspectType(name string) (*introspection.Type, error) {
+func (ec *executionContext) IntrospectType(name string) (*introspection.Type, error) {
 	if ec.DisableIntrospection {
 		return nil, errors.New("introspection disabled")
 	}
@@ -356,15 +382,6 @@ func (ec *executionContext) InvokeResolver(ctx context.Context, objectName, fiel
 
 func (ec *executionContext) LookupFieldContextHandler(objectName, fieldName string) (shardruntime.FieldContextHandler, bool) {
 	return shardruntime.LookupFieldContext({{ $.Scope | quote }}, objectName, fieldName)
-}
-
-func (ec *executionContext) ResolveExecutableComplexity(ctx context.Context, objectName, fieldName string, childComplexity int, rawArgs map[string]any) (int, bool) {
-	handler, ok := shardruntime.LookupComplexity({{ $.Scope | quote }}, objectName, fieldName)
-	if !ok {
-		return 0, false
-	}
-
-	return handler(ctx, ec, childComplexity, rawArgs)
 }
 
 {{- range $object := .Objects }}

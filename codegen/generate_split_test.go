@@ -676,27 +676,26 @@ func TestSplitComplexityLookupParity(t *testing.T) {
 	require.Greater(t, execStart, complexityStart)
 
 	complexityBody := contents[complexityStart:execStart]
-	require.Contains(t, complexityBody, "shardruntime.LookupComplexity(")
-	require.Contains(t, complexityBody, "typeName, field")
-	require.Contains(t, complexityBody, "return handler(ctx, &ec, childComplexity, rawArgs)")
-	require.NotContains(t, complexityBody, "switch typeName+\".\"+field")
-	require.NotContains(t, complexityBody, "switch typeName + \".\" + field")
+	// Complexity is computed centrally in the root method via a switch over
+	// typeName+"."+field, calling ec.complexity.<Object>.<Field> directly.
+	// It must NOT dispatch to per-shard handlers (that caused infinite
+	// recursion: handler -> ResolveExecutableComplexity -> LookupComplexity ->
+	// handler), since a shard cannot reach the root-package ComplexityRoot.
+	require.Contains(t, complexityBody, "switch typeName + \".\" + field")
+	require.Contains(t, complexityBody, "e.complexity.")
+	require.NotContains(t, complexityBody, "shardruntime.LookupComplexity(")
+	require.NotContains(t, complexityBody, "ResolveExecutableComplexity")
 	require.Contains(t, complexityBody, "return 0, false")
 
-	var foundRegisterComplexity bool
 	for relPath, shardContents := range snapshot {
 		if !strings.HasSuffix(relPath, filepath.Join("register.generated.go")) {
 			continue
 		}
 
 		registerBody := string(shardContents)
-		if strings.Contains(registerBody, "RegisterComplexity(splitScope,") {
-			foundRegisterComplexity = true
-			require.Contains(t, registerBody, "return __splitComplexity_")
-		}
+		require.NotContains(t, registerBody, "RegisterComplexity(splitScope,",
+			"shards must not register complexity handlers; complexity lives in the root")
 	}
-
-	require.True(t, foundRegisterComplexity, "expected shard register output to include complexity registrations")
 }
 
 func TestSplitRootInputMapFromGeneratedUnmarshalers(t *testing.T) {
@@ -962,21 +961,21 @@ func TestSplitComplexityEmissionByOwner(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// Per-shard complexity handlers are no longer emitted; complexity is
+	// computed centrally in the root executableSchema.Complexity method
+	// (a shard cannot reach the root-package ComplexityRoot, which is what
+	// caused the previous handler<->ResolveExecutableComplexity recursion).
 	alphaContents, err := os.ReadFile(alphaPath)
 	require.NoError(t, err)
 	alphaText := string(alphaContents)
-	require.Contains(t, alphaText, "split_complexity_.gotpl")
-	require.Contains(t, alphaText, "func __splitComplexity_AlphaQuery_alphaField")
-	require.Contains(t, alphaText, "return ec.ResolveExecutableComplexity(ctx, \"AlphaQuery\", \"alphaField\", childComplexity, rawArgs)")
-	require.NotContains(t, alphaText, "func __splitComplexity_ZetaQuery_zetaField")
+	require.NotContains(t, alphaText, "func __splitComplexity_")
+	require.NotContains(t, alphaText, "ResolveExecutableComplexity")
 
 	zetaContents, err := os.ReadFile(zetaPath)
 	require.NoError(t, err)
 	zetaText := string(zetaContents)
-	require.Contains(t, zetaText, "split_complexity_.gotpl")
-	require.Contains(t, zetaText, "func __splitComplexity_ZetaQuery_zetaField")
-	require.Contains(t, zetaText, "return ec.ResolveExecutableComplexity(ctx, \"ZetaQuery\", \"zetaField\", childComplexity, rawArgs)")
-	require.NotContains(t, zetaText, "func __splitComplexity_AlphaQuery_alphaField")
+	require.NotContains(t, zetaText, "func __splitComplexity_")
+	require.NotContains(t, zetaText, "ResolveExecutableComplexity")
 }
 
 func TestSplitFieldsUsesResolveFieldInsteadOfBridge(t *testing.T) {

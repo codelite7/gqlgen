@@ -1,13 +1,7 @@
 {{ define "split_complexity_.gotpl" }}
-{{- range $key := .Ownership.ComplexityOwnerKeys }}
-{{- if eq (index $.Ownership.ComplexityOwner $key) $.ShardName }}
-{{- with $field := index $.FieldByLookupKey $key }}
-
-// split_complexity_.gotpl
-func __splitComplexity_{{ $field.Object.Name }}_{{ $field.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, childComplexity, rawArgs)
-}
-{{- end }}
-{{- end }}
-{{- end }}
+{{- /* Complexity is computed centrally in the root executableSchema.Complexity
+       method, which can access ec.complexity (a root-package type). Per-shard
+       complexity handlers are intentionally not emitted: a shard cannot type-
+       assert to the root *executionContext, so it has no way to reach the
+       ComplexityRoot funcs. */}}
 {{ end }}

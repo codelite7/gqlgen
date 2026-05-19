@@ -32,13 +32,6 @@ type ObjectExecutionContext interface {
 		argsKey string,
 		rawArgs map[string]any,
 	) (map[string]any, error)
-	ResolveExecutableComplexity(
-		ctx context.Context,
-		objectName string,
-		fieldName string,
-		childComplexity int,
-		rawArgs map[string]any,
-	) (int, bool)
 	ResolveField(
 		ctx context.Context,
 		objectName string,

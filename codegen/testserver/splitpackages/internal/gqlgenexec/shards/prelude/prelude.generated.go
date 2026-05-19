@@ -4,10 +4,15 @@ package prelude
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
+	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -365,517 +370,3140 @@ func ___Type(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel as
 	return out
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Directive_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Directive", "args", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Directive", "args")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Directive.args")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Directive).Args, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Directive_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Directive", "description", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Directive", "description")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Directive.description")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Directive).Description(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Directive_isRepeatable(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Directive", "isRepeatable", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Directive", "isRepeatable")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Directive.isRepeatable")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Directive).IsRepeatable, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNBoolean2bool", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Directive_locations(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Directive", "locations", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Directive", "locations")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Directive.locations")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Directive).Locations, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__DirectiveLocation2ᚕstringᚄ", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Directive_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Directive", "name", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Directive", "name")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Directive.name")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Directive).Name, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___EnumValue_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__EnumValue", "deprecationReason", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__EnumValue", "deprecationReason")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __EnumValue.deprecationReason")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.EnumValue).DeprecationReason(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___EnumValue_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__EnumValue", "description", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__EnumValue", "description")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __EnumValue.description")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.EnumValue).Description(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___EnumValue_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__EnumValue", "isDeprecated", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__EnumValue", "isDeprecated")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __EnumValue.isDeprecated")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.EnumValue).IsDeprecated(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNBoolean2bool", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___EnumValue_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__EnumValue", "name", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__EnumValue", "name")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __EnumValue.name")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.EnumValue).Name, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Field_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Field", "args", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Field", "args")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Field.args")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Field).Args, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Field_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Field", "deprecationReason", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Field", "deprecationReason")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Field.deprecationReason")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Field).DeprecationReason(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Field_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Field", "description", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Field", "description")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Field.description")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Field).Description(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Field_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Field", "isDeprecated", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Field", "isDeprecated")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Field.isDeprecated")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Field).IsDeprecated(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNBoolean2bool", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Field_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Field", "name", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Field", "name")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Field.name")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Field).Name, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Field_type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Field", "type", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Field", "type")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Field.type")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Field).Type, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___InputValue_defaultValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__InputValue", "defaultValue", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__InputValue", "defaultValue")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __InputValue.defaultValue")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.InputValue).DefaultValue, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___InputValue_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__InputValue", "deprecationReason", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__InputValue", "deprecationReason")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __InputValue.deprecationReason")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.InputValue).DeprecationReason(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___InputValue_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__InputValue", "description", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__InputValue", "description")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __InputValue.description")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.InputValue).Description(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___InputValue_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__InputValue", "isDeprecated", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__InputValue", "isDeprecated")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __InputValue.isDeprecated")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.InputValue).IsDeprecated(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNBoolean2bool", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___InputValue_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__InputValue", "name", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__InputValue", "name")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __InputValue.name")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.InputValue).Name, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___InputValue_type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__InputValue", "type", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__InputValue", "type")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __InputValue.type")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.InputValue).Type, nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Schema_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Schema", "description", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Schema", "description")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Schema.description")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Schema).Description(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Schema_directives(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Schema", "directives", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Schema", "directives")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Schema.directives")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Schema).Directives(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Schema_mutationType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Schema", "mutationType", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Schema", "mutationType")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Schema.mutationType")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Schema).MutationType(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Schema_queryType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Schema", "queryType", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Schema", "queryType")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Schema.queryType")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Schema).QueryType(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Schema_subscriptionType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Schema", "subscriptionType", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Schema", "subscriptionType")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Schema.subscriptionType")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Schema).SubscriptionType(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Schema_types(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Schema", "types", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Schema", "types")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Schema.types")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Schema).Types(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "description", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.description")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).Description(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_enumValues(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "enumValues", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.enumValues")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.(*introspection.Type).EnumValues(fc.Args["includeDeprecated"].(bool)), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_fields(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "fields", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.fields")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.(*introspection.Type).Fields(fc.Args["includeDeprecated"].(bool)), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_inputFields(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "inputFields", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.inputFields")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).InputFields(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_interfaces(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "interfaces", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.interfaces")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).Interfaces(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_isOneOf(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "isOneOf", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.isOneOf")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).IsOneOf(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOBoolean2bool", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_kind(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "kind", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.kind")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).Kind(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalN__TypeKind2string", sel, v)
+		},
+		true, true,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "name", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.name")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).Name(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_ofType(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "ofType", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.ofType")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).OfType(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_possibleTypes(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "possibleTypes", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.possibleTypes")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).PossibleTypes(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_fields_.gotpl
+// split_fields_.gotpl — field
 func __splitField___Type_specifiedByURL(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return ec.ResolveField(ctx, "__Type", "specifiedByURL", field, obj)
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		// fieldContext provider
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+			if !ok {
+				return nil, fmt.Errorf("no field context for __Type.specifiedByURL")
+			}
+			return handler(ctx, ec, field)
+		},
+		// resolver
+		func(ctx context.Context) (any, error) {
+			return obj.(*introspection.Type).SpecifiedByURL(), nil
+		},
+		// directives
+		nil,
+		// marshaler
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, v)
+		},
+		true, false,
+	)
 }
 
-// split_args_.gotpl
+// split_fieldcontext_.gotpl — fieldContext for __Directive.args
+func __splitFieldContext___Directive_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.description")
+				}
+				return handler(ctx, ec, field)
+			case "type":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "type")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.type")
+				}
+				return handler(ctx, ec, field)
+			case "defaultValue":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "defaultValue")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.defaultValue")
+				}
+				return handler(ctx, ec, field)
+			case "isDeprecated":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "isDeprecated")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.isDeprecated")
+				}
+				return handler(ctx, ec, field)
+			case "deprecationReason":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "deprecationReason")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.deprecationReason")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
+	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field___Directive_args_args")
+	if !ok {
+		return nil, fmt.Errorf("no args handler for %q", "field___Directive_args_args")
+	}
+	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Directive.description
+func __splitFieldContext___Directive_description(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Directive.isRepeatable
+func __splitFieldContext___Directive_isRepeatable(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Directive.locations
+func __splitFieldContext___Directive_locations(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type __DirectiveLocation does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Directive.name
+func __splitFieldContext___Directive_name(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __EnumValue.deprecationReason
+func __splitFieldContext___EnumValue_deprecationReason(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __EnumValue.description
+func __splitFieldContext___EnumValue_description(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __EnumValue.isDeprecated
+func __splitFieldContext___EnumValue_isDeprecated(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __EnumValue.name
+func __splitFieldContext___EnumValue_name(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Field.args
+func __splitFieldContext___Field_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.description")
+				}
+				return handler(ctx, ec, field)
+			case "type":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "type")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.type")
+				}
+				return handler(ctx, ec, field)
+			case "defaultValue":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "defaultValue")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.defaultValue")
+				}
+				return handler(ctx, ec, field)
+			case "isDeprecated":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "isDeprecated")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.isDeprecated")
+				}
+				return handler(ctx, ec, field)
+			case "deprecationReason":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "deprecationReason")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.deprecationReason")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
+	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field___Field_args_args")
+	if !ok {
+		return nil, fmt.Errorf("no args handler for %q", "field___Field_args_args")
+	}
+	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Field.deprecationReason
+func __splitFieldContext___Field_deprecationReason(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Field.description
+func __splitFieldContext___Field_description(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Field.isDeprecated
+func __splitFieldContext___Field_isDeprecated(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Field.name
+func __splitFieldContext___Field_name(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Field.type
+func __splitFieldContext___Field_type(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __InputValue.defaultValue
+func __splitFieldContext___InputValue_defaultValue(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __InputValue.deprecationReason
+func __splitFieldContext___InputValue_deprecationReason(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __InputValue.description
+func __splitFieldContext___InputValue_description(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __InputValue.isDeprecated
+func __splitFieldContext___InputValue_isDeprecated(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __InputValue.name
+func __splitFieldContext___InputValue_name(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __InputValue.type
+func __splitFieldContext___InputValue_type(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Schema.description
+func __splitFieldContext___Schema_description(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Schema.directives
+func __splitFieldContext___Schema_directives(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Directive", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Directive.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Directive", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Directive.description")
+				}
+				return handler(ctx, ec, field)
+			case "isRepeatable":
+				handler, ok := ec.LookupFieldContextHandler("__Directive", "isRepeatable")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Directive.isRepeatable")
+				}
+				return handler(ctx, ec, field)
+			case "locations":
+				handler, ok := ec.LookupFieldContextHandler("__Directive", "locations")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Directive.locations")
+				}
+				return handler(ctx, ec, field)
+			case "args":
+				handler, ok := ec.LookupFieldContextHandler("__Directive", "args")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Directive.args")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Directive", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Schema.mutationType
+func __splitFieldContext___Schema_mutationType(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Schema.queryType
+func __splitFieldContext___Schema_queryType(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Schema.subscriptionType
+func __splitFieldContext___Schema_subscriptionType(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Schema.types
+func __splitFieldContext___Schema_types(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.description
+func __splitFieldContext___Type_description(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.enumValues
+func __splitFieldContext___Type_enumValues(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__EnumValue", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __EnumValue.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__EnumValue", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __EnumValue.description")
+				}
+				return handler(ctx, ec, field)
+			case "isDeprecated":
+				handler, ok := ec.LookupFieldContextHandler("__EnumValue", "isDeprecated")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __EnumValue.isDeprecated")
+				}
+				return handler(ctx, ec, field)
+			case "deprecationReason":
+				handler, ok := ec.LookupFieldContextHandler("__EnumValue", "deprecationReason")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __EnumValue.deprecationReason")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __EnumValue", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
+	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field___Type_enumValues_args")
+	if !ok {
+		return nil, fmt.Errorf("no args handler for %q", "field___Type_enumValues_args")
+	}
+	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.fields
+func __splitFieldContext___Type_fields(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Field", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Field.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Field", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Field.description")
+				}
+				return handler(ctx, ec, field)
+			case "args":
+				handler, ok := ec.LookupFieldContextHandler("__Field", "args")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Field.args")
+				}
+				return handler(ctx, ec, field)
+			case "type":
+				handler, ok := ec.LookupFieldContextHandler("__Field", "type")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Field.type")
+				}
+				return handler(ctx, ec, field)
+			case "isDeprecated":
+				handler, ok := ec.LookupFieldContextHandler("__Field", "isDeprecated")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Field.isDeprecated")
+				}
+				return handler(ctx, ec, field)
+			case "deprecationReason":
+				handler, ok := ec.LookupFieldContextHandler("__Field", "deprecationReason")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Field.deprecationReason")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Field", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
+	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field___Type_fields_args")
+	if !ok {
+		return nil, fmt.Errorf("no args handler for %q", "field___Type_fields_args")
+	}
+	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.inputFields
+func __splitFieldContext___Type_inputFields(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.description")
+				}
+				return handler(ctx, ec, field)
+			case "type":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "type")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.type")
+				}
+				return handler(ctx, ec, field)
+			case "defaultValue":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "defaultValue")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.defaultValue")
+				}
+				return handler(ctx, ec, field)
+			case "isDeprecated":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "isDeprecated")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.isDeprecated")
+				}
+				return handler(ctx, ec, field)
+			case "deprecationReason":
+				handler, ok := ec.LookupFieldContextHandler("__InputValue", "deprecationReason")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __InputValue.deprecationReason")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.interfaces
+func __splitFieldContext___Type_interfaces(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.isOneOf
+func __splitFieldContext___Type_isOneOf(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.kind
+func __splitFieldContext___Type_kind(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type __TypeKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.name
+func __splitFieldContext___Type_name(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.ofType
+func __splitFieldContext___Type_ofType(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.possibleTypes
+func __splitFieldContext___Type_possibleTypes(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.kind")
+				}
+				return handler(ctx, ec, field)
+			case "name":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.name")
+				}
+				return handler(ctx, ec, field)
+			case "description":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.description")
+				}
+				return handler(ctx, ec, field)
+			case "specifiedByURL":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
+				}
+				return handler(ctx, ec, field)
+			case "fields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.fields")
+				}
+				return handler(ctx, ec, field)
+			case "interfaces":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
+				}
+				return handler(ctx, ec, field)
+			case "possibleTypes":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
+				}
+				return handler(ctx, ec, field)
+			case "enumValues":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
+				}
+				return handler(ctx, ec, field)
+			case "inputFields":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
+				}
+				return handler(ctx, ec, field)
+			case "ofType":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.ofType")
+				}
+				return handler(ctx, ec, field)
+			case "isOneOf":
+				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
+				if !ok {
+					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
+				}
+				return handler(ctx, ec, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+// split_fieldcontext_.gotpl — fieldContext for __Type.specifiedByURL
+func __splitFieldContext___Type_specifiedByURL(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+// split_args_.gotpl — args for __Directive.args
 func __splitArgs_field___Directive_args_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
-	return ec.ParseFieldArgs(ctx, "field___Directive_args_args", rawArgs)
+	args := map[string]any{}
+	var arg0 *bool
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+		data, err := ec.UnmarshalCodec(ctx, "unmarshalOBoolean2ᚖbool", tmp)
+		if err != nil {
+			return nil, err
+		}
+		if data != nil {
+			arg0 = data.(*bool)
+		}
+	}
+	args["includeDeprecated"] = arg0
+	return args, nil
 }
 
-// split_args_.gotpl
+// split_args_.gotpl — args for __Field.args
 func __splitArgs_field___Field_args_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
-	return ec.ParseFieldArgs(ctx, "field___Field_args_args", rawArgs)
+	args := map[string]any{}
+	var arg0 *bool
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+		data, err := ec.UnmarshalCodec(ctx, "unmarshalOBoolean2ᚖbool", tmp)
+		if err != nil {
+			return nil, err
+		}
+		if data != nil {
+			arg0 = data.(*bool)
+		}
+	}
+	args["includeDeprecated"] = arg0
+	return args, nil
 }
 
-// split_args_.gotpl
+// split_args_.gotpl — args for __Type.enumValues
 func __splitArgs_field___Type_enumValues_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
-	return ec.ParseFieldArgs(ctx, "field___Type_enumValues_args", rawArgs)
+	args := map[string]any{}
+	var arg0 bool
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+		data, err := ec.UnmarshalCodec(ctx, "unmarshalOBoolean2bool", tmp)
+		if err != nil {
+			return nil, err
+		}
+		arg0 = data.(bool)
+	}
+	args["includeDeprecated"] = arg0
+	return args, nil
 }
 
-// split_args_.gotpl
+// split_args_.gotpl — args for __Type.fields
 func __splitArgs_field___Type_fields_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
-	return ec.ParseFieldArgs(ctx, "field___Type_fields_args", rawArgs)
+	args := map[string]any{}
+	var arg0 bool
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+		data, err := ec.UnmarshalCodec(ctx, "unmarshalOBoolean2bool", tmp)
+		if err != nil {
+			return nil, err
+		}
+		arg0 = data.(bool)
+	}
+	args["includeDeprecated"] = arg0
+	return args, nil
 }
 
-// split_complexity_.gotpl
-func __splitComplexity___Directive_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Directive", "args", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Directive_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Directive", "description", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Directive_isRepeatable(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Directive", "isRepeatable", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Directive_locations(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Directive", "locations", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Directive_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Directive", "name", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___EnumValue_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__EnumValue", "deprecationReason", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___EnumValue_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__EnumValue", "description", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___EnumValue_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__EnumValue", "isDeprecated", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___EnumValue_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__EnumValue", "name", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Field_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Field", "args", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Field_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Field", "deprecationReason", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Field_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Field", "description", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Field_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Field", "isDeprecated", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Field_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Field", "name", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Field_type(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Field", "type", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___InputValue_defaultValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__InputValue", "defaultValue", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___InputValue_deprecationReason(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__InputValue", "deprecationReason", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___InputValue_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__InputValue", "description", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___InputValue_isDeprecated(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__InputValue", "isDeprecated", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___InputValue_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__InputValue", "name", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___InputValue_type(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__InputValue", "type", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Schema_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Schema", "description", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Schema_directives(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Schema", "directives", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Schema_mutationType(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Schema", "mutationType", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Schema_queryType(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Schema", "queryType", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Schema_subscriptionType(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Schema", "subscriptionType", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Schema_types(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Schema", "types", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_description(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "description", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_enumValues(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "enumValues", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_fields(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "fields", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_inputFields(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "inputFields", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_interfaces(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "interfaces", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_isOneOf(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "isOneOf", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_kind(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "kind", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_name(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "name", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_ofType(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "ofType", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_possibleTypes(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "possibleTypes", childComplexity, rawArgs)
-}
-
-// split_complexity_.gotpl
-func __splitComplexity___Type_specifiedByURL(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-	return ec.ResolveExecutableComplexity(ctx, "__Type", "specifiedByURL", childComplexity, rawArgs)
-}
-
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalNBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalNBoolean2bool", sel, value)
+	_ = sel
+	v := value.(bool)
+	res := graphql.MarshalBoolean(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalNString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalNString2string", sel, value)
+	_ = sel
+	v := value.(string)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
+func marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject(splitScope, "__Directive")
+	if !ok {
+		panic("missing object shard handler for __Directive")
+	}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	return handler(ctx, ec, sel, value)
+}
+
+// split_codecs_.gotpl — marshal
 func marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ", sel, value)
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
+func marshalN__DirectiveLocation2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	_ = sel
+	v := value.(string)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+// split_codecs_.gotpl — marshal
 func marshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalN__DirectiveLocation2ᚕstringᚄ", sel, value)
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__DirectiveLocation2string", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
+func marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject(splitScope, "__EnumValue")
+	if !ok {
+		panic("missing object shard handler for __EnumValue")
+	}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	return handler(ctx, ec, sel, value)
+}
+
+// split_codecs_.gotpl — marshal
+func marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject(splitScope, "__Field")
+	if !ok {
+		panic("missing object shard handler for __Field")
+	}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	return handler(ctx, ec, sel, value)
+}
+
+// split_codecs_.gotpl — marshal
+func marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject(splitScope, "__InputValue")
+	if !ok {
+		panic("missing object shard handler for __InputValue")
+	}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	return handler(ctx, ec, sel, value)
+}
+
+// split_codecs_.gotpl — marshal
 func marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", sel, value)
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
+func marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
+	if !ok {
+		panic("missing object shard handler for __Type")
+	}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	return handler(ctx, ec, sel, value)
+}
+
+// split_codecs_.gotpl — marshal
 func marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", sel, value)
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, value)
+	if value == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	if rv.Kind() == reflect.Struct {
+		ptr := reflect.New(rv.Type())
+		ptr.Elem().Set(rv)
+		value = ptr.Interface()
+	}
+	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
+	if !ok {
+		panic("missing object shard handler for __Type")
+	}
+	return handler(ctx, ec, sel, value)
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalN__TypeKind2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalN__TypeKind2string", sel, value)
+	_ = sel
+	v := value.(string)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalOBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalOBoolean2bool", sel, value)
+	_ = sel
+	_ = ctx
+	v := value.(bool)
+	res := graphql.MarshalBoolean(v)
+	return res
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalOBoolean2ᚖbool(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalOBoolean2ᚖbool", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return graphql.Null
+	}
+	if rv.Kind() == reflect.Struct {
+		ptr := reflect.New(rv.Type())
+		ptr.Elem().Set(rv)
+		value = ptr.Interface()
+	}
+	_ = sel
+	_ = ctx
+	v := value.(*bool)
+	res := graphql.MarshalBoolean(*v)
+	return res
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
+func marshalOString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	v := value.(string)
+	res := graphql.MarshalString(v)
+	return res
+}
+
+// split_codecs_.gotpl — marshal
 func marshalOString2ᚖstring(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return graphql.Null
+	}
+	if rv.Kind() == reflect.Struct {
+		ptr := reflect.New(rv.Type())
+		ptr.Elem().Set(rv)
+		value = ptr.Interface()
+	}
+	_ = sel
+	_ = ctx
+	v := value.(*string)
+	res := graphql.MarshalString(*v)
+	return res
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
+func marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
+	if !ok {
+		panic("missing object shard handler for __Type")
+	}
+	{
+		rv := reflect.ValueOf(value)
+		if rv.Kind() == reflect.Struct {
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			value = ptr.Interface()
+		}
+	}
+	return handler(ctx, ec, sel, value)
+}
+
+// split_codecs_.gotpl — marshal
 func marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	ret := make(graphql.Array, rv.Len())
+	var wg sync.WaitGroup
+	isLen1 := rv.Len() == 1
+	if !isLen1 {
+		wg.Add(rv.Len())
+	}
+	for i := 0; i < rv.Len(); i++ {
+		i := i
+		fc := &graphql.FieldContext{
+			Index: &i,
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.MarshalCodec(ctx, "marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, rv.Index(i).Interface())
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+	}
+	wg.Wait()
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+	return ret
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — marshal
 func marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	return ec.MarshalCodec(ctx, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, value)
+	if value == nil {
+		return graphql.Null
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return graphql.Null
+	}
+	if rv.Kind() == reflect.Struct {
+		ptr := reflect.New(rv.Type())
+		ptr.Elem().Set(rv)
+		value = ptr.Interface()
+	}
+	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
+	if !ok {
+		panic("missing object shard handler for __Type")
+	}
+	return handler(ctx, ec, sel, value)
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
 func unmarshalNBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalNBoolean2bool", value)
+	res, err := graphql.UnmarshalBoolean(value)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
 func unmarshalNString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalNString2string", value)
+	res, err := graphql.UnmarshalString(value)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
+func unmarshalN__DirectiveLocation2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := graphql.UnmarshalString(value)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+// split_codecs_.gotpl — unmarshal
 func unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalN__DirectiveLocation2ᚕstringᚄ", value)
+	vSlice := graphql.CoerceList(value)
+	if len(vSlice) == 0 {
+		return ([]string)(nil), nil
+	}
+	res := make([]any, len(vSlice))
+	for i := range vSlice {
+		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		elem, err := ec.UnmarshalCodec(elemCtx, "unmarshalN__DirectiveLocation2string", vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+		res[i] = elem
+	}
+	for _, e := range res {
+		if e != nil {
+			sliceType := reflect.SliceOf(reflect.TypeOf(e))
+			typedSlice := reflect.MakeSlice(sliceType, len(res), len(res))
+			for i, elem := range res {
+				if elem != nil {
+					typedSlice.Index(i).Set(reflect.ValueOf(elem))
+				}
+			}
+			return typedSlice.Interface(), nil
+		}
+	}
+	return ([]string)(nil), nil
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
 func unmarshalN__TypeKind2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalN__TypeKind2string", value)
+	res, err := graphql.UnmarshalString(value)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
 func unmarshalOBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalOBoolean2bool", value)
+	res, err := graphql.UnmarshalBoolean(value)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
 func unmarshalOBoolean2ᚖbool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalOBoolean2ᚖbool", value)
+	if value == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalBoolean(value)
+	if err != nil {
+		return nil, graphql.ErrorOnPath(ctx, err)
+	}
+	return &res, nil
 }
 
-// split_codecs_.gotpl
+// split_codecs_.gotpl — unmarshal
+func unmarshalOString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := graphql.UnmarshalString(value)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+// split_codecs_.gotpl — unmarshal
 func unmarshalOString2ᚖstring(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	return ec.UnmarshalCodec(ctx, "unmarshalOString2ᚖstring", value)
+	if value == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalString(value)
+	if err != nil {
+		return nil, graphql.ErrorOnPath(ctx, err)
+	}
+	return &res, nil
 }

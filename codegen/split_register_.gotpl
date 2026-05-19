@@ -41,15 +41,9 @@ func init() {
 {{- end }}
 {{- end }}
 {{- end }}
-{{- range $key := .Ownership.ComplexityOwnerKeys }}
-{{- if eq (index $.Ownership.ComplexityOwner $key) $.ShardName }}
-{{- with $field := index $.FieldByLookupKey $key }}
-	shardruntime.RegisterComplexity(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, childComplexity, rawArgs)
-	})
-{{- end }}
-{{- end }}
-{{- end }}
+{{- /* Complexity is computed in the root executableSchema.Complexity method
+       (it needs ec.complexity, a root-package type), so no per-shard
+       complexity handlers are registered. */}}
 {{- range $key := .Ownership.CodecOwnerKeys }}
 {{- if eq (index $.Ownership.CodecOwner $key) $.ShardName }}
 {{- with $type := index $.CodecByFunc $key }}
