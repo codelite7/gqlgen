@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,6 +29,50 @@ func isNil(input any) bool {
 }
 
 type ckey string
+
+type callStore struct {
+	mu    sync.Mutex
+	calls map[string][]directiveCall
+}
+
+func (s *callStore) getCalls(directiveName string) []directiveCall {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.calls == nil {
+		s.calls = make(map[string][]directiveCall)
+	}
+
+	return s.calls[directiveName]
+}
+
+func (s *callStore) addCall(directiveName string, call directiveCall) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.calls == nil {
+		s.calls = make(map[string][]directiveCall)
+	}
+
+	s.calls[directiveName] = append(s.calls[directiveName], call)
+}
+
+func (s *callStore) reset(directiveName string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.calls == nil {
+		s.calls = make(map[string][]directiveCall)
+	}
+
+	s.calls[directiveName] = nil
+}
+
+type directiveCall struct {
+	TypeName string
+	Value    any
+	Args     map[string]any
+}
 
 func TestDirectives(t *testing.T) {
 	resolvers := &Stub{}
@@ -57,6 +102,14 @@ func TestDirectives(t *testing.T) {
 	}
 
 	resolvers.QueryResolver.DirectiveInputType = func(ctx context.Context, arg InnerInput) (i *string, e error) {
+		return &ok, nil
+	}
+
+	resolvers.QueryResolver.DirectiveInputOuter = func(ctx context.Context, arg OuterWrapperInput) (i *string, e error) {
+		return &ok, nil
+	}
+
+	resolvers.QueryResolver.DirectiveInputWithArgs = func(ctx context.Context, arg InputDirectivesWithArgs) (i *string, e error) {
 		return &ok, nil
 	}
 
@@ -111,6 +164,9 @@ func TestDirectives(t *testing.T) {
 	resolvers.SubscriptionResolver.DirectiveUnimplemented = func(ctx context.Context) (<-chan *string, error) {
 		return okchan()
 	}
+
+	callStore := callStore{}
+
 	srv := handler.New(NewExecutableSchema(Config{
 		Resolvers: resolvers,
 		Directives: DirectiveRoot{
@@ -176,8 +232,20 @@ func TestDirectives(t *testing.T) {
 			Custom: func(ctx context.Context, obj any, next graphql.Resolver) (any, error) {
 				return next(ctx)
 			},
+			FieldOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				return next(context.WithValue(ctx, ckey("request_id"), &reason))
+			},
 			Logged: func(ctx context.Context, obj any, next graphql.Resolver, id string) (any, error) {
 				return next(context.WithValue(ctx, ckey("request_id"), &id))
+			},
+			MutationOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				return next(context.WithValue(ctx, ckey("request_id"), &reason))
+			},
+			QueryOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				return next(context.WithValue(ctx, ckey("request_id"), &reason))
+			},
+			SubscriptionOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				return next(context.WithValue(ctx, ckey("request_id"), &reason))
 			},
 			ToNull: func(ctx context.Context, obj any, next graphql.Resolver) (any, error) {
 				return nil, nil
@@ -204,7 +272,26 @@ func TestDirectives(t *testing.T) {
 				return next(ctx)
 			},
 			Directive3: func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error) {
-				return next(ctx)
+				call := directiveCall{}
+				typedObj, err := next(ctx)
+				if typedObj != nil {
+					call.TypeName = (reflect.TypeOf(typedObj).String())
+					call.Value = typedObj
+				}
+				callStore.addCall("Directive3", call)
+				return typedObj, err
+			},
+			Directive3WithArg: func(ctx context.Context, obj any, next graphql.Resolver, inputNamespace string) (res any, err error) {
+				call := directiveCall{
+					Args: map[string]any{"inputNamespace": inputNamespace},
+				}
+				typedObj, err := next(ctx)
+				if typedObj != nil {
+					call.TypeName = reflect.TypeOf(typedObj).String()
+					call.Value = typedObj
+				}
+				callStore.addCall("Directive3WithArg", call)
+				return typedObj, err
 			},
 			Order1: func(ctx context.Context, obj any, next graphql.Resolver, location string) (res any, err error) {
 				order := []string{location}
@@ -322,7 +409,11 @@ func TestDirectives(t *testing.T) {
 
 			err := c.Post(`query { directiveFieldDef(ret: "") }`, &resp)
 
-			require.EqualError(t, err, `[{"message":"not valid","path":["directiveFieldDef"]}]`)
+			require.EqualError(
+				t,
+				err,
+				`[{"message":"not valid","path":["directiveFieldDef"],"locations":[{"line":1,"column":9}]}]`,
+			)
 		})
 
 		t.Run("has 2 directives", func(t *testing.T) {
@@ -345,7 +436,7 @@ func TestDirectives(t *testing.T) {
 			require.EqualError(
 				t,
 				err,
-				`[{"message":"directive unimplemented is not implemented","path":["directiveUnimplemented"]}]`,
+				`[{"message":"directive unimplemented is not implemented","path":["directiveUnimplemented"],"locations":[{"line":1,"column":9}]}]`,
 			)
 		})
 
@@ -377,6 +468,15 @@ func TestDirectives(t *testing.T) {
 			c.MustPost(`query { directiveField }`, &resp)
 
 			require.Nil(t, resp.DirectiveField)
+		})
+		t.Run("directive defined in a separate file with no type definitions", func(t *testing.T) {
+			var resp struct {
+				DirectiveField string
+			}
+
+			c.MustPost(`query { directiveField@fieldOnly(reason:"test_reason") }`, &resp)
+
+			require.Equal(t, "test_reason", resp.DirectiveField)
 		})
 	})
 	t.Run("input field directives", func(t *testing.T) {
@@ -467,6 +567,46 @@ func TestDirectives(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, "Ok", *resp.DirectiveInputType)
 		})
+		t.Run("directives run as expected for X times", func(t *testing.T) {
+			callStore.reset("Directive3")
+
+			var resp struct {
+				DirectiveInputOuter *string
+			}
+
+			query := `query { directiveInputOuter(arg: {inner: {text:"test", inner:{message:"msg"}}}) }`
+			err := c.Post(query, &resp)
+			require.NoError(t, err)
+
+			calls := callStore.getCalls("Directive3")
+			t.Logf("directive3 was called %d time(s)", len(calls))
+
+			require.Len(t, calls, 1,
+				"@directive3 should be called exactly once, but was called %d times", len(calls))
+			require.Equal(t, "followschema.InputDirectives", calls[0].TypeName,
+				"@directive3 should receive type InputDirectives, but received %s",
+				calls[0].TypeName)
+			require.Equal(t, "test", calls[0].Value.(InputDirectives).Text)
+		})
+		t.Run("INPUT_OBJECT directive with args passes arguments", func(t *testing.T) {
+			callStore.reset("Directive3WithArg")
+
+			var resp struct {
+				DirectiveInputWithArgs *string
+			}
+
+			query := `query { directiveInputWithArgs(arg: {text:"test"}) }`
+			err := c.Post(query, &resp)
+			require.NoError(t, err)
+
+			calls := callStore.getCalls("Directive3WithArg")
+			require.Len(t, calls, 1,
+				"@directive3WithArg should be called exactly once")
+			require.Equal(t, "followschema.InputDirectivesWithArgs", calls[0].TypeName)
+			require.Equal(t, "test", calls[0].Value.(InputDirectivesWithArgs).Text)
+			require.Equal(t, "InputDirectivesWithArgs", calls[0].Args["inputNamespace"],
+				"inputNamespace argument should be passed to the directive")
+		})
 	})
 	t.Run("object field directives", func(t *testing.T) {
 		t.Run("when function success", func(t *testing.T) {
@@ -499,6 +639,53 @@ func TestDirectives(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Nil(t, resp.DirectiveObjectWithCustomGoModel.NullableText)
+		})
+	})
+
+	t.Run("operation directives from separate file with no type definitions", func(t *testing.T) {
+		t.Run("query directive", func(t *testing.T) {
+			var resp struct {
+				DirectiveField string
+			}
+
+			c.MustPost(
+				`query @queryOnly(reason:"query_test") { directiveField@logged(id:"id1") }`,
+				&resp,
+			)
+
+			require.Equal(t, "id1", resp.DirectiveField)
+		})
+		t.Run("mutation directive", func(t *testing.T) {
+			resolvers.MutationResolver.UpdateSomething = func(ctx context.Context, input SpecialInput) (string, error) {
+				if s, ok := ctx.Value(ckey("request_id")).(*string); ok {
+					return *s, nil
+				}
+				return "no directive", nil
+			}
+
+			var resp struct {
+				UpdateSomething string
+			}
+
+			c.MustPost(
+				`mutation @mutationOnly(reason:"mutation_test") { updateSomething(input:{nesting:{field:"a@b.c"}}) }`,
+				&resp,
+			)
+
+			require.Equal(t, "mutation_test", resp.UpdateSomething)
+		})
+		t.Run("subscription directive", func(t *testing.T) {
+			var resp struct {
+				DirectiveArg *string
+			}
+
+			err := c.WebsocketOnce(
+				`subscription @subscriptionOnly(reason:"sub_test") { directiveArg(arg: "test") }`,
+				&resp,
+			)
+
+			require.NoError(t, err)
+			require.Equal(t, "Ok", *resp.DirectiveArg)
 		})
 	})
 

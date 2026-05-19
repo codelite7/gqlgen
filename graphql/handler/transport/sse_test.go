@@ -78,6 +78,32 @@ func TestSSE(t *testing.T) {
 		)
 	})
 
+	t.Run("fail on null body", func(t *testing.T) {
+		h := initialize()
+		req := createHTTPTestRequest("null")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		assert.Equal(t, 200, w.Code, "Request return wrong status -> %d", w.Code)
+		assert.Equal(t, "text/event-stream", w.Header().Get("Content-Type"))
+
+		br := bufio.NewReader(w.Body)
+
+		assert.Equal(t, ":\n", readLine(br))
+		assert.Equal(t, "\n", readLine(br))
+		assert.Equal(t, "event: next\n", readLine(br))
+		assert.Equal(
+			t,
+			`data: {"errors":[{"message":"no operation provided","extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}],"data":null}`+"\n",
+			readLine(br),
+		)
+		assert.Equal(t, "\n", readLine(br))
+		assert.Equal(t, "event: complete\n", readLine(br))
+		assert.Equal(t, "\n", readLine(br))
+
+		_, err := br.ReadByte()
+		assert.Equal(t, err, io.EOF)
+	})
+
 	t.Run("decode failure", func(t *testing.T) {
 		h := initialize()
 		req := createHTTPTestRequest("notjson")
@@ -124,11 +150,9 @@ func TestSSE(t *testing.T) {
 		defer srv.Close()
 
 		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			handler.SendNextSubscriptionMessage()
-		}()
+		})
 
 		client := &http.Client{}
 		req := createHTTPRequest(srv.URL, `{"query":"subscription { name }"}`)
@@ -150,21 +174,17 @@ func TestSSE(t *testing.T) {
 		assert.Equal(t, "data: {\"data\":{\"name\":\"test\"}}\n", readLine(br))
 		assert.Equal(t, "\n", readLine(br))
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			handler.SendNextSubscriptionMessage()
-		}()
+		})
 
 		assert.Equal(t, "event: next\n", readLine(br))
 		assert.Equal(t, "data: {\"data\":{\"name\":\"test\"}}\n", readLine(br))
 		assert.Equal(t, "\n", readLine(br))
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			handler.SendCompleteSubscriptionMessage()
-		}()
+		})
 
 		assert.Equal(t, "event: complete\n", readLine(br))
 		assert.Equal(t, "\n", readLine(br))
@@ -180,12 +200,10 @@ func TestSSE(t *testing.T) {
 		defer srv.Close()
 
 		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			// Wait for ping interval to trigger
 			time.Sleep(pingInterval + time.Millisecond*100)
-		}()
+		})
 
 		client := &http.Client{}
 		req := createHTTPRequest(srv.URL, `{"query":"subscription { name }"}`)
@@ -206,11 +224,9 @@ func TestSSE(t *testing.T) {
 		assert.Equal(t, ": ping\n", readLine(br))
 		assert.Equal(t, "\n", readLine(br))
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			handler.SendCompleteSubscriptionMessage()
-		}()
+		})
 
 		assert.Equal(t, "event: complete\n", readLine(br))
 		assert.Equal(t, "\n", readLine(br))

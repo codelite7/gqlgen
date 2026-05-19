@@ -161,7 +161,8 @@ func (b *Binder) FindObject(pkgName, typeName string) (types.Object, error) {
 }
 
 func indexDefs(pkg *packages.Package) map[string]types.Object {
-	res := make(map[string]types.Object)
+	// Pre-allocate with capacity to avoid map rehashing
+	res := make(map[string]types.Object, len(pkg.TypesInfo.Defs))
 
 	scope := pkg.Types.Scope()
 	for astNode, def := range pkg.TypesInfo.Defs {
@@ -331,6 +332,24 @@ func (ref *TypeReference) UnmarshalFunc() string {
 
 func (ref *TypeReference) UnmarshalFuncFunctionSyntax() string {
 	return ref.UnmarshalFunc() + "F"
+}
+
+// EnumMarshalVar returns the generated enum marshal variable name for the
+// given generation mode.
+func (ref *TypeReference) EnumMarshalVar(functionSyntax bool) string {
+	if functionSyntax {
+		return ref.MarshalFuncFunctionSyntax()
+	}
+	return ref.MarshalFunc()
+}
+
+// EnumUnmarshalVar returns the generated enum unmarshal variable name for the
+// given generation mode.
+func (ref *TypeReference) EnumUnmarshalVar(functionSyntax bool) string {
+	if functionSyntax {
+		return ref.UnmarshalFuncFunctionSyntax()
+	}
+	return ref.UnmarshalFunc()
 }
 
 func (ref *TypeReference) IsTargetNilable() bool {
@@ -672,8 +691,8 @@ func hasMethod(it types.Type, name string) bool {
 		return false
 	}
 
-	for i := 0; i < namedType.NumMethods(); i++ {
-		if namedType.Method(i).Name() == name {
+	for method := range namedType.Methods() {
+		if method.Name() == name {
 			return true
 		}
 	}

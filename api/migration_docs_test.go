@@ -26,7 +26,12 @@ func TestMigrationDocsExamplesStillValid(t *testing.T) {
 
 	for _, snippet := range requiredSnippets {
 		t.Run(snippet, func(t *testing.T) {
-			require.True(t, strings.Contains(readme, snippet), "README migration section missing snippet: %q", snippet)
+			require.True(
+				t,
+				strings.Contains(readme, snippet),
+				"README migration section missing snippet: %q",
+				snippet,
+			)
 		})
 	}
 }

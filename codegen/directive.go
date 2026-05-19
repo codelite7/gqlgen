@@ -186,12 +186,11 @@ func (d *Directive) Declaration() string {
 
 	var resSb173 strings.Builder
 	for _, arg := range d.Args {
-		resSb173.WriteString(
-			fmt.Sprintf(
-				", %s %s",
-				templates.ToGoPrivate(arg.Name),
-				templates.CurrentImports.LookupType(arg.TypeReference.GO),
-			),
+		fmt.Fprintf(
+			&resSb173,
+			", %s %s",
+			templates.ToGoPrivate(arg.Name),
+			templates.CurrentImports.LookupType(arg.TypeReference.GO),
 		)
 	}
 	res += resSb173.String()
@@ -209,7 +208,7 @@ func (d *Directive) CallPath() string {
 		return "builtInDirective" + d.CallName()
 	}
 
-	return "ec.directives." + d.CallName()
+	return "ec.Directives." + d.CallName()
 }
 
 func (d *Directive) FunctionImpl() string {

@@ -32,13 +32,6 @@ type ObjectExecutionContext interface {
 		argsKey string,
 		rawArgs map[string]any,
 	) (map[string]any, error)
-	ResolveExecutableComplexity(
-		ctx context.Context,
-		objectName string,
-		fieldName string,
-		childComplexity int,
-		rawArgs map[string]any,
-	) (int, bool)
 	ResolveField(
 		ctx context.Context,
 		objectName string,
@@ -106,31 +99,31 @@ type ResolverInvokerHandler func(ctx context.Context, ec ObjectExecutionContext,
 type ArgsHandler func(ctx context.Context, ec ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error)
 
 var (
-	mu                    sync.RWMutex
-	objectByScope         = map[string]map[string]ObjectHandler{}
-	streamByScope         = map[string]map[string]StreamObjectHandler{}
-	fieldByScope              = map[string]map[string]map[string]FieldHandler{}
-	streamFieldByScope        = map[string]map[string]map[string]StreamFieldHandler{}
-	complexityByScope     = map[string]map[string]map[string]ComplexityHandler{}
-	inputUnmarshalByScope = map[string]map[string]any{}
-	codecMarshalByScope      = map[string]map[string]CodecMarshalHandler{}
-	codecUnmarshalByScope    = map[string]map[string]CodecUnmarshalHandler{}
-	fieldContextByScope      = map[string]map[string]FieldContextHandler{}
-	resolverInvokerByScope   = map[string]map[string]ResolverInvokerHandler{}
-	argsByScope              = map[string]map[string]ArgsHandler{}
+	mu                     sync.RWMutex
+	objectByScope          = map[string]map[string]ObjectHandler{}
+	streamByScope          = map[string]map[string]StreamObjectHandler{}
+	fieldByScope           = map[string]map[string]map[string]FieldHandler{}
+	streamFieldByScope     = map[string]map[string]map[string]StreamFieldHandler{}
+	complexityByScope      = map[string]map[string]map[string]ComplexityHandler{}
+	inputUnmarshalByScope  = map[string]map[string]any{}
+	codecMarshalByScope    = map[string]map[string]CodecMarshalHandler{}
+	codecUnmarshalByScope  = map[string]map[string]CodecUnmarshalHandler{}
+	fieldContextByScope    = map[string]map[string]FieldContextHandler{}
+	resolverInvokerByScope = map[string]map[string]ResolverInvokerHandler{}
+	argsByScope            = map[string]map[string]ArgsHandler{}
 
 	objectLookupSnapshot           atomic.Value
 	streamObjectLookupSnapshot     atomic.Value
-	fieldLookupSnapshot                atomic.Value
-	fieldLookupSnapshotDirty           atomic.Bool
-	streamFieldLookupSnapshot          atomic.Value
+	fieldLookupSnapshot            atomic.Value
+	fieldLookupSnapshotDirty       atomic.Bool
+	streamFieldLookupSnapshot      atomic.Value
 	complexityLookupSnapshot       atomic.Value
 	inputUnmarshalMapByScopeLookup atomic.Value
-	codecMarshalLookupSnapshot         atomic.Value
-	codecUnmarshalLookupSnapshot       atomic.Value
-	fieldContextLookupSnapshot         atomic.Value
-	resolverInvokerLookupSnapshot      atomic.Value
-	argsLookupSnapshot                 atomic.Value
+	codecMarshalLookupSnapshot     atomic.Value
+	codecUnmarshalLookupSnapshot   atomic.Value
+	fieldContextLookupSnapshot     atomic.Value
+	resolverInvokerLookupSnapshot  atomic.Value
+	argsLookupSnapshot             atomic.Value
 )
 
 var emptyInputUnmarshalMap = map[reflect.Type]reflect.Value{}
@@ -177,15 +170,17 @@ func cloneComplexityHandlers(src map[string]ComplexityHandler) map[string]Comple
 	return maps.Clone(src)
 }
 
-func cloneInputUnmarshalMapByScope(src map[string]map[reflect.Type]reflect.Value) map[string]map[reflect.Type]reflect.Value {
+func cloneInputUnmarshalMapByScope(
+	src map[string]map[reflect.Type]reflect.Value,
+) map[string]map[reflect.Type]reflect.Value {
 	clone := make(map[string]map[reflect.Type]reflect.Value, len(src))
-	for scope, handlers := range src {
-		clone[scope] = handlers
-	}
+	maps.Copy(clone, src)
 	return clone
 }
 
-func cloneInputUnmarshalHandlers(src map[reflect.Type]reflect.Value) map[reflect.Type]reflect.Value {
+func cloneInputUnmarshalHandlers(
+	src map[reflect.Type]reflect.Value,
+) map[reflect.Type]reflect.Value {
 	return maps.Clone(src)
 }
 
@@ -193,7 +188,9 @@ func cloneCodecMarshalHandlers(src map[string]CodecMarshalHandler) map[string]Co
 	return maps.Clone(src)
 }
 
-func cloneCodecUnmarshalHandlers(src map[string]CodecUnmarshalHandler) map[string]CodecUnmarshalHandler {
+func cloneCodecUnmarshalHandlers(
+	src map[string]CodecUnmarshalHandler,
+) map[string]CodecUnmarshalHandler {
 	return maps.Clone(src)
 }
 
@@ -353,7 +350,9 @@ func RegisterField(scope, objectName, fieldName string, handler FieldHandler) {
 	}
 
 	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate field shard handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	objectHandlers[fieldName] = handler
 
@@ -412,7 +411,9 @@ func RegisterStreamField(scope, objectName, fieldName string, handler StreamFiel
 	}
 
 	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate stream field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate stream field shard handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	objectHandlers[fieldName] = handler
 
@@ -443,7 +444,9 @@ func RegisterComplexity(scope, objectName, fieldName string, handler ComplexityH
 	}
 
 	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate complexity shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate complexity shard handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	objectHandlers[fieldName] = handler
 
@@ -520,7 +523,7 @@ func ListInputUnmarshalers(scope string, ec ObjectExecutionContext) []any {
 
 		// Wrap 3-arg functions (ctx, ec, obj) into 2-arg functions (ctx, obj)
 		// to maintain compatibility with BuildUnmarshalerMap/UnmarshalInputFromContext.
-		if fnType.NumIn() == 3 {
+		if fnType.Kind() == reflect.Func && fnType.NumIn() == 3 {
 			wrapperType := reflect.FuncOf(
 				[]reflect.Type{fnType.In(0), fnType.In(2)},
 				[]reflect.Type{fnType.Out(0), fnType.Out(1)},
@@ -617,7 +620,9 @@ func RegisterFieldContext(scope, objectName, fieldName string, handler FieldCont
 	}
 
 	if _, exists := scopeHandlers[key]; exists {
-		panic("duplicate field context handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate field context handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	scopeHandlers[key] = handler
 
@@ -633,7 +638,9 @@ func LookupFieldContext(scope, objectName, fieldName string) (FieldContextHandle
 
 // --- ResolverInvoker registry ---
 
-func cloneResolverInvokerHandlers(src map[string]ResolverInvokerHandler) map[string]ResolverInvokerHandler {
+func cloneResolverInvokerHandlers(
+	src map[string]ResolverInvokerHandler,
+) map[string]ResolverInvokerHandler {
 	return maps.Clone(src)
 }
 
@@ -660,7 +667,9 @@ func RegisterResolverInvoker(scope, objectName, fieldName string, handler Resolv
 	}
 
 	if _, exists := scopeHandlers[key]; exists {
-		panic("duplicate resolver invoker handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate resolver invoker handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	scopeHandlers[key] = handler
 

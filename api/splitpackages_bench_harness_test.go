@@ -40,7 +40,10 @@ func TestSplitPackagesBenchHarnessRelativeWorkDir(t *testing.T) {
 
 	srcDir := filepath.Join(wd, "testdata", "splitpackages")
 	baseDir := filepath.Join(wd, "testdata")
-	workDir, err := os.MkdirTemp(baseDir, "relative-splitpackages-")
+	// t.TempDir() can't be used: this test exercises a work dir relative to
+	// baseDir inside the module; an OS temp dir would be neither relative nor
+	// within the module.
+	workDir, err := os.MkdirTemp(baseDir, "relative-splitpackages-") //nolint:usetesting
 	require.NoError(t, err)
 	workDirName := filepath.Base(workDir)
 	require.NoError(t, copySplitBenchFixture(srcDir, workDir))
@@ -67,7 +70,10 @@ func TestSplitPackagesBenchHarnessUsesExecOutputDirForStats(t *testing.T) {
 	require.NoError(t, err)
 
 	srcDir := filepath.Join(wd, "testdata", "splitpackages")
-	workDir, err := os.MkdirTemp(filepath.Join(wd, "testdata"), "custom-output-")
+	testdataDir := filepath.Join(wd, "testdata")
+	// t.TempDir() can't be used: the work dir must live inside the module's
+	// testdata so generated split-packages code resolves its import path.
+	workDir, err := os.MkdirTemp(testdataDir, "custom-output-") //nolint:usetesting
 	require.NoError(t, err)
 	require.NoError(t, copySplitBenchFixture(srcDir, workDir))
 
@@ -75,7 +81,12 @@ func TestSplitPackagesBenchHarnessUsesExecOutputDirForStats(t *testing.T) {
 	configContents, err := os.ReadFile(configPath)
 	require.NoError(t, err)
 
-	updatedConfig := strings.Replace(string(configContents), "filename: graph/generated.go", "filename: generated/generated.go", 1)
+	updatedConfig := strings.Replace(
+		string(configContents),
+		"filename: graph/generated.go",
+		"filename: generated/generated.go",
+		1,
+	)
 	require.NotEqual(t, string(configContents), updatedConfig)
 	require.NoError(t, os.WriteFile(configPath, []byte(updatedConfig), 0o644))
 
@@ -101,17 +112,32 @@ type splitBenchThreshold struct {
 	minGeneratedBytes int64
 }
 
-func evaluateSplitBenchThreshold(summary SplitPackagesBenchSummary, threshold splitBenchThreshold) error {
+func evaluateSplitBenchThreshold(
+	summary SplitPackagesBenchSummary,
+	threshold splitBenchThreshold,
+) error {
 	if summary.DurationMillis > threshold.maxDurationMillis {
-		return fmt.Errorf("duration_ms %d exceeds max %d", summary.DurationMillis, threshold.maxDurationMillis)
+		return fmt.Errorf(
+			"duration_ms %d exceeds max %d",
+			summary.DurationMillis,
+			threshold.maxDurationMillis,
+		)
 	}
 
 	if summary.GeneratedFileCount < threshold.minGeneratedFiles {
-		return fmt.Errorf("generated_file_count %d below min %d", summary.GeneratedFileCount, threshold.minGeneratedFiles)
+		return fmt.Errorf(
+			"generated_file_count %d below min %d",
+			summary.GeneratedFileCount,
+			threshold.minGeneratedFiles,
+		)
 	}
 
 	if summary.GeneratedBytes < threshold.minGeneratedBytes {
-		return fmt.Errorf("generated_bytes %d below min %d", summary.GeneratedBytes, threshold.minGeneratedBytes)
+		return fmt.Errorf(
+			"generated_bytes %d below min %d",
+			summary.GeneratedBytes,
+			threshold.minGeneratedBytes,
+		)
 	}
 
 	return nil

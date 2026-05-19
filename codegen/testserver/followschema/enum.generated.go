@@ -29,6 +29,10 @@ import (
 
 func (ec *executionContext) unmarshalInputInputWithEnumValue(ctx context.Context, obj any) (InputWithEnumValue, error) {
 	var it InputWithEnumValue
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -50,7 +54,6 @@ func (ec *executionContext) unmarshalInputInputWithEnumValue(ctx context.Context
 			it.Enum = data
 		}
 	}
-
 	return it, nil
 }
 

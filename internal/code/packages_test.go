@@ -51,7 +51,11 @@ func TestPackages(t *testing.T) {
 
 	t.Run("custom build flags preserve embedded spaces", func(t *testing.T) {
 		p := NewPackages(WithBuildFlags("-gcflags=github.com/MatthewsREIS/gemini/...=-N -l"))
-		require.Equal(t, []string{"-gcflags=github.com/MatthewsREIS/gemini/...=-N -l"}, p.buildFlags)
+		require.Equal(
+			t,
+			[]string{"-gcflags=github.com/MatthewsREIS/gemini/...=-N -l"},
+			p.buildFlags,
+		)
 	})
 
 	t.Run("build tags and custom flags coexist", func(t *testing.T) {

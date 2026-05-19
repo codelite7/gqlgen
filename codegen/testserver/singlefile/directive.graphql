@@ -7,10 +7,15 @@ directive @populate(value: String!) on ARGUMENT_DEFINITION
 directive @directive1 on FIELD_DEFINITION
 directive @directive2 on FIELD_DEFINITION
 directive @directive3 on INPUT_OBJECT
+directive @directive3WithArg(inputNamespace: String!) on INPUT_OBJECT
 directive @unimplemented on FIELD_DEFINITION
 directive @order1(location: String!) repeatable on FIELD_DEFINITION | OBJECT
 directive @order2(location: String!) on OBJECT
 directive @noop on ARGUMENT_DEFINITION
+directive @fieldOnly(reason: String!) on FIELD
+directive @queryOnly(reason: String!) on QUERY
+directive @mutationOnly(reason: String!) on MUTATION
+directive @subscriptionOnly(reason: String!) on SUBSCRIPTION
 
 extend type Query {
     directiveArg(arg: String! @length(min:1, max: 255, message: "invalid length")): String
@@ -21,6 +26,8 @@ extend type Query {
     directiveInputNullable(arg: InputDirectives): String
     directiveInput(arg: InputDirectives!): String
     directiveInputType(arg: InnerInput! @custom): String
+    directiveInputOuter(arg: OuterWrapperInput!): String
+    directiveInputWithArgs(arg: InputDirectivesWithArgs!): String
     directiveObject: ObjectDirectives @order1(location: "Query_field")
     directiveObjectWithCustomGoModel: ObjectDirectivesWithCustomGoModel
     directiveFieldDef(ret: String!): String! @length(min: 1, message: "not valid")
@@ -36,6 +43,10 @@ extend type Subscription {
     directiveUnimplemented: String @unimplemented
 }
 
+input OuterWrapperInput {
+    inner: InputDirectives!
+}
+
 input InputDirectives @directive3 {
     text: String! @length(min: 0, max: 7, message: "not valid")
     nullableText: String @toNull
@@ -46,6 +57,10 @@ input InputDirectives @directive3 {
 
 input InnerDirectives {
     message: String! @length(min: 1, message: "not valid")
+}
+
+input InputDirectivesWithArgs @directive3WithArg(inputNamespace: "InputDirectivesWithArgs") {
+    text: String!
 }
 
 type ObjectDirectives @order1(location: "order1_1") @order1(location: "order1_2") @order2(location: "order2_1") {

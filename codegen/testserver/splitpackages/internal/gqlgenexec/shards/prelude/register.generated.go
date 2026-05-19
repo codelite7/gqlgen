@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func init() {
@@ -124,118 +125,145 @@ func init() {
 	shardruntime.RegisterField(splitScope, "__Type", "specifiedByURL", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 		return __splitField___Type_specifiedByURL(ctx, ec, field, obj)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Directive", "args", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Directive_args(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterFieldContext(splitScope, "__Directive", "args", __splitFieldContext___Directive_args)
+	shardruntime.RegisterFieldContext(splitScope, "__Directive", "description", __splitFieldContext___Directive_description)
+	shardruntime.RegisterFieldContext(splitScope, "__Directive", "isRepeatable", __splitFieldContext___Directive_isRepeatable)
+	shardruntime.RegisterFieldContext(splitScope, "__Directive", "locations", __splitFieldContext___Directive_locations)
+	shardruntime.RegisterFieldContext(splitScope, "__Directive", "name", __splitFieldContext___Directive_name)
+	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "deprecationReason", __splitFieldContext___EnumValue_deprecationReason)
+	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "description", __splitFieldContext___EnumValue_description)
+	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "isDeprecated", __splitFieldContext___EnumValue_isDeprecated)
+	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "name", __splitFieldContext___EnumValue_name)
+	shardruntime.RegisterFieldContext(splitScope, "__Field", "args", __splitFieldContext___Field_args)
+	shardruntime.RegisterFieldContext(splitScope, "__Field", "deprecationReason", __splitFieldContext___Field_deprecationReason)
+	shardruntime.RegisterFieldContext(splitScope, "__Field", "description", __splitFieldContext___Field_description)
+	shardruntime.RegisterFieldContext(splitScope, "__Field", "isDeprecated", __splitFieldContext___Field_isDeprecated)
+	shardruntime.RegisterFieldContext(splitScope, "__Field", "name", __splitFieldContext___Field_name)
+	shardruntime.RegisterFieldContext(splitScope, "__Field", "type", __splitFieldContext___Field_type)
+	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "defaultValue", __splitFieldContext___InputValue_defaultValue)
+	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "deprecationReason", __splitFieldContext___InputValue_deprecationReason)
+	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "description", __splitFieldContext___InputValue_description)
+	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "isDeprecated", __splitFieldContext___InputValue_isDeprecated)
+	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "name", __splitFieldContext___InputValue_name)
+	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "type", __splitFieldContext___InputValue_type)
+	shardruntime.RegisterFieldContext(splitScope, "__Schema", "description", __splitFieldContext___Schema_description)
+	shardruntime.RegisterFieldContext(splitScope, "__Schema", "directives", __splitFieldContext___Schema_directives)
+	shardruntime.RegisterFieldContext(splitScope, "__Schema", "mutationType", __splitFieldContext___Schema_mutationType)
+	shardruntime.RegisterFieldContext(splitScope, "__Schema", "queryType", __splitFieldContext___Schema_queryType)
+	shardruntime.RegisterFieldContext(splitScope, "__Schema", "subscriptionType", __splitFieldContext___Schema_subscriptionType)
+	shardruntime.RegisterFieldContext(splitScope, "__Schema", "types", __splitFieldContext___Schema_types)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "description", __splitFieldContext___Type_description)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "enumValues", __splitFieldContext___Type_enumValues)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "fields", __splitFieldContext___Type_fields)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "inputFields", __splitFieldContext___Type_inputFields)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "interfaces", __splitFieldContext___Type_interfaces)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "isOneOf", __splitFieldContext___Type_isOneOf)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "kind", __splitFieldContext___Type_kind)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "name", __splitFieldContext___Type_name)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "ofType", __splitFieldContext___Type_ofType)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "possibleTypes", __splitFieldContext___Type_possibleTypes)
+	shardruntime.RegisterFieldContext(splitScope, "__Type", "specifiedByURL", __splitFieldContext___Type_specifiedByURL)
+	shardruntime.RegisterArgs(splitScope, "field___Directive_args_args", __splitArgs_field___Directive_args_args)
+	shardruntime.RegisterArgs(splitScope, "field___Field_args_args", __splitArgs_field___Field_args_args)
+	shardruntime.RegisterArgs(splitScope, "field___Type_enumValues_args", __splitArgs_field___Type_enumValues_args)
+	shardruntime.RegisterArgs(splitScope, "field___Type_fields_args", __splitArgs_field___Type_fields_args)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalNBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalNBoolean2bool(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Directive", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Directive_description(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalNString2string(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Directive", "isRepeatable", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Directive_isRepeatable(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Directive", "locations", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Directive_locations(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Directive", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Directive_name(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__DirectiveLocation2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__DirectiveLocation2string(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__EnumValue", "deprecationReason", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___EnumValue_deprecationReason(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__DirectiveLocation2ᚕstringᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__DirectiveLocation2ᚕstringᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__EnumValue", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___EnumValue_description(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__EnumValue", "isDeprecated", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___EnumValue_isDeprecated(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__EnumValue", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___EnumValue_name(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Field", "args", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Field_args(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Field", "deprecationReason", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Field_deprecationReason(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Field", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Field_description(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Field", "isDeprecated", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Field_isDeprecated(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Field", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Field_name(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__TypeKind2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalN__TypeKind2string(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Field", "type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Field_type(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalOBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalOBoolean2bool(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__InputValue", "defaultValue", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___InputValue_defaultValue(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalOBoolean2ᚖbool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalOBoolean2ᚖbool(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__InputValue", "deprecationReason", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___InputValue_deprecationReason(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalOString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalOString2string(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__InputValue", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___InputValue_description(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalOString2ᚖstring", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalOString2ᚖstring(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__InputValue", "isDeprecated", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___InputValue_isDeprecated(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__InputValue", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___InputValue_name(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__InputValue", "type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___InputValue_type(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Schema", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Schema_description(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Schema", "directives", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Schema_directives(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Schema", "mutationType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Schema_mutationType(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Schema", "queryType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Schema_queryType(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalNBoolean2bool(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Schema", "subscriptionType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Schema_subscriptionType(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalNString2string(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Schema", "types", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Schema_types(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__DirectiveLocation2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalN__DirectiveLocation2string(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_description(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__DirectiveLocation2ᚕstringᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "enumValues", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_enumValues(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__TypeKind2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalN__TypeKind2string(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "fields", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_fields(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOBoolean2bool(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "inputFields", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_inputFields(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOBoolean2ᚖbool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOBoolean2ᚖbool(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "interfaces", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_interfaces(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOString2string(ctx, ec, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "isOneOf", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_isOneOf(ctx, ec, childComplexity, rawArgs)
-	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "kind", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_kind(ctx, ec, childComplexity, rawArgs)
-	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_name(ctx, ec, childComplexity, rawArgs)
-	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "ofType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_ofType(ctx, ec, childComplexity, rawArgs)
-	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "possibleTypes", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_possibleTypes(ctx, ec, childComplexity, rawArgs)
-	})
-	shardruntime.RegisterComplexity(splitScope, "__Type", "specifiedByURL", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity___Type_specifiedByURL(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOString2ᚖstring", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOString2ᚖstring(ctx, ec, value)
 	})
 }

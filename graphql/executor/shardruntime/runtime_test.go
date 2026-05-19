@@ -8,8 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/ast"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 func TestFieldRegistry(t *testing.T) {
@@ -69,7 +70,7 @@ func TestFieldLookupSnapshotIsBuiltLazily(t *testing.T) {
 	}
 
 	const total = 16
-	for i := 0; i < total; i++ {
+	for i := range total {
 		RegisterField("scope", "Query", fmt.Sprintf("field_%03d", i), h)
 	}
 
@@ -267,7 +268,10 @@ func TestInputUnmarshalMap(t *testing.T) {
 
 	missingScope := InputUnmarshalMap("missing-scope", nil)
 	if len(missingScope) != 0 {
-		t.Fatalf("expected empty input unmarshaler map for missing scope, got %d entries", len(missingScope))
+		t.Fatalf(
+			"expected empty input unmarshaler map for missing scope, got %d entries",
+			len(missingScope),
+		)
 	}
 }
 
@@ -325,7 +329,11 @@ func TestCodecUnmarshalRegistry(t *testing.T) {
 	}
 
 	if got, ok := LookupCodecUnmarshal("scope", "unmarshalBar"); ok || got != nil {
-		t.Fatalf("unexpected codec unmarshal handler before registration: handler=%v ok=%v", got, ok)
+		t.Fatalf(
+			"unexpected codec unmarshal handler before registration: handler=%v ok=%v",
+			got,
+			ok,
+		)
 	}
 
 	RegisterCodecUnmarshal("scope", "unmarshalBar", h)
@@ -371,14 +379,26 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 			return graphql.Null
 		}
 
-		RegisterObject("scope", "Query", func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet, obj any) graphql.Marshaler {
-			return h(ctx, ec, sel, obj)
-		})
-		assertDuplicateRegistrationPanic(t, "duplicate object shard handler registration: scope:Query", func() {
-			RegisterObject("scope", "Query", func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet, obj any) graphql.Marshaler {
+		RegisterObject(
+			"scope",
+			"Query",
+			func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet, obj any) graphql.Marshaler {
 				return h(ctx, ec, sel, obj)
-			})
-		})
+			},
+		)
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate object shard handler registration: scope:Query",
+			func() {
+				RegisterObject(
+					"scope",
+					"Query",
+					func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet, obj any) graphql.Marshaler {
+						return h(ctx, ec, sel, obj)
+					},
+				)
+			},
+		)
 	})
 
 	t.Run("stream object", func(t *testing.T) {
@@ -390,14 +410,26 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 			}
 		}
 
-		RegisterStreamObject("scope", "Query", func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet) func(context.Context) graphql.Marshaler {
-			return h(ctx, ec, sel)
-		})
-		assertDuplicateRegistrationPanic(t, "duplicate stream object shard handler registration: scope:Query", func() {
-			RegisterStreamObject("scope", "Query", func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet) func(context.Context) graphql.Marshaler {
+		RegisterStreamObject(
+			"scope",
+			"Query",
+			func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet) func(context.Context) graphql.Marshaler {
 				return h(ctx, ec, sel)
-			})
-		})
+			},
+		)
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate stream object shard handler registration: scope:Query",
+			func() {
+				RegisterStreamObject(
+					"scope",
+					"Query",
+					func(ctx context.Context, ec ObjectExecutionContext, sel ast.SelectionSet) func(context.Context) graphql.Marshaler {
+						return h(ctx, ec, sel)
+					},
+				)
+			},
+		)
 	})
 
 	t.Run("field", func(t *testing.T) {
@@ -408,9 +440,13 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 		}
 
 		RegisterField("scope", "Query", "name", h)
-		assertDuplicateRegistrationPanic(t, "duplicate field shard handler registration: scope:Query:name", func() {
-			RegisterField("scope", "Query", "name", h)
-		})
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate field shard handler registration: scope:Query:name",
+			func() {
+				RegisterField("scope", "Query", "name", h)
+			},
+		)
 	})
 
 	t.Run("stream field", func(t *testing.T) {
@@ -423,9 +459,13 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 		}
 
 		RegisterStreamField("scope", "Query", "name", h)
-		assertDuplicateRegistrationPanic(t, "duplicate stream field shard handler registration: scope:Query:name", func() {
-			RegisterStreamField("scope", "Query", "name", h)
-		})
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate stream field shard handler registration: scope:Query:name",
+			func() {
+				RegisterStreamField("scope", "Query", "name", h)
+			},
+		)
 	})
 
 	t.Run("complexity", func(t *testing.T) {
@@ -436,9 +476,13 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 		}
 
 		RegisterComplexity("scope", "Query", "name", h)
-		assertDuplicateRegistrationPanic(t, "duplicate complexity shard handler registration: scope:Query:name", func() {
-			RegisterComplexity("scope", "Query", "name", h)
-		})
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate complexity shard handler registration: scope:Query:name",
+			func() {
+				RegisterComplexity("scope", "Query", "name", h)
+			},
+		)
 	})
 
 	t.Run("input unmarshaler", func(t *testing.T) {
@@ -447,9 +491,13 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 		type marker struct{ id string }
 
 		RegisterInputUnmarshaler("scope", "InputA", &marker{id: "A"})
-		assertDuplicateRegistrationPanic(t, "duplicate input unmarshaler registration: scope:InputA", func() {
-			RegisterInputUnmarshaler("scope", "InputA", &marker{id: "dup"})
-		})
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate input unmarshaler registration: scope:InputA",
+			func() {
+				RegisterInputUnmarshaler("scope", "InputA", &marker{id: "dup"})
+			},
+		)
 	})
 
 	t.Run("codec marshal", func(t *testing.T) {
@@ -460,9 +508,13 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 		}
 
 		RegisterCodecMarshal("scope", "marshalFoo", h)
-		assertDuplicateRegistrationPanic(t, "duplicate codec marshal handler registration: scope:marshalFoo", func() {
-			RegisterCodecMarshal("scope", "marshalFoo", h)
-		})
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate codec marshal handler registration: scope:marshalFoo",
+			func() {
+				RegisterCodecMarshal("scope", "marshalFoo", h)
+			},
+		)
 	})
 
 	t.Run("codec unmarshal", func(t *testing.T) {
@@ -473,9 +525,13 @@ func TestRegistryDuplicatePanics(t *testing.T) {
 		}
 
 		RegisterCodecUnmarshal("scope", "unmarshalBar", h)
-		assertDuplicateRegistrationPanic(t, "duplicate codec unmarshal handler registration: scope:unmarshalBar", func() {
-			RegisterCodecUnmarshal("scope", "unmarshalBar", h)
-		})
+		assertDuplicateRegistrationPanic(
+			t,
+			"duplicate codec unmarshal handler registration: scope:unmarshalBar",
+			func() {
+				RegisterCodecUnmarshal("scope", "unmarshalBar", h)
+			},
+		)
 	})
 }
 
@@ -503,7 +559,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		var readersWG sync.WaitGroup
 		var writesDone atomic.Bool
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			writersWG.Add(1)
 			go func(i int) {
 				defer writersWG.Done()
@@ -512,20 +568,18 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			}(i)
 		}
 
-		for i := 0; i < readers; i++ {
-			readersWG.Add(1)
-			go func() {
-				defer readersWG.Done()
+		for range readers {
+			readersWG.Go(func() {
 				<-start
 				for !writesDone.Load() {
-					for i := 0; i < total; i++ {
+					for i := range total {
 						handler, ok := LookupField("scope", "Query", fmt.Sprintf("field_%03d", i))
 						if ok && handler == nil {
 							reportErr(fmt.Errorf("nil field handler for registered key %d", i))
 						}
 					}
 				}
-			}()
+			})
 		}
 
 		close(start)
@@ -538,7 +592,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			handler, ok := LookupField("scope", "Query", fmt.Sprintf("field_%03d", i))
 			if !ok || handler == nil {
 				t.Fatalf("missing registered field handler for key %d", i)
@@ -571,7 +625,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		var readersWG sync.WaitGroup
 		var writesDone atomic.Bool
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			writersWG.Add(1)
 			go func(i int) {
 				defer writersWG.Done()
@@ -580,20 +634,24 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			}(i)
 		}
 
-		for i := 0; i < readers; i++ {
-			readersWG.Add(1)
-			go func() {
-				defer readersWG.Done()
+		for range readers {
+			readersWG.Go(func() {
 				<-start
 				for !writesDone.Load() {
-					for i := 0; i < total; i++ {
-						handler, ok := LookupStreamField("scope", "Query", fmt.Sprintf("stream_field_%03d", i))
+					for i := range total {
+						handler, ok := LookupStreamField(
+							"scope",
+							"Query",
+							fmt.Sprintf("stream_field_%03d", i),
+						)
 						if ok && handler == nil {
-							reportErr(fmt.Errorf("nil stream field handler for registered key %d", i))
+							reportErr(
+								fmt.Errorf("nil stream field handler for registered key %d", i),
+							)
 						}
 					}
 				}
-			}()
+			})
 		}
 
 		close(start)
@@ -606,7 +664,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			handler, ok := LookupStreamField("scope", "Query", fmt.Sprintf("stream_field_%03d", i))
 			if !ok || handler == nil {
 				t.Fatalf("missing registered stream field handler for key %d", i)
@@ -637,7 +695,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		var readersWG sync.WaitGroup
 		var writesDone atomic.Bool
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			writersWG.Add(1)
 			go func(i int) {
 				defer writersWG.Done()
@@ -646,20 +704,22 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			}(i)
 		}
 
-		for i := 0; i < readers; i++ {
-			readersWG.Add(1)
-			go func() {
-				defer readersWG.Done()
+		for range readers {
+			readersWG.Go(func() {
 				<-start
 				for !writesDone.Load() {
-					for i := 0; i < total; i++ {
-						handler, ok := LookupComplexity("scope", "Query", fmt.Sprintf("complexity_%03d", i))
+					for i := range total {
+						handler, ok := LookupComplexity(
+							"scope",
+							"Query",
+							fmt.Sprintf("complexity_%03d", i),
+						)
 						if ok && handler == nil {
 							reportErr(fmt.Errorf("nil complexity handler for registered key %d", i))
 						}
 					}
 				}
-			}()
+			})
 		}
 
 		close(start)
@@ -672,7 +732,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			handler, ok := LookupComplexity("scope", "Query", fmt.Sprintf("complexity_%03d", i))
 			if !ok || handler == nil {
 				t.Fatalf("missing registered complexity handler for key %d", i)
@@ -701,24 +761,32 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		var readersWG sync.WaitGroup
 		var writesDone atomic.Bool
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			writersWG.Add(1)
 			go func(i int) {
 				defer writersWG.Done()
 				<-start
-				RegisterInputUnmarshaler("scope", fmt.Sprintf("Input_%03d", i), &marker{id: fmt.Sprintf("%03d", i)})
+				RegisterInputUnmarshaler(
+					"scope",
+					fmt.Sprintf("Input_%03d", i),
+					&marker{id: fmt.Sprintf("%03d", i)},
+				)
 			}(i)
 		}
 
-		for i := 0; i < readers; i++ {
-			readersWG.Add(1)
-			go func() {
-				defer readersWG.Done()
+		for range readers {
+			readersWG.Go(func() {
 				<-start
 				for !writesDone.Load() {
 					unmarshalers := ListInputUnmarshalers("scope", nil)
 					if len(unmarshalers) > total {
-						reportErr(fmt.Errorf("unexpected input unmarshaler count: got %d want <= %d", len(unmarshalers), total))
+						reportErr(
+							fmt.Errorf(
+								"unexpected input unmarshaler count: got %d want <= %d",
+								len(unmarshalers),
+								total,
+							),
+						)
 					}
 					for i, unmarshaler := range unmarshalers {
 						if unmarshaler == nil {
@@ -726,7 +794,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 						}
 					}
 				}
-			}()
+			})
 		}
 
 		close(start)
@@ -741,7 +809,11 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 
 		unmarshalers := ListInputUnmarshalers("scope", nil)
 		if len(unmarshalers) != total {
-			t.Fatalf("unexpected number of registered input unmarshalers: got %d want %d", len(unmarshalers), total)
+			t.Fatalf(
+				"unexpected number of registered input unmarshalers: got %d want %d",
+				len(unmarshalers),
+				total,
+			)
 		}
 		for i, unmarshaler := range unmarshalers {
 			if unmarshaler == nil {
@@ -773,7 +845,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		var readersWG sync.WaitGroup
 		var writesDone atomic.Bool
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			writersWG.Add(1)
 			go func(i int) {
 				defer writersWG.Done()
@@ -782,20 +854,20 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			}(i)
 		}
 
-		for i := 0; i < readers; i++ {
-			readersWG.Add(1)
-			go func() {
-				defer readersWG.Done()
+		for range readers {
+			readersWG.Go(func() {
 				<-start
 				for !writesDone.Load() {
-					for i := 0; i < total; i++ {
+					for i := range total {
 						handler, ok := LookupCodecMarshal("scope", fmt.Sprintf("marshal_%03d", i))
 						if ok && handler == nil {
-							reportErr(fmt.Errorf("nil codec marshal handler for registered key %d", i))
+							reportErr(
+								fmt.Errorf("nil codec marshal handler for registered key %d", i),
+							)
 						}
 					}
 				}
-			}()
+			})
 		}
 
 		close(start)
@@ -808,7 +880,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			handler, ok := LookupCodecMarshal("scope", fmt.Sprintf("marshal_%03d", i))
 			if !ok || handler == nil {
 				t.Fatalf("missing registered codec marshal handler for key %d", i)
@@ -839,7 +911,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		var readersWG sync.WaitGroup
 		var writesDone atomic.Bool
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			writersWG.Add(1)
 			go func(i int) {
 				defer writersWG.Done()
@@ -848,20 +920,23 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			}(i)
 		}
 
-		for i := 0; i < readers; i++ {
-			readersWG.Add(1)
-			go func() {
-				defer readersWG.Done()
+		for range readers {
+			readersWG.Go(func() {
 				<-start
 				for !writesDone.Load() {
-					for i := 0; i < total; i++ {
-						handler, ok := LookupCodecUnmarshal("scope", fmt.Sprintf("unmarshal_%03d", i))
+					for i := range total {
+						handler, ok := LookupCodecUnmarshal(
+							"scope",
+							fmt.Sprintf("unmarshal_%03d", i),
+						)
 						if ok && handler == nil {
-							reportErr(fmt.Errorf("nil codec unmarshal handler for registered key %d", i))
+							reportErr(
+								fmt.Errorf("nil codec unmarshal handler for registered key %d", i),
+							)
 						}
 					}
 				}
-			}()
+			})
 		}
 
 		close(start)
@@ -874,7 +949,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		for i := 0; i < total; i++ {
+		for i := range total {
 			handler, ok := LookupCodecUnmarshal("scope", fmt.Sprintf("unmarshal_%03d", i))
 			if !ok || handler == nil {
 				t.Fatalf("missing registered codec unmarshal handler for key %d", i)
@@ -1048,7 +1123,11 @@ func TestResolverInvokerRegistry(t *testing.T) {
 	}
 
 	if got, ok := LookupResolverInvoker("scope", "Query", "name"); ok || got != nil {
-		t.Fatalf("unexpected resolver invoker handler before registration: handler=%v ok=%v", got, ok)
+		t.Fatalf(
+			"unexpected resolver invoker handler before registration: handler=%v ok=%v",
+			got,
+			ok,
+		)
 	}
 
 	RegisterResolverInvoker("scope", "Query", "name", h)
@@ -1073,7 +1152,11 @@ func TestResolverInvokerRegistry(t *testing.T) {
 		t.Fatalf("unexpected resolver invoker handler for missing field: handler=%v ok=%v", got, ok)
 	}
 	if got, ok := LookupResolverInvoker("scope", "Mutation", "name"); ok || got != nil {
-		t.Fatalf("unexpected resolver invoker handler for missing object: handler=%v ok=%v", got, ok)
+		t.Fatalf(
+			"unexpected resolver invoker handler for missing object: handler=%v ok=%v",
+			got,
+			ok,
+		)
 	}
 	if got, ok := LookupResolverInvoker("other-scope", "Query", "name"); ok || got != nil {
 		t.Fatalf("unexpected resolver invoker handler for missing scope: handler=%v ok=%v", got, ok)
@@ -1150,4 +1233,3 @@ func TestArgsRegistry(t *testing.T) {
 
 	RegisterArgs("scope", "Query.name", h)
 }
-

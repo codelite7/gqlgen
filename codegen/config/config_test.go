@@ -104,6 +104,7 @@ go_build_flags: "-gcflags=all=-N -l"
 
 		if runtime.GOOS == "windows" {
 			require.ErrorContains(t, err, "failed to walk schema at root not_walkable/: ")
+			// TODO(steve): Now that Go 1.25 is min supported, this could be improved.
 			// Go 1.24 and below report "CreateFile" but 1.25 and above report "GetFileAttributesEx"
 			// in error
 			// See https://go.dev/doc/go1.25#ospkgos
@@ -192,6 +193,43 @@ func TestReferencedPackages(t *testing.T) {
 	})
 }
 
+func TestTypeMapFieldBatch(t *testing.T) {
+	t.Run("batch flag is parsed from config", func(t *testing.T) {
+		cfg, err := ReadConfig(strings.NewReader(`
+schema: schema.graphql
+exec:
+  filename: generated.go
+models:
+  User:
+    fields:
+      posts:
+        resolver: true
+        batch: true
+      name:
+        resolver: false
+`))
+		require.NoError(t, err)
+		require.True(t, cfg.Models["User"].Fields["posts"].Batch)
+		require.True(t, cfg.Models["User"].Fields["posts"].Resolver)
+		require.False(t, cfg.Models["User"].Fields["name"].Batch)
+	})
+
+	t.Run("batch flag defaults to false when not specified", func(t *testing.T) {
+		cfg, err := ReadConfig(strings.NewReader(`
+schema: schema.graphql
+exec:
+  filename: generated.go
+models:
+  User:
+    fields:
+      posts:
+        resolver: true
+`))
+		require.NoError(t, err)
+		require.False(t, cfg.Models["User"].Fields["posts"].Batch)
+	})
+}
+
 func TestConfigCheck(t *testing.T) {
 	for _, execLayout := range []ExecLayout{ExecLayoutSingleFile, ExecLayoutFollowSchema} {
 		t.Run(string(execLayout), func(t *testing.T) {
@@ -247,23 +285,6 @@ func TestConfigCheck(t *testing.T) {
 					t,
 					config.check(),
 					"exec and federation define the same import path (github.com/99designs/gqlgen/codegen/config/generated) with different package names (generated vs federation)",
-				)
-			})
-
-			t.Run("deprecated federated flag raises an error", func(t *testing.T) {
-				config := Config{
-					Exec: ExecConfig{
-						Layout:   execLayout,
-						Filename: "generated/exec.go",
-						DirName:  "generated",
-					},
-					Federated: true,
-				}
-
-				require.EqualError(
-					t,
-					config.check(),
-					"federated has been removed, instead use\nfederation:\n    filename: path/to/federated.go",
 				)
 			})
 		})
@@ -553,5 +574,49 @@ unknown: foo`))
 		if err == nil && cfg == nil {
 			t.Fatal("ReadConfig returned nil config without error")
 		}
+	})
+}
+
+func TestPerformanceOptions(t *testing.T) {
+	t.Run("GetFastValidation defaults to false", func(t *testing.T) {
+		cfg := &Config{}
+		require.False(t, cfg.GetFastValidation())
+	})
+
+	t.Run("GetFastValidation returns true when set", func(t *testing.T) {
+		val := true
+		cfg := &Config{FastValidation: &val}
+		require.True(t, cfg.GetFastValidation())
+	})
+
+	t.Run("GetSkipImportGrouping defaults to false", func(t *testing.T) {
+		cfg := &Config{}
+		require.False(t, cfg.GetSkipImportGrouping())
+	})
+
+	t.Run("GetSkipImportGrouping returns true when set", func(t *testing.T) {
+		val := true
+		cfg := &Config{SkipImportGrouping: &val}
+		require.True(t, cfg.GetSkipImportGrouping())
+	})
+
+	t.Run("GetUseBufferPooling defaults to false", func(t *testing.T) {
+		cfg := &Config{}
+		require.False(t, cfg.GetUseBufferPooling())
+	})
+
+	t.Run("GetUseBufferPooling returns true when set", func(t *testing.T) {
+		val := true
+		cfg := &Config{UseBufferPooling: &val}
+		require.True(t, cfg.GetUseBufferPooling())
+	})
+
+	t.Run("GetPruneOptions returns correct values", func(t *testing.T) {
+		skipImport := true
+		useBuffer := true
+		cfg := &Config{SkipImportGrouping: &skipImport, UseBufferPooling: &useBuffer}
+		opts := cfg.GetPruneOptions()
+		require.True(t, opts.SkipImportGrouping)
+		require.True(t, opts.UseBufferPooling)
 	})
 }

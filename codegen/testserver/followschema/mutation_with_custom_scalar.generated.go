@@ -29,6 +29,10 @@ import (
 
 func (ec *executionContext) unmarshalInputNestedInput(ctx context.Context, obj any) (NestedInput, error) {
 	var it NestedInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -50,12 +54,15 @@ func (ec *executionContext) unmarshalInputNestedInput(ctx context.Context, obj a
 			it.Field = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputSpecialInput(ctx context.Context, obj any) (SpecialInput, error) {
 	var it SpecialInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -77,7 +84,6 @@ func (ec *executionContext) unmarshalInputSpecialInput(ctx context.Context, obj 
 			it.Nesting = data
 		}
 	}
-
 	return it, nil
 }
 

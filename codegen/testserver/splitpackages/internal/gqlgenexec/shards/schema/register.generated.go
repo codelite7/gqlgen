@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func init() {
@@ -19,13 +20,15 @@ func init() {
 	shardruntime.RegisterField(splitScope, "Query", "hello", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 		return __splitField_Query_hello(ctx, ec, field, obj)
 	})
-	shardruntime.RegisterComplexity(splitScope, "Query", "__schema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity_Query___schema(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterFieldContext(splitScope, "Query", "__schema", __splitFieldContext_Query___schema)
+	shardruntime.RegisterFieldContext(splitScope, "Query", "__type", __splitFieldContext_Query___type)
+	shardruntime.RegisterFieldContext(splitScope, "Query", "hello", __splitFieldContext_Query_hello)
+	shardruntime.RegisterArgs(splitScope, "field_Query___type_args", __splitArgs_field_Query___type_args)
+	shardruntime.RegisterArgs(splitScope, "field_Query_hello_args", __splitArgs_field_Query_hello_args)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterComplexity(splitScope, "Query", "__type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity_Query___type(ctx, ec, childComplexity, rawArgs)
-	})
-	shardruntime.RegisterComplexity(splitScope, "Query", "hello", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, childComplexity int, rawArgs map[string]any) (int, bool) {
-		return __splitComplexity_Query_hello(ctx, ec, childComplexity, rawArgs)
+	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, ec, sel, value)
 	})
 }

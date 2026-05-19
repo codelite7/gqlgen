@@ -52,23 +52,11 @@ var splitImportsTemplate string
 //go:embed split_runtime_.gotpl
 var splitRuntimeTemplate string
 
-//go:embed args.gotpl
-var argsTemplate string
-
 //go:embed directives.gotpl
 var directivesTemplate string
 
-//go:embed field.gotpl
-var fieldTemplate string
-
-//go:embed input.gotpl
-var inputTemplate string
-
 //go:embed interface.gotpl
 var interfaceTemplate string
-
-//go:embed type.gotpl
-var typeTemplate string
 
 type splitRootTemplateData struct {
 	*Data
@@ -114,7 +102,10 @@ func generateSplitPackages(data *Data) error {
 }
 
 func cleanupSplitGeneratedOutputs(data *Data) error {
-	if err := removeSplitGeneratedByGlob(filepath.Join(data.Config.Exec.Dir(), "split_shard_import_*.generated.go"), "split import"); err != nil {
+	if err := removeSplitGeneratedByGlob(
+		filepath.Join(data.Config.Exec.Dir(), "split_shard_import_*.generated.go"),
+		"split import",
+	); err != nil {
 		return err
 	}
 
@@ -123,7 +114,10 @@ func cleanupSplitGeneratedOutputs(data *Data) error {
 		return fmt.Errorf("remove stale split runtime file %q: %w", runtimePath, err)
 	}
 
-	generatedShardFiles, err := listSplitShardGeneratedFiles(data.Config.Exec.ShardDir, data.Config.Exec.ShardFilenameTemplate)
+	generatedShardFiles, err := listSplitShardGeneratedFiles(
+		data.Config.Exec.ShardDir,
+		data.Config.Exec.ShardFilenameTemplate,
+	)
 	if err != nil {
 		return err
 	}
@@ -133,14 +127,10 @@ func cleanupSplitGeneratedOutputs(data *Data) error {
 		}
 	}
 
-	if err := pruneEmptyDirs(data.Config.Exec.ShardDir); err != nil {
-		return err
-	}
-
-	return nil
+	return pruneEmptyDirs(data.Config.Exec.ShardDir)
 }
 
-func removeSplitGeneratedByGlob(pattern string, kind string) error {
+func removeSplitGeneratedByGlob(pattern, kind string) error {
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		return fmt.Errorf("invalid %s cleanup glob %q: %w", kind, pattern, err)
@@ -155,7 +145,7 @@ func removeSplitGeneratedByGlob(pattern string, kind string) error {
 	return nil
 }
 
-func listSplitShardGeneratedFiles(root string, _ string) ([]string, error) {
+func listSplitShardGeneratedFiles(root, _ string) ([]string, error) {
 	info, err := os.Stat(root)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -193,7 +183,7 @@ func listSplitShardGeneratedFiles(root string, _ string) ([]string, error) {
 	return generated, nil
 }
 
-func isSplitOwnedGeneratedFile(path string, name string) (bool, error) {
+func isSplitOwnedGeneratedFile(path, name string) (bool, error) {
 	if name == "register.generated.go" {
 		return true, nil
 	}
@@ -485,7 +475,10 @@ func generateSplitShardImports(data *Data, shardImports []string) error {
 	}
 
 	for i, shardImport := range shardImports {
-		path := filepath.Join(data.Config.Exec.Dir(), fmt.Sprintf("split_shard_import_%d.generated.go", i))
+		path := filepath.Join(
+			data.Config.Exec.Dir(),
+			fmt.Sprintf("split_shard_import_%d.generated.go", i),
+		)
 		if err := templates.Render(templates.Options{
 			PackageName:     data.Config.Exec.Package,
 			Template:        splitImportsTemplate,

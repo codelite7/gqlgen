@@ -55,12 +55,12 @@ func TestGoInitialismsConcurrentSetAndRead(t *testing.T) {
 	var wg sync.WaitGroup
 	var emptyReads atomic.Int32
 
-	for i := 0; i < workers; i++ {
+	for i := range workers {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 			<-start
-			for j := 0; j < iterations; j++ {
+			for j := range iterations {
 				GoInitialismsConfig{
 					ReplaceDefaults: true,
 					Initialisms:     []string{fmt.Sprintf("worker_%d_%d", i, j)},
@@ -69,17 +69,15 @@ func TestGoInitialismsConcurrentSetAndRead(t *testing.T) {
 		}(i)
 	}
 
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range workers {
+		wg.Go(func() {
 			<-start
-			for j := 0; j < iterations; j++ {
+			for range iterations {
 				if len(templates.GetInitialisms()) == 0 {
 					emptyReads.Add(1)
 				}
 			}
-		}()
+		})
 	}
 
 	close(start)

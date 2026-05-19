@@ -72,6 +72,11 @@ func (r *mutationResolver) UpdateProduct(ctx context.Context, input map[string]i
 	panic("not implemented")
 }
 
+// Issue4053 is the resolver for the issue4053 field.
+func (r *mutationResolver) Issue4053(ctx context.Context, input *Issue4053Input1) (bool, error) {
+	panic("not implemented")
+}
+
 // UpdateSomething is the resolver for the updateSomething field.
 func (r *mutationResolver) UpdateSomething(ctx context.Context, input SpecialInput) (string, error) {
 	panic("not implemented")
@@ -244,6 +249,16 @@ func (r *queryResolver) DirectiveInput(ctx context.Context, arg InputDirectives)
 
 // DirectiveInputType is the resolver for the directiveInputType field.
 func (r *queryResolver) DirectiveInputType(ctx context.Context, arg InnerInput) (*string, error) {
+	panic("not implemented")
+}
+
+// DirectiveInputOuter is the resolver for the directiveInputOuter field.
+func (r *queryResolver) DirectiveInputOuter(ctx context.Context, arg OuterWrapperInput) (*string, error) {
+	panic("not implemented")
+}
+
+// DirectiveInputWithArgs is the resolver for the directiveInputWithArgs field.
+func (r *queryResolver) DirectiveInputWithArgs(ctx context.Context, arg InputDirectivesWithArgs) (*string, error) {
 	panic("not implemented")
 }
 
