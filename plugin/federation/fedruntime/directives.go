@@ -3,6 +3,7 @@ package fedruntime
 import (
 	"context"
 	"fmt"
+	"slices"
 )
 
 // ResolverFunc is a function that resolves a value in the context of federation entity resolution.
@@ -26,8 +27,8 @@ func ChainDirectives(
 	// The last directive in the slice wraps the base resolver
 	// Each previous directive wraps the result of the next directive
 	resolver := base
-	for i := len(directives) - 1; i >= 0; i-- {
-		directive := directives[i]
+	for _, v := range slices.Backward(directives) {
+		directive := v
 		next := resolver
 		resolver = func(ctx context.Context) (any, error) {
 			return directive(ctx, next)

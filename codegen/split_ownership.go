@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/vektah/gqlparser/v2/ast"
+
+	"github.com/99designs/gqlgen/codegen/config"
 )
 
 type splitOwnershipPlanner struct {
@@ -74,7 +75,11 @@ func planSplitOwnership(data *Data) (*splitOwnershipPlanner, error) {
 	return planner, nil
 }
 
-func (p *splitOwnershipPlanner) planCodecOwnership(data *Data, builds map[string]*Data, filenameToShard map[string]string) {
+func (p *splitOwnershipPlanner) planCodecOwnership(
+	data *Data,
+	builds map[string]*Data,
+	filenameToShard map[string]string,
+) {
 	codecConsumers := map[string]map[string]struct{}{}
 
 	for filename, build := range builds {
@@ -148,7 +153,11 @@ func (p *splitOwnershipPlanner) planCodecOwnership(data *Data, builds map[string
 	}
 }
 
-func addCodecConsumer(consumers map[string]map[string]struct{}, ref *config.TypeReference, shard string) {
+func addCodecConsumer(
+	consumers map[string]map[string]struct{},
+	ref *config.TypeReference,
+	shard string,
+) {
 	if ref == nil || ref.Definition == nil || ref.GQL == nil || ref.GO == nil || shard == "" {
 		return
 	}
@@ -194,7 +203,11 @@ func smallestCodecConsumer(consumers map[string]struct{}) string {
 	return shards[0]
 }
 
-func (p *splitOwnershipPlanner) planInputOwnership(data *Data, builds map[string]*Data, filenameToShard map[string]string) {
+func (p *splitOwnershipPlanner) planInputOwnership(
+	data *Data,
+	builds map[string]*Data,
+	filenameToShard map[string]string,
+) {
 	inputDeps := buildInputDependencies(data)
 	inputConsumers := map[string]map[string]struct{}{}
 
@@ -343,7 +356,12 @@ func (p *splitOwnershipPlanner) addBuild(build *Data, shard string) error {
 				}
 			}
 
-			if err := setOwnedKey(p.FieldContextOwner, field.FieldContextFunc(), shard, "field context"); err != nil {
+			if err := setOwnedKey(
+				p.FieldContextOwner,
+				field.FieldContextFunc(),
+				shard,
+				"field context",
+			); err != nil {
 				return err
 			}
 		}
@@ -355,7 +373,13 @@ func (p *splitOwnershipPlanner) addBuild(build *Data, shard string) error {
 func setOwnedKey(owners map[string]string, key, shard, ownerType string) error {
 	if current, exists := owners[key]; exists {
 		if current != shard {
-			return fmt.Errorf("conflicting %s ownership for %q: %q vs %q", ownerType, key, current, shard)
+			return fmt.Errorf(
+				"conflicting %s ownership for %q: %q vs %q",
+				ownerType,
+				key,
+				current,
+				shard,
+			)
 		}
 		return nil
 	}

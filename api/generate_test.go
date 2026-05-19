@@ -17,8 +17,10 @@ func cleanup(workDir string) {
 	_ = os.Remove(filepath.Join(workDir, "server.go"))
 	_ = os.Remove(filepath.Join(workDir, "graph", "generated.go"))
 	_ = os.Remove(filepath.Join(workDir, "graph", "split_runtime.generated.go"))
-	for i := 0; i < 64; i++ {
-		_ = os.Remove(filepath.Join(workDir, "graph", fmt.Sprintf("split_shard_import_%d.generated.go", i)))
+	for i := range 64 {
+		_ = os.Remove(
+			filepath.Join(workDir, "graph", fmt.Sprintf("split_shard_import_%d.generated.go", i)),
+		)
 	}
 	_ = os.RemoveAll(filepath.Join(workDir, "graph", "internal", "gqlgenexec"))
 	_ = os.Remove(filepath.Join(workDir, "graph", "resolver.go"))

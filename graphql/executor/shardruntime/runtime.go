@@ -170,15 +170,17 @@ func cloneComplexityHandlers(src map[string]ComplexityHandler) map[string]Comple
 	return maps.Clone(src)
 }
 
-func cloneInputUnmarshalMapByScope(src map[string]map[reflect.Type]reflect.Value) map[string]map[reflect.Type]reflect.Value {
+func cloneInputUnmarshalMapByScope(
+	src map[string]map[reflect.Type]reflect.Value,
+) map[string]map[reflect.Type]reflect.Value {
 	clone := make(map[string]map[reflect.Type]reflect.Value, len(src))
-	for scope, handlers := range src {
-		clone[scope] = handlers
-	}
+	maps.Copy(clone, src)
 	return clone
 }
 
-func cloneInputUnmarshalHandlers(src map[reflect.Type]reflect.Value) map[reflect.Type]reflect.Value {
+func cloneInputUnmarshalHandlers(
+	src map[reflect.Type]reflect.Value,
+) map[reflect.Type]reflect.Value {
 	return maps.Clone(src)
 }
 
@@ -186,7 +188,9 @@ func cloneCodecMarshalHandlers(src map[string]CodecMarshalHandler) map[string]Co
 	return maps.Clone(src)
 }
 
-func cloneCodecUnmarshalHandlers(src map[string]CodecUnmarshalHandler) map[string]CodecUnmarshalHandler {
+func cloneCodecUnmarshalHandlers(
+	src map[string]CodecUnmarshalHandler,
+) map[string]CodecUnmarshalHandler {
 	return maps.Clone(src)
 }
 
@@ -346,7 +350,9 @@ func RegisterField(scope, objectName, fieldName string, handler FieldHandler) {
 	}
 
 	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate field shard handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	objectHandlers[fieldName] = handler
 
@@ -405,7 +411,9 @@ func RegisterStreamField(scope, objectName, fieldName string, handler StreamFiel
 	}
 
 	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate stream field shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate stream field shard handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	objectHandlers[fieldName] = handler
 
@@ -436,7 +444,9 @@ func RegisterComplexity(scope, objectName, fieldName string, handler ComplexityH
 	}
 
 	if _, exists := objectHandlers[fieldName]; exists {
-		panic("duplicate complexity shard handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate complexity shard handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	objectHandlers[fieldName] = handler
 
@@ -610,7 +620,9 @@ func RegisterFieldContext(scope, objectName, fieldName string, handler FieldCont
 	}
 
 	if _, exists := scopeHandlers[key]; exists {
-		panic("duplicate field context handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate field context handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	scopeHandlers[key] = handler
 
@@ -626,7 +638,9 @@ func LookupFieldContext(scope, objectName, fieldName string) (FieldContextHandle
 
 // --- ResolverInvoker registry ---
 
-func cloneResolverInvokerHandlers(src map[string]ResolverInvokerHandler) map[string]ResolverInvokerHandler {
+func cloneResolverInvokerHandlers(
+	src map[string]ResolverInvokerHandler,
+) map[string]ResolverInvokerHandler {
 	return maps.Clone(src)
 }
 
@@ -653,7 +667,9 @@ func RegisterResolverInvoker(scope, objectName, fieldName string, handler Resolv
 	}
 
 	if _, exists := scopeHandlers[key]; exists {
-		panic("duplicate resolver invoker handler registration: " + scope + ":" + objectName + ":" + fieldName)
+		panic(
+			"duplicate resolver invoker handler registration: " + scope + ":" + objectName + ":" + fieldName,
+		)
 	}
 	scopeHandlers[key] = handler
 

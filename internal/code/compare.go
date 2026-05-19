@@ -202,7 +202,8 @@ func internalAliasNamedCompatible(expected, actual *types.Named) bool {
 	expectedQualified := expectedPkg + "." + expected.Obj().Name()
 	actualQualified := actualPkg + "." + actual.Obj().Name()
 
-	if !isAliasInternal(expectedQualified, actualQualified) && !isAliasInternal(actualQualified, expectedQualified) {
+	if !isAliasInternal(expectedQualified, actualQualified) &&
+		!isAliasInternal(actualQualified, expectedQualified) {
 		return false
 	}
 
