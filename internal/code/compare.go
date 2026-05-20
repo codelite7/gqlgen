@@ -202,7 +202,16 @@ func internalAliasNamedCompatible(expected, actual *types.Named) bool {
 	expectedQualified := expectedPkg + "." + expected.Obj().Name()
 	actualQualified := actualPkg + "." + actual.Obj().Name()
 
-	if !isAliasInternal(expectedQualified, actualQualified) &&
+	// When both sides originate from aliases they may be sibling aliases of the
+	// same internal type living in different packages — e.g. the root facade
+	// alias gen.X and a per-entity subpackage alias gen/<entity>.X, both
+	// aliasing gen/internal.X. Neither alias path contains "internal", so the
+	// isAliasInternal heuristic (which only matches alias-vs-internal) misses
+	// them. In that case fall through to the underlying-identity check below,
+	// which is the real compatibility guarantee.
+	bothAliases := expected.Obj().IsAlias() && actual.Obj().IsAlias()
+	if !bothAliases &&
+		!isAliasInternal(expectedQualified, actualQualified) &&
 		!isAliasInternal(actualQualified, expectedQualified) {
 		return false
 	}

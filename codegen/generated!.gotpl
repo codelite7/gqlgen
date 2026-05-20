@@ -144,7 +144,13 @@
 		inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 			{{- range $input := .Inputs -}}
 				{{ if not $input.HasUnmarshal }}
+					{{- if $.Config.UseFunctionSyntaxForExecutionContext }}
+					func(ctx context.Context, obj any) ({{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}, error) {
+						return unmarshalInput{{ $input.Name }}(ctx, {{$.ECArg}}obj)
+					},
+					{{- else }}
 					{{$.ECDot}}unmarshalInput{{ $input.Name }},
+					{{- end }}
 				{{- end }}
 			{{- end }}
 		)
