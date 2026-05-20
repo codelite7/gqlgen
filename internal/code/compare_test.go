@@ -80,10 +80,19 @@ func TestCompatibleTypes_SiblingAliasesToSameInternal(t *testing.T) {
 	internalNamed := types.NewNamed(internalTypeName, types.NewStruct(nil, nil), nil)
 
 	genPkg := types.NewPackage("github.com/org/repo/ent/gen", "gen")
-	genAlias := types.NewAlias(types.NewTypeName(token.NoPos, genPkg, "ChatterNotification", nil), internalNamed)
+	genAlias := types.NewAlias(
+		types.NewTypeName(token.NoPos, genPkg, "ChatterNotification", nil),
+		internalNamed,
+	)
 
-	subPkg := types.NewPackage("github.com/org/repo/ent/gen/chatternotification", "chatternotification")
-	subAlias := types.NewAlias(types.NewTypeName(token.NoPos, subPkg, "ChatterNotification", nil), internalNamed)
+	subPkg := types.NewPackage(
+		"github.com/org/repo/ent/gen/chatternotification",
+		"chatternotification",
+	)
+	subAlias := types.NewAlias(
+		types.NewTypeName(token.NoPos, subPkg, "ChatterNotification", nil),
+		internalNamed,
+	)
 
 	require.NoError(t, CompatibleTypes(genAlias, subAlias))
 	require.NoError(t, CompatibleTypes(subAlias, genAlias))
@@ -96,21 +105,41 @@ func TestCompatibleTypes_SiblingAliasesToDifferentInternal(t *testing.T) {
 	internalPkg := types.NewPackage("github.com/org/repo/ent/gen/internal", "internal")
 	namedA := types.NewNamed(
 		types.NewTypeName(token.NoPos, internalPkg, "Contact", nil),
-		types.NewStruct([]*types.Var{types.NewField(token.NoPos, internalPkg, "A", types.Typ[types.String], false)}, nil),
+		types.NewStruct(
+			[]*types.Var{
+				types.NewField(token.NoPos, internalPkg, "A", types.Typ[types.String], false),
+			},
+			nil,
+		),
 		nil,
 	)
 	namedB := types.NewNamed(
 		types.NewTypeName(token.NoPos, internalPkg, "Property", nil),
-		types.NewStruct([]*types.Var{types.NewField(token.NoPos, internalPkg, "B", types.Typ[types.Int], false)}, nil),
+		types.NewStruct(
+			[]*types.Var{
+				types.NewField(token.NoPos, internalPkg, "B", types.Typ[types.Int], false),
+			},
+			nil,
+		),
 		nil,
 	)
 
 	genAlias := types.NewAlias(
-		types.NewTypeName(token.NoPos, types.NewPackage("github.com/org/repo/ent/gen", "gen"), "Contact", nil),
+		types.NewTypeName(
+			token.NoPos,
+			types.NewPackage("github.com/org/repo/ent/gen", "gen"),
+			"Contact",
+			nil,
+		),
 		namedA,
 	)
 	subAlias := types.NewAlias(
-		types.NewTypeName(token.NoPos, types.NewPackage("github.com/org/repo/ent/gen/property", "property"), "Property", nil),
+		types.NewTypeName(
+			token.NoPos,
+			types.NewPackage("github.com/org/repo/ent/gen/property", "property"),
+			"Property",
+			nil,
+		),
 		namedB,
 	)
 
