@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
-	"strconv"
 	"sync/atomic"
 
 	"github.com/99designs/gqlgen/codegen/testdata/object_generic/graph/model"
@@ -1657,448 +1655,498 @@ func fieldContext___Type_isOneOf(_ context.Context, ec *executionContext, field 
 
 var queryImplementors = []string{"Query"}
 
+var queryFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "user",
+		NonNull:    false,
+		Concurrent: true,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return _Query_user(ctx, ec, field)
+		},
+	},
+	{
+		Name:       "__type",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return _Query___type(ctx, ec, field)
+		},
+	},
+	{
+		Name:       "__schema",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return _Query___schema(ctx, ec, field)
+		},
+	},
+}
+
 func _Query(ctx context.Context, ec *executionContext, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, queryImplementors)
-	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
-		Object: "Query",
-	})
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
-			Object: field.Name,
-			Field:  field,
-		})
-
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Query")
-		case "user":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = _Query_user(ctx, ec, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "__type":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return _Query___type(ctx, ec, field)
-			})
-		case "__schema":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return _Query___schema(ctx, ec, field)
-			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		nil,
+		"Query",
+		queryImplementors,
+		queryFieldHandlers,
+		true,
+	)
 }
 
 var userImplementors = []string{"User"}
 
+var userFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "id",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return _User_id(ctx, ec, field, obj.(*model.User))
+		},
+	},
+	{
+		Name:       "name",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return _User_name(ctx, ec, field, obj.(*model.User))
+		},
+	},
+	{
+		Name:       "age",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return _User_age(ctx, ec, field, obj.(*model.User))
+		},
+	},
+}
+
 func _User(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = _User_id(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "name":
-			out.Values[i] = _User_name(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "age":
-			out.Values[i] = _User_age(ctx, ec, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"User",
+		userImplementors,
+		userFieldHandlers,
+		false,
+	)
 }
 
 var __DirectiveImplementors = []string{"__Directive"}
 
+var __DirectiveFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "name",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Directive_name(ctx, ec, field, obj.(*introspection.Directive))
+		},
+	},
+	{
+		Name:       "description",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Directive_description(ctx, ec, field, obj.(*introspection.Directive))
+		},
+	},
+	{
+		Name:       "isRepeatable",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Directive_isRepeatable(ctx, ec, field, obj.(*introspection.Directive))
+		},
+	},
+	{
+		Name:       "locations",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Directive_locations(ctx, ec, field, obj.(*introspection.Directive))
+		},
+	},
+	{
+		Name:       "args",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Directive_args(ctx, ec, field, obj.(*introspection.Directive))
+		},
+	},
+}
+
 func ___Directive(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, __DirectiveImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("__Directive")
-		case "name":
-			out.Values[i] = ___Directive_name(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "description":
-			out.Values[i] = ___Directive_description(ctx, ec, field, obj)
-		case "isRepeatable":
-			out.Values[i] = ___Directive_isRepeatable(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "locations":
-			out.Values[i] = ___Directive_locations(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "args":
-			out.Values[i] = ___Directive_args(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"__Directive",
+		__DirectiveImplementors,
+		__DirectiveFieldHandlers,
+		false,
+	)
 }
 
 var __EnumValueImplementors = []string{"__EnumValue"}
 
+var __EnumValueFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "name",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___EnumValue_name(ctx, ec, field, obj.(*introspection.EnumValue))
+		},
+	},
+	{
+		Name:       "description",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___EnumValue_description(ctx, ec, field, obj.(*introspection.EnumValue))
+		},
+	},
+	{
+		Name:       "isDeprecated",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___EnumValue_isDeprecated(ctx, ec, field, obj.(*introspection.EnumValue))
+		},
+	},
+	{
+		Name:       "deprecationReason",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___EnumValue_deprecationReason(ctx, ec, field, obj.(*introspection.EnumValue))
+		},
+	},
+}
+
 func ___EnumValue(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.EnumValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, __EnumValueImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("__EnumValue")
-		case "name":
-			out.Values[i] = ___EnumValue_name(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "description":
-			out.Values[i] = ___EnumValue_description(ctx, ec, field, obj)
-		case "isDeprecated":
-			out.Values[i] = ___EnumValue_isDeprecated(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deprecationReason":
-			out.Values[i] = ___EnumValue_deprecationReason(ctx, ec, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"__EnumValue",
+		__EnumValueImplementors,
+		__EnumValueFieldHandlers,
+		false,
+	)
 }
 
 var __FieldImplementors = []string{"__Field"}
 
+var __FieldFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "name",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Field_name(ctx, ec, field, obj.(*introspection.Field))
+		},
+	},
+	{
+		Name:       "description",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Field_description(ctx, ec, field, obj.(*introspection.Field))
+		},
+	},
+	{
+		Name:       "args",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Field_args(ctx, ec, field, obj.(*introspection.Field))
+		},
+	},
+	{
+		Name:       "type",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Field_type(ctx, ec, field, obj.(*introspection.Field))
+		},
+	},
+	{
+		Name:       "isDeprecated",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Field_isDeprecated(ctx, ec, field, obj.(*introspection.Field))
+		},
+	},
+	{
+		Name:       "deprecationReason",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Field_deprecationReason(ctx, ec, field, obj.(*introspection.Field))
+		},
+	},
+}
+
 func ___Field(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Field) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, __FieldImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("__Field")
-		case "name":
-			out.Values[i] = ___Field_name(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "description":
-			out.Values[i] = ___Field_description(ctx, ec, field, obj)
-		case "args":
-			out.Values[i] = ___Field_args(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "type":
-			out.Values[i] = ___Field_type(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "isDeprecated":
-			out.Values[i] = ___Field_isDeprecated(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deprecationReason":
-			out.Values[i] = ___Field_deprecationReason(ctx, ec, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"__Field",
+		__FieldImplementors,
+		__FieldFieldHandlers,
+		false,
+	)
 }
 
 var __InputValueImplementors = []string{"__InputValue"}
 
+var __InputValueFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "name",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___InputValue_name(ctx, ec, field, obj.(*introspection.InputValue))
+		},
+	},
+	{
+		Name:       "description",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___InputValue_description(ctx, ec, field, obj.(*introspection.InputValue))
+		},
+	},
+	{
+		Name:       "type",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___InputValue_type(ctx, ec, field, obj.(*introspection.InputValue))
+		},
+	},
+	{
+		Name:       "defaultValue",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___InputValue_defaultValue(ctx, ec, field, obj.(*introspection.InputValue))
+		},
+	},
+	{
+		Name:       "isDeprecated",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___InputValue_isDeprecated(ctx, ec, field, obj.(*introspection.InputValue))
+		},
+	},
+	{
+		Name:       "deprecationReason",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___InputValue_deprecationReason(ctx, ec, field, obj.(*introspection.InputValue))
+		},
+	},
+}
+
 func ___InputValue(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.InputValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, __InputValueImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("__InputValue")
-		case "name":
-			out.Values[i] = ___InputValue_name(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "description":
-			out.Values[i] = ___InputValue_description(ctx, ec, field, obj)
-		case "type":
-			out.Values[i] = ___InputValue_type(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "defaultValue":
-			out.Values[i] = ___InputValue_defaultValue(ctx, ec, field, obj)
-		case "isDeprecated":
-			out.Values[i] = ___InputValue_isDeprecated(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deprecationReason":
-			out.Values[i] = ___InputValue_deprecationReason(ctx, ec, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"__InputValue",
+		__InputValueImplementors,
+		__InputValueFieldHandlers,
+		false,
+	)
 }
 
 var __SchemaImplementors = []string{"__Schema"}
 
+var __SchemaFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "description",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Schema_description(ctx, ec, field, obj.(*introspection.Schema))
+		},
+	},
+	{
+		Name:       "types",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Schema_types(ctx, ec, field, obj.(*introspection.Schema))
+		},
+	},
+	{
+		Name:       "queryType",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Schema_queryType(ctx, ec, field, obj.(*introspection.Schema))
+		},
+	},
+	{
+		Name:       "mutationType",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Schema_mutationType(ctx, ec, field, obj.(*introspection.Schema))
+		},
+	},
+	{
+		Name:       "subscriptionType",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Schema_subscriptionType(ctx, ec, field, obj.(*introspection.Schema))
+		},
+	},
+	{
+		Name:       "directives",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Schema_directives(ctx, ec, field, obj.(*introspection.Schema))
+		},
+	},
+}
+
 func ___Schema(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Schema) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, __SchemaImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("__Schema")
-		case "description":
-			out.Values[i] = ___Schema_description(ctx, ec, field, obj)
-		case "types":
-			out.Values[i] = ___Schema_types(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "queryType":
-			out.Values[i] = ___Schema_queryType(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "mutationType":
-			out.Values[i] = ___Schema_mutationType(ctx, ec, field, obj)
-		case "subscriptionType":
-			out.Values[i] = ___Schema_subscriptionType(ctx, ec, field, obj)
-		case "directives":
-			out.Values[i] = ___Schema_directives(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"__Schema",
+		__SchemaImplementors,
+		__SchemaFieldHandlers,
+		false,
+	)
 }
 
 var __TypeImplementors = []string{"__Type"}
 
+var __TypeFieldHandlers = []graphql.FieldHandler{
+	{
+		Name:       "kind",
+		NonNull:    true,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_kind(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "name",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_name(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "description",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_description(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "specifiedByURL",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_specifiedByURL(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "fields",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_fields(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "interfaces",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_interfaces(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "possibleTypes",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_possibleTypes(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "enumValues",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_enumValues(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "inputFields",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_inputFields(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "ofType",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_ofType(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+	{
+		Name:       "isOneOf",
+		NonNull:    false,
+		Concurrent: false,
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			return ___Type_isOneOf(ctx, ec, field, obj.(*introspection.Type))
+		},
+	},
+}
+
 func ___Type(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Type) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, __TypeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("__Type")
-		case "kind":
-			out.Values[i] = ___Type_kind(ctx, ec, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "name":
-			out.Values[i] = ___Type_name(ctx, ec, field, obj)
-		case "description":
-			out.Values[i] = ___Type_description(ctx, ec, field, obj)
-		case "specifiedByURL":
-			out.Values[i] = ___Type_specifiedByURL(ctx, ec, field, obj)
-		case "fields":
-			out.Values[i] = ___Type_fields(ctx, ec, field, obj)
-		case "interfaces":
-			out.Values[i] = ___Type_interfaces(ctx, ec, field, obj)
-		case "possibleTypes":
-			out.Values[i] = ___Type_possibleTypes(ctx, ec, field, obj)
-		case "enumValues":
-			out.Values[i] = ___Type_enumValues(ctx, ec, field, obj)
-		case "inputFields":
-			out.Values[i] = ___Type_inputFields(ctx, ec, field, obj)
-		case "ofType":
-			out.Values[i] = ___Type_ofType(ctx, ec, field, obj)
-		case "isOneOf":
-			out.Values[i] = ___Type_isOneOf(ctx, ec, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		obj,
+		"__Type",
+		__TypeImplementors,
+		__TypeFieldHandlers,
+		false,
+	)
 }
 
 // endregion **************************** object.gotpl ****************************

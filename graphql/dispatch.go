@@ -68,6 +68,9 @@ func DispatchObject(
 ) Marshaler {
 	opCtx := ec.GetOperationContext()
 	fields := CollectFields(opCtx, sel, implementors)
+	if root {
+		ctx = WithFieldContext(ctx, &FieldContext{Object: typeName})
+	}
 
 	out := NewFieldSet(fields)
 	deferred := make(map[string]*FieldSet)

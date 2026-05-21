@@ -41,6 +41,21 @@ func (ec *ExecutionContextState[R, D, C]) Schema() *ast.Schema {
 	return ec.ParsedSchema
 }
 
+// GetOperationContext returns the embedded *OperationContext. It exists so the
+// generated *executionContext satisfies graphql.ObjectExecutionContext, which
+// DispatchObject calls into when use_generic_dispatcher is enabled.
+func (ec *ExecutionContextState[R, D, C]) GetOperationContext() *OperationContext {
+	return ec.OperationContext
+}
+
+// AddDeferred atomically adds delta to the Deferred counter. Single-file
+// generated code historically inlined atomic.AddInt32(&ec.Deferred, ...);
+// exposing this as a method lets DispatchObject participate in the same
+// accounting without touching the generated struct's field directly.
+func (ec *ExecutionContextState[R, D, C]) AddDeferred(delta int32) {
+	atomic.AddInt32(&ec.Deferred, delta)
+}
+
 func (ec *ExecutionContextState[R, D, C]) ProcessDeferredGroup(dg DeferredGroup) {
 	atomic.AddInt32(&ec.PendingDeferred, 1)
 	go func() {

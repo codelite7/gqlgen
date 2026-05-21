@@ -24,6 +24,38 @@ func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}s
 	}
 }
 {{- else }}
+{{- if $.Config.Exec.UseGenericDispatcher }}
+
+var {{ $object.Name|lcFirst }}FieldHandlers = []graphql.FieldHandler{
+{{- range $field := $object.Fields }}
+	{
+		Name:       {{$field.Name|quote}},
+		NonNull:    {{ $field.TypeReference.GQL.NonNull }},
+		Concurrent: {{ $field.IsConcurrent }},
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+		{{- if $object.Root }}
+			return {{$.ECDot}}_{{$object.Name}}_{{$field.Name}}(ctx, {{$.ECArg}}field)
+		{{- else }}
+			return {{$.ECDot}}_{{$object.Name}}_{{$field.Name}}(ctx, {{$.ECArg}}field, obj.({{$object.Reference | ref}}))
+		{{- end }}
+		},
+	},
+{{- end }}
+}
+
+func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}sel ast.SelectionSet{{ if not $object.Root }}, obj {{$object.Reference | ref }}{{ end }}) graphql.Marshaler {
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		{{ if $object.Root }}nil{{ else }}obj{{ end }},
+		{{$object.Name|quote}},
+		{{$object.Name|lcFirst}}Implementors,
+		{{$object.Name|lcFirst}}FieldHandlers,
+		{{ $object.Root }},
+	)
+}
+{{- else }}
 
 func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}sel ast.SelectionSet{{ if not $object.Root }},obj {{$object.Reference | ref }}{{ end }}) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, {{$object.Name|lcFirst}}Implementors)
@@ -134,6 +166,7 @@ func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}s
 
 	return out
 }
+{{- end }}
 {{- end }}
 
 {{- end }}
