@@ -1655,31 +1655,45 @@ func fieldContext___Type_isOneOf(_ context.Context, ec *executionContext, field 
 
 var queryImplementors = []string{"Query"}
 
-var queryFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "user",
-		NonNull:    false,
-		Concurrent: true,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return _Query_user(ctx, ec, field)
+// queryFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var queryFieldHandlers []graphql.FieldHandler
+
+func init() {
+	queryFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "user",
+			NonNull:    false,
+			Concurrent: true,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return _Query_user(ctx, ec0, field)
+			},
 		},
-	},
-	{
-		Name:       "__type",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return _Query___type(ctx, ec, field)
+		{
+			Name:       "__type",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return _Query___type(ctx, ec0, field)
+			},
 		},
-	},
-	{
-		Name:       "__schema",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return _Query___schema(ctx, ec, field)
+		{
+			Name:       "__schema",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return _Query___schema(ctx, ec0, field)
+			},
 		},
-	},
+	}
 }
 
 func _Query(ctx context.Context, ec *executionContext, sel ast.SelectionSet) graphql.Marshaler {
@@ -1697,31 +1711,45 @@ func _Query(ctx context.Context, ec *executionContext, sel ast.SelectionSet) gra
 
 var userImplementors = []string{"User"}
 
-var userFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "id",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return _User_id(ctx, ec, field, obj.(*model.User))
+// userFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var userFieldHandlers []graphql.FieldHandler
+
+func init() {
+	userFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "id",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return _User_id(ctx, ec0, field, obj.(*model.User))
+			},
 		},
-	},
-	{
-		Name:       "name",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return _User_name(ctx, ec, field, obj.(*model.User))
+		{
+			Name:       "name",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return _User_name(ctx, ec0, field, obj.(*model.User))
+			},
 		},
-	},
-	{
-		Name:       "age",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return _User_age(ctx, ec, field, obj.(*model.User))
+		{
+			Name:       "age",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return _User_age(ctx, ec0, field, obj.(*model.User))
+			},
 		},
-	},
+	}
 }
 
 func _User(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
@@ -1739,47 +1767,63 @@ func _User(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj 
 
 var __DirectiveImplementors = []string{"__Directive"}
 
-var __DirectiveFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "name",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Directive_name(ctx, ec, field, obj.(*introspection.Directive))
+// __DirectiveFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var __DirectiveFieldHandlers []graphql.FieldHandler
+
+func init() {
+	__DirectiveFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "name",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Directive_name(ctx, ec0, field, obj.(*introspection.Directive))
+			},
 		},
-	},
-	{
-		Name:       "description",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Directive_description(ctx, ec, field, obj.(*introspection.Directive))
+		{
+			Name:       "description",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Directive_description(ctx, ec0, field, obj.(*introspection.Directive))
+			},
 		},
-	},
-	{
-		Name:       "isRepeatable",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Directive_isRepeatable(ctx, ec, field, obj.(*introspection.Directive))
+		{
+			Name:       "isRepeatable",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Directive_isRepeatable(ctx, ec0, field, obj.(*introspection.Directive))
+			},
 		},
-	},
-	{
-		Name:       "locations",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Directive_locations(ctx, ec, field, obj.(*introspection.Directive))
+		{
+			Name:       "locations",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Directive_locations(ctx, ec0, field, obj.(*introspection.Directive))
+			},
 		},
-	},
-	{
-		Name:       "args",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Directive_args(ctx, ec, field, obj.(*introspection.Directive))
+		{
+			Name:       "args",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Directive_args(ctx, ec0, field, obj.(*introspection.Directive))
+			},
 		},
-	},
+	}
 }
 
 func ___Directive(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
@@ -1797,39 +1841,54 @@ func ___Directive(ctx context.Context, ec *executionContext, sel ast.SelectionSe
 
 var __EnumValueImplementors = []string{"__EnumValue"}
 
-var __EnumValueFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "name",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___EnumValue_name(ctx, ec, field, obj.(*introspection.EnumValue))
+// __EnumValueFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var __EnumValueFieldHandlers []graphql.FieldHandler
+
+func init() {
+	__EnumValueFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "name",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___EnumValue_name(ctx, ec0, field, obj.(*introspection.EnumValue))
+			},
 		},
-	},
-	{
-		Name:       "description",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___EnumValue_description(ctx, ec, field, obj.(*introspection.EnumValue))
+		{
+			Name:       "description",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___EnumValue_description(ctx, ec0, field, obj.(*introspection.EnumValue))
+			},
 		},
-	},
-	{
-		Name:       "isDeprecated",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___EnumValue_isDeprecated(ctx, ec, field, obj.(*introspection.EnumValue))
+		{
+			Name:       "isDeprecated",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___EnumValue_isDeprecated(ctx, ec0, field, obj.(*introspection.EnumValue))
+			},
 		},
-	},
-	{
-		Name:       "deprecationReason",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___EnumValue_deprecationReason(ctx, ec, field, obj.(*introspection.EnumValue))
+		{
+			Name:       "deprecationReason",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___EnumValue_deprecationReason(ctx, ec0, field, obj.(*introspection.EnumValue))
+			},
 		},
-	},
+	}
 }
 
 func ___EnumValue(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.EnumValue) graphql.Marshaler {
@@ -1847,55 +1906,72 @@ func ___EnumValue(ctx context.Context, ec *executionContext, sel ast.SelectionSe
 
 var __FieldImplementors = []string{"__Field"}
 
-var __FieldFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "name",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Field_name(ctx, ec, field, obj.(*introspection.Field))
+// __FieldFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var __FieldFieldHandlers []graphql.FieldHandler
+
+func init() {
+	__FieldFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "name",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Field_name(ctx, ec0, field, obj.(*introspection.Field))
+			},
 		},
-	},
-	{
-		Name:       "description",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Field_description(ctx, ec, field, obj.(*introspection.Field))
+		{
+			Name:       "description",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Field_description(ctx, ec0, field, obj.(*introspection.Field))
+			},
 		},
-	},
-	{
-		Name:       "args",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Field_args(ctx, ec, field, obj.(*introspection.Field))
+		{
+			Name:       "args",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Field_args(ctx, ec0, field, obj.(*introspection.Field))
+			},
 		},
-	},
-	{
-		Name:       "type",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Field_type(ctx, ec, field, obj.(*introspection.Field))
+		{
+			Name:       "type",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Field_type(ctx, ec0, field, obj.(*introspection.Field))
+			},
 		},
-	},
-	{
-		Name:       "isDeprecated",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Field_isDeprecated(ctx, ec, field, obj.(*introspection.Field))
+		{
+			Name:       "isDeprecated",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Field_isDeprecated(ctx, ec0, field, obj.(*introspection.Field))
+			},
 		},
-	},
-	{
-		Name:       "deprecationReason",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Field_deprecationReason(ctx, ec, field, obj.(*introspection.Field))
+		{
+			Name:       "deprecationReason",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Field_deprecationReason(ctx, ec0, field, obj.(*introspection.Field))
+			},
 		},
-	},
+	}
 }
 
 func ___Field(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Field) graphql.Marshaler {
@@ -1913,55 +1989,72 @@ func ___Field(ctx context.Context, ec *executionContext, sel ast.SelectionSet, o
 
 var __InputValueImplementors = []string{"__InputValue"}
 
-var __InputValueFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "name",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___InputValue_name(ctx, ec, field, obj.(*introspection.InputValue))
+// __InputValueFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var __InputValueFieldHandlers []graphql.FieldHandler
+
+func init() {
+	__InputValueFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "name",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___InputValue_name(ctx, ec0, field, obj.(*introspection.InputValue))
+			},
 		},
-	},
-	{
-		Name:       "description",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___InputValue_description(ctx, ec, field, obj.(*introspection.InputValue))
+		{
+			Name:       "description",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___InputValue_description(ctx, ec0, field, obj.(*introspection.InputValue))
+			},
 		},
-	},
-	{
-		Name:       "type",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___InputValue_type(ctx, ec, field, obj.(*introspection.InputValue))
+		{
+			Name:       "type",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___InputValue_type(ctx, ec0, field, obj.(*introspection.InputValue))
+			},
 		},
-	},
-	{
-		Name:       "defaultValue",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___InputValue_defaultValue(ctx, ec, field, obj.(*introspection.InputValue))
+		{
+			Name:       "defaultValue",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___InputValue_defaultValue(ctx, ec0, field, obj.(*introspection.InputValue))
+			},
 		},
-	},
-	{
-		Name:       "isDeprecated",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___InputValue_isDeprecated(ctx, ec, field, obj.(*introspection.InputValue))
+		{
+			Name:       "isDeprecated",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___InputValue_isDeprecated(ctx, ec0, field, obj.(*introspection.InputValue))
+			},
 		},
-	},
-	{
-		Name:       "deprecationReason",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___InputValue_deprecationReason(ctx, ec, field, obj.(*introspection.InputValue))
+		{
+			Name:       "deprecationReason",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___InputValue_deprecationReason(ctx, ec0, field, obj.(*introspection.InputValue))
+			},
 		},
-	},
+	}
 }
 
 func ___InputValue(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.InputValue) graphql.Marshaler {
@@ -1979,55 +2072,72 @@ func ___InputValue(ctx context.Context, ec *executionContext, sel ast.SelectionS
 
 var __SchemaImplementors = []string{"__Schema"}
 
-var __SchemaFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "description",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Schema_description(ctx, ec, field, obj.(*introspection.Schema))
+// __SchemaFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var __SchemaFieldHandlers []graphql.FieldHandler
+
+func init() {
+	__SchemaFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "description",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Schema_description(ctx, ec0, field, obj.(*introspection.Schema))
+			},
 		},
-	},
-	{
-		Name:       "types",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Schema_types(ctx, ec, field, obj.(*introspection.Schema))
+		{
+			Name:       "types",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Schema_types(ctx, ec0, field, obj.(*introspection.Schema))
+			},
 		},
-	},
-	{
-		Name:       "queryType",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Schema_queryType(ctx, ec, field, obj.(*introspection.Schema))
+		{
+			Name:       "queryType",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Schema_queryType(ctx, ec0, field, obj.(*introspection.Schema))
+			},
 		},
-	},
-	{
-		Name:       "mutationType",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Schema_mutationType(ctx, ec, field, obj.(*introspection.Schema))
+		{
+			Name:       "mutationType",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Schema_mutationType(ctx, ec0, field, obj.(*introspection.Schema))
+			},
 		},
-	},
-	{
-		Name:       "subscriptionType",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Schema_subscriptionType(ctx, ec, field, obj.(*introspection.Schema))
+		{
+			Name:       "subscriptionType",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Schema_subscriptionType(ctx, ec0, field, obj.(*introspection.Schema))
+			},
 		},
-	},
-	{
-		Name:       "directives",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Schema_directives(ctx, ec, field, obj.(*introspection.Schema))
+		{
+			Name:       "directives",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Schema_directives(ctx, ec0, field, obj.(*introspection.Schema))
+			},
 		},
-	},
+	}
 }
 
 func ___Schema(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Schema) graphql.Marshaler {
@@ -2045,95 +2155,117 @@ func ___Schema(ctx context.Context, ec *executionContext, sel ast.SelectionSet, 
 
 var __TypeImplementors = []string{"__Type"}
 
-var __TypeFieldHandlers = []graphql.FieldHandler{
-	{
-		Name:       "kind",
-		NonNull:    true,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_kind(ctx, ec, field, obj.(*introspection.Type))
+// __TypeFieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var __TypeFieldHandlers []graphql.FieldHandler
+
+func init() {
+	__TypeFieldHandlers = []graphql.FieldHandler{
+		{
+			Name:       "kind",
+			NonNull:    true,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_kind(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "name",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_name(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "name",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_name(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "description",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_description(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "description",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_description(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "specifiedByURL",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_specifiedByURL(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "specifiedByURL",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_specifiedByURL(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "fields",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_fields(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "fields",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_fields(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "interfaces",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_interfaces(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "interfaces",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_interfaces(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "possibleTypes",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_possibleTypes(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "possibleTypes",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_possibleTypes(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "enumValues",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_enumValues(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "enumValues",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_enumValues(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "inputFields",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_inputFields(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "inputFields",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_inputFields(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "ofType",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_ofType(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "ofType",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_ofType(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
-	{
-		Name:       "isOneOf",
-		NonNull:    false,
-		Concurrent: false,
-		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-			return ___Type_isOneOf(ctx, ec, field, obj.(*introspection.Type))
+		{
+			Name:       "isOneOf",
+			NonNull:    false,
+			Concurrent: false,
+			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+				ec0 := ec.(*executionContext)
+				return ___Type_isOneOf(ctx, ec0, field, obj.(*introspection.Type))
+			},
 		},
-	},
+	}
 }
 
 func ___Type(ctx context.Context, ec *executionContext, sel ast.SelectionSet, obj *introspection.Type) graphql.Marshaler {

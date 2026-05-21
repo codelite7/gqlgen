@@ -26,21 +26,41 @@ func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}s
 {{- else }}
 {{- if $.Config.Exec.UseGenericDispatcher }}
 
-var {{ $object.Name|lcFirst }}FieldHandlers = []graphql.FieldHandler{
+// {{ $object.Name|lcFirst }}FieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var {{ $object.Name|lcFirst }}FieldHandlers []graphql.FieldHandler
+
+func init() {
+	{{ $object.Name|lcFirst }}FieldHandlers = []graphql.FieldHandler{
 {{- range $field := $object.Fields }}
 	{
 		Name:       {{$field.Name|quote}},
 		NonNull:    {{ $field.TypeReference.GQL.NonNull }},
 		Concurrent: {{ $field.IsConcurrent }},
 		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		{{- if $object.Root }}
-			return {{$.ECDot}}_{{$object.Name}}_{{$field.Name}}(ctx, {{$.ECArg}}field)
+			ec0 := ec.(*executionContext)
+		{{- if $.Config.UseFunctionSyntaxForExecutionContext }}
+			{{- if $object.Root }}
+			return _{{$object.Name}}_{{$field.Name}}(ctx, ec0, field)
+			{{- else }}
+			return _{{$object.Name}}_{{$field.Name}}(ctx, ec0, field, obj.({{$object.Reference | ref}}))
+			{{- end }}
 		{{- else }}
-			return {{$.ECDot}}_{{$object.Name}}_{{$field.Name}}(ctx, {{$.ECArg}}field, obj.({{$object.Reference | ref}}))
+			{{- if $object.Root }}
+			return ec0._{{$object.Name}}_{{$field.Name}}(ctx, field)
+			{{- else }}
+			return ec0._{{$object.Name}}_{{$field.Name}}(ctx, field, obj.({{$object.Reference | ref}}))
+			{{- end }}
 		{{- end }}
 		},
 	},
 {{- end }}
+	}
 }
 
 func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}sel ast.SelectionSet{{ if not $object.Root }}, obj {{$object.Reference | ref }}{{ end }}) graphql.Marshaler {

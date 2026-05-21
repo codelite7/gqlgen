@@ -21,8 +21,16 @@ import (
 func TestObjectDispatcherEmitsTable(t *testing.T) {
 	generated := readFixtureGenerated(t)
 
-	require.Contains(t, generated, "var userFieldHandlers = []graphql.FieldHandler{",
-		"expected per-type field handler table for User")
+	// The handler table is declared at package level and populated in init()
+	// to break the package-level init cycle that forms via introspection types
+	// (__Type -> __Field -> __InputValue -> __Type) — each per-field Resolve
+	// closure transitively references other types' tables, and Go's static
+	// init-cycle analyzer follows closure bodies. init() runs after var
+	// initialization, sidestepping the analyzer.
+	require.Contains(t, generated, "var userFieldHandlers []graphql.FieldHandler",
+		"expected per-type field handler table declaration for User")
+	require.Contains(t, generated, "userFieldHandlers = []graphql.FieldHandler{",
+		"expected per-type field handler table population for User (in init())")
 	require.Contains(t, generated, "graphql.DispatchObject(",
 		"expected DispatchObject call in collapsed dispatcher")
 
