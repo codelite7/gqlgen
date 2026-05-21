@@ -25,7 +25,11 @@
         },
         "layout": {
           "type": "string",
-          "enum": ["single-file", "follow-schema", "split-packages"],
+          "enum": [
+            "single-file",
+            "follow-schema",
+            "split-packages"
+          ],
           "default": "single-file"
         },
         "dir": {
@@ -50,6 +54,11 @@
           "type": "integer",
           "description": "Maximum number of goroutines in concurrency to use per child resolvers",
           "default": 1000
+        },
+        "use_generic_dispatcher": {
+          "type": "boolean",
+          "description": "Emit the per-type _<Type> object dispatcher as a FieldHandler table consumed by graphql.DispatchObject instead of an inline switch. Default off.",
+          "default": false
         }
       }
     },
@@ -57,9 +66,15 @@
       "description": "Federation configuration",
       "type": "object",
       "properties": {
-        "filename": { "type": "string" },
-        "package": { "type": "string" },
-        "version": { "type": "integer" },
+        "filename": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
         "options": {
           "type": "object",
           "properties": {
@@ -80,20 +95,32 @@
             }
           }
         },
-        "model_template": { "type": "string" }
+        "model_template": {
+          "type": "string"
+        }
       }
     },
     "model": {
       "description": "Where should any generated models go?",
       "type": "object",
       "properties": {
-        "filename": { "type": "string" },
-        "package": { "type": "string" },
-        "model_template": { "type": "string" },
-        "version": { "type": "integer" },
+        "filename": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "model_template": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
         "options": {
           "type": "object",
-          "additionalProperties": { "type": "boolean" }
+          "additionalProperties": {
+            "type": "boolean"
+          }
         }
       }
     },
@@ -103,19 +130,34 @@
       "properties": {
         "layout": {
           "type": "string",
-          "enum": ["single-file", "follow-schema"],
+          "enum": [
+            "single-file",
+            "follow-schema"
+          ],
           "default": "follow-schema"
         },
-        "package": { "type": "string" },
-        "dir": { "type": "string" },
-        "filename": { "type": "string" },
+        "package": {
+          "type": "string"
+        },
+        "dir": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
         "filename_template": {
           "type": "string",
           "default": "{name}.resolvers.go"
         },
-        "omit_template_comment": { "type": "boolean" },
-        "resolver_template": { "type": "string" },
-        "preserve_resolver": { "type": "boolean" },
+        "omit_template_comment": {
+          "type": "boolean"
+        },
+        "resolver_template": {
+          "type": "string"
+        },
+        "preserve_resolver": {
+          "type": "boolean"
+        },
         "type": {
           "type": "string",
           "description": "The name of the resolver struct type",
@@ -126,7 +168,9 @@
     "autobind": {
       "description": "gqlgen will search for any type names in the schema in these go packages",
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "autobind_getter_haser": {
       "description": "Enable getter/haser methods for autobind",
@@ -141,7 +185,9 @@
         "properties": {
           "model": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "forceGenerate": {
             "type": "boolean",
@@ -156,8 +202,12 @@
                   "type": "string",
                   "description": "Go type for this field"
                 },
-                "resolver": { "type": "boolean" },
-                "fieldName": { "type": "string" },
+                "resolver": {
+                  "type": "boolean"
+                },
+                "fieldName": {
+                  "type": "string"
+                },
                 "omittable": {
                   "type": "boolean",
                   "description": "Wrap this field with Omittable"
@@ -190,9 +240,18 @@
             "additionalProperties": {
               "type": "object",
               "properties": {
-                "type": { "type": "string", "description": "Go type of the extra field" },
-                "overrideTags": { "type": "string", "description": "Override the Go struct tag" },
-                "description": { "type": "string", "description": "Go doc-comment for the field" }
+                "type": {
+                  "type": "string",
+                  "description": "Go type of the extra field"
+                },
+                "overrideTags": {
+                  "type": "string",
+                  "description": "Override the Go struct tag"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Go doc-comment for the field"
+                }
               }
             }
           },
@@ -202,9 +261,18 @@
             "items": {
               "type": "object",
               "properties": {
-                "type": { "type": "string", "description": "Go type of the extra field" },
-                "overrideTags": { "type": "string", "description": "Override the Go struct tag" },
-                "description": { "type": "string", "description": "Go doc-comment for the field" }
+                "type": {
+                  "type": "string",
+                  "description": "Go type of the extra field"
+                },
+                "overrideTags": {
+                  "type": "string",
+                  "description": "Override the Go struct tag"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Go doc-comment for the field"
+                }
               }
             }
           }
@@ -360,21 +428,29 @@
     "go_build_tags": {
       "description": "Set build tags that will be used to load packages",
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "go_build_flags": {
       "description": "Set additional build flags passed to go/packages while loading packages",
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "go_initialisms": {
       "description": "Set to modify the initialisms regarded for Go names",
       "type": "object",
       "properties": {
-        "replace_defaults": { "type": "boolean" },
+        "replace_defaults": {
+          "type": "boolean"
+        },
         "initialisms": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     }

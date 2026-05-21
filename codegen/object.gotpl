@@ -24,6 +24,59 @@ func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}s
 	}
 }
 {{- else }}
+{{- if $.Config.Exec.UseGenericDispatcher }}
+
+// {{ $object.Name|lcFirst }}FieldHandlers is populated in init() (below) rather
+// than initialized inline. Inline initialization triggers Go's package-level
+// init-cycle check: each per-field Resolve closure transitively references
+// other types' field-handler tables (introspection types cycle as
+// __Type -> __Field -> __InputValue -> __Type), and the analyzer follows
+// closure bodies during static cycle detection. Populating in init() runs
+// after all package-level vars have their zero values, so no cycle is seen.
+var {{ $object.Name|lcFirst }}FieldHandlers []graphql.FieldHandler
+
+func init() {
+	{{ $object.Name|lcFirst }}FieldHandlers = []graphql.FieldHandler{
+{{- range $field := $object.Fields }}
+	{
+		Name:         {{$field.Name|quote}},
+		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+		Concurrent:   {{ $field.IsConcurrent }},
+		RecoverPanic: {{ not $.Config.OmitPanicHandler }},
+		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+			ec0 := ec.(*executionContext)
+		{{- if $.Config.UseFunctionSyntaxForExecutionContext }}
+			{{- if $object.Root }}
+			return _{{$object.Name}}_{{$field.Name}}(ctx, ec0, field)
+			{{- else }}
+			return _{{$object.Name}}_{{$field.Name}}(ctx, ec0, field, obj.({{$object.Reference | ref}}))
+			{{- end }}
+		{{- else }}
+			{{- if $object.Root }}
+			return ec0._{{$object.Name}}_{{$field.Name}}(ctx, field)
+			{{- else }}
+			return ec0._{{$object.Name}}_{{$field.Name}}(ctx, field, obj.({{$object.Reference | ref}}))
+			{{- end }}
+		{{- end }}
+		},
+	},
+{{- end }}
+	}
+}
+
+func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}sel ast.SelectionSet{{ if not $object.Root }}, obj {{$object.Reference | ref }}{{ end }}) graphql.Marshaler {
+	return graphql.DispatchObject(
+		ctx,
+		ec,
+		sel,
+		{{ if $object.Root }}nil{{ else }}obj{{ end }},
+		{{$object.Name|quote}},
+		{{$object.Name|lcFirst}}Implementors,
+		{{$object.Name|lcFirst}}FieldHandlers,
+		{{ $object.Root }},
+	)
+}
+{{- else }}
 
 func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}sel ast.SelectionSet{{ if not $object.Root }},obj {{$object.Reference | ref }}{{ end }}) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, {{$object.Name|lcFirst}}Implementors)
@@ -134,6 +187,7 @@ func {{$.FuncReceiver}}_{{$object.Name}}(ctx context.Context, {{$.ECFuncParam}}s
 
 	return out
 }
+{{- end }}
 {{- end }}
 
 {{- end }}

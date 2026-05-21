@@ -30,6 +30,19 @@ type ExecConfig struct {
 	// but processing time may increase due to the reduced number of concurrences
 	// Default: 0 (unlimited)
 	WorkerLimit uint `yaml:"worker_limit"`
+
+	// UseGenericDispatcher swaps the per-type _<Type>(...) dispatcher emitted
+	// by codegen/object.gotpl from a giant per-type switch into a per-type
+	// FieldHandler table consumed by graphql.DispatchObject. The mechanism is
+	// the same compile-time win as use_function_syntax_for_execution_context:
+	// collapse many AST-distinct per-type bodies into one shared generic body
+	// so the compiler holds the dispatcher's type-checked AST once instead of
+	// hundreds of near-identical copies.
+	//
+	// Only affects single-file (and follow-schema) layouts; split-packages
+	// already delegates dispatch through ec.ResolveField and is unaffected.
+	// Default: false (emit the historical switch).
+	UseGenericDispatcher bool `yaml:"use_generic_dispatcher,omitempty"`
 }
 
 type ExecLayout string

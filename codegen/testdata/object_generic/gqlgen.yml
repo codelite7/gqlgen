@@ -1,0 +1,15 @@
+schema:
+  - "*.graphqls"
+skip_validation: true
+use_function_syntax_for_execution_context: true
+exec:
+  filename: graph/generated.go
+  package: graph
+  use_generic_dispatcher: true
+model:
+  filename: graph/model/models_gen.go
+  package: model
+resolver:
+  filename: graph/resolver.go
+  package: graph
+  type: Resolver
