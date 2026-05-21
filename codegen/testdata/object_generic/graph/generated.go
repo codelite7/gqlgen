@@ -1667,27 +1667,30 @@ var queryFieldHandlers []graphql.FieldHandler
 func init() {
 	queryFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "user",
-			NonNull:    false,
-			Concurrent: true,
+			Name:         "user",
+			NonNull:      false,
+			Concurrent:   true,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return _Query_user(ctx, ec0, field)
 			},
 		},
 		{
-			Name:       "__type",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "__type",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return _Query___type(ctx, ec0, field)
 			},
 		},
 		{
-			Name:       "__schema",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "__schema",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return _Query___schema(ctx, ec0, field)
@@ -1723,27 +1726,30 @@ var userFieldHandlers []graphql.FieldHandler
 func init() {
 	userFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "id",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "id",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return _User_id(ctx, ec0, field, obj.(*model.User))
 			},
 		},
 		{
-			Name:       "name",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "name",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return _User_name(ctx, ec0, field, obj.(*model.User))
 			},
 		},
 		{
-			Name:       "age",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "age",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return _User_age(ctx, ec0, field, obj.(*model.User))
@@ -1779,45 +1785,50 @@ var __DirectiveFieldHandlers []graphql.FieldHandler
 func init() {
 	__DirectiveFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "name",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "name",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Directive_name(ctx, ec0, field, obj.(*introspection.Directive))
 			},
 		},
 		{
-			Name:       "description",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "description",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Directive_description(ctx, ec0, field, obj.(*introspection.Directive))
 			},
 		},
 		{
-			Name:       "isRepeatable",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "isRepeatable",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Directive_isRepeatable(ctx, ec0, field, obj.(*introspection.Directive))
 			},
 		},
 		{
-			Name:       "locations",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "locations",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Directive_locations(ctx, ec0, field, obj.(*introspection.Directive))
 			},
 		},
 		{
-			Name:       "args",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "args",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Directive_args(ctx, ec0, field, obj.(*introspection.Directive))
@@ -1853,36 +1864,40 @@ var __EnumValueFieldHandlers []graphql.FieldHandler
 func init() {
 	__EnumValueFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "name",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "name",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___EnumValue_name(ctx, ec0, field, obj.(*introspection.EnumValue))
 			},
 		},
 		{
-			Name:       "description",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "description",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___EnumValue_description(ctx, ec0, field, obj.(*introspection.EnumValue))
 			},
 		},
 		{
-			Name:       "isDeprecated",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "isDeprecated",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___EnumValue_isDeprecated(ctx, ec0, field, obj.(*introspection.EnumValue))
 			},
 		},
 		{
-			Name:       "deprecationReason",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "deprecationReason",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___EnumValue_deprecationReason(ctx, ec0, field, obj.(*introspection.EnumValue))
@@ -1918,54 +1933,60 @@ var __FieldFieldHandlers []graphql.FieldHandler
 func init() {
 	__FieldFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "name",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "name",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Field_name(ctx, ec0, field, obj.(*introspection.Field))
 			},
 		},
 		{
-			Name:       "description",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "description",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Field_description(ctx, ec0, field, obj.(*introspection.Field))
 			},
 		},
 		{
-			Name:       "args",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "args",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Field_args(ctx, ec0, field, obj.(*introspection.Field))
 			},
 		},
 		{
-			Name:       "type",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "type",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Field_type(ctx, ec0, field, obj.(*introspection.Field))
 			},
 		},
 		{
-			Name:       "isDeprecated",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "isDeprecated",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Field_isDeprecated(ctx, ec0, field, obj.(*introspection.Field))
 			},
 		},
 		{
-			Name:       "deprecationReason",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "deprecationReason",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Field_deprecationReason(ctx, ec0, field, obj.(*introspection.Field))
@@ -2001,54 +2022,60 @@ var __InputValueFieldHandlers []graphql.FieldHandler
 func init() {
 	__InputValueFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "name",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "name",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___InputValue_name(ctx, ec0, field, obj.(*introspection.InputValue))
 			},
 		},
 		{
-			Name:       "description",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "description",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___InputValue_description(ctx, ec0, field, obj.(*introspection.InputValue))
 			},
 		},
 		{
-			Name:       "type",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "type",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___InputValue_type(ctx, ec0, field, obj.(*introspection.InputValue))
 			},
 		},
 		{
-			Name:       "defaultValue",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "defaultValue",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___InputValue_defaultValue(ctx, ec0, field, obj.(*introspection.InputValue))
 			},
 		},
 		{
-			Name:       "isDeprecated",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "isDeprecated",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___InputValue_isDeprecated(ctx, ec0, field, obj.(*introspection.InputValue))
 			},
 		},
 		{
-			Name:       "deprecationReason",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "deprecationReason",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___InputValue_deprecationReason(ctx, ec0, field, obj.(*introspection.InputValue))
@@ -2084,54 +2111,60 @@ var __SchemaFieldHandlers []graphql.FieldHandler
 func init() {
 	__SchemaFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "description",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "description",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Schema_description(ctx, ec0, field, obj.(*introspection.Schema))
 			},
 		},
 		{
-			Name:       "types",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "types",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Schema_types(ctx, ec0, field, obj.(*introspection.Schema))
 			},
 		},
 		{
-			Name:       "queryType",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "queryType",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Schema_queryType(ctx, ec0, field, obj.(*introspection.Schema))
 			},
 		},
 		{
-			Name:       "mutationType",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "mutationType",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Schema_mutationType(ctx, ec0, field, obj.(*introspection.Schema))
 			},
 		},
 		{
-			Name:       "subscriptionType",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "subscriptionType",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Schema_subscriptionType(ctx, ec0, field, obj.(*introspection.Schema))
 			},
 		},
 		{
-			Name:       "directives",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "directives",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Schema_directives(ctx, ec0, field, obj.(*introspection.Schema))
@@ -2167,99 +2200,110 @@ var __TypeFieldHandlers []graphql.FieldHandler
 func init() {
 	__TypeFieldHandlers = []graphql.FieldHandler{
 		{
-			Name:       "kind",
-			NonNull:    true,
-			Concurrent: false,
+			Name:         "kind",
+			NonNull:      true,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_kind(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "name",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "name",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_name(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "description",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "description",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_description(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "specifiedByURL",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "specifiedByURL",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_specifiedByURL(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "fields",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "fields",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_fields(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "interfaces",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "interfaces",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_interfaces(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "possibleTypes",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "possibleTypes",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_possibleTypes(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "enumValues",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "enumValues",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_enumValues(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "inputFields",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "inputFields",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_inputFields(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "ofType",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "ofType",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_ofType(ctx, ec0, field, obj.(*introspection.Type))
 			},
 		},
 		{
-			Name:       "isOneOf",
-			NonNull:    false,
-			Concurrent: false,
+			Name:         "isOneOf",
+			NonNull:      false,
+			Concurrent:   false,
+			RecoverPanic: true,
 			Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 				ec0 := ec.(*executionContext)
 				return ___Type_isOneOf(ctx, ec0, field, obj.(*introspection.Type))

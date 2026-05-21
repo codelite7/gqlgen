@@ -31,10 +31,11 @@ type ObjectExecutionContext interface {
 // continues to hold directive wrapping, field-context lookup, resolver call
 // and marshaling — only the per-type switch is collapsed.
 type FieldHandler struct {
-	Name       string
-	NonNull    bool
-	Concurrent bool
-	Resolve    func(
+	Name         string
+	NonNull      bool
+	Concurrent   bool
+	RecoverPanic bool
+	Resolve      func(
 		ctx context.Context,
 		ec ObjectExecutionContext,
 		field CollectedField,
@@ -99,11 +100,13 @@ func DispatchObject(
 			handlerCopy := *handler
 			fieldCopy := field
 			innerFunc := func(ctx context.Context, fs *FieldSet) (res Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
+				if handlerCopy.RecoverPanic {
+					defer func() {
+						if r := recover(); r != nil {
+							ec.Error(ctx, ec.Recover(ctx, r))
+						}
+					}()
+				}
 				res = handlerCopy.Resolve(ctx, ec, fieldCopy, obj)
 				if handlerCopy.NonNull && res == Null {
 					atomic.AddUint32(&fs.Invalids, 1)

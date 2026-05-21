@@ -39,9 +39,10 @@ func init() {
 	{{ $object.Name|lcFirst }}FieldHandlers = []graphql.FieldHandler{
 {{- range $field := $object.Fields }}
 	{
-		Name:       {{$field.Name|quote}},
-		NonNull:    {{ $field.TypeReference.GQL.NonNull }},
-		Concurrent: {{ $field.IsConcurrent }},
+		Name:         {{$field.Name|quote}},
+		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+		Concurrent:   {{ $field.IsConcurrent }},
+		RecoverPanic: {{ not $.Config.OmitPanicHandler }},
 		Resolve: func(ctx context.Context, ec graphql.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 			ec0 := ec.(*executionContext)
 		{{- if $.Config.UseFunctionSyntaxForExecutionContext }}

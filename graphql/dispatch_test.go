@@ -204,3 +204,29 @@ func TestDispatchObject_Concurrent_DispatchesViaGoroutine(t *testing.T) {
 	require.Equal(t, int32(2), calls.Load(), "both concurrent handlers should fire")
 	require.Equal(t, `{"name":"alice","other":"alice"}`, string(marshalToBytes(res)))
 }
+
+func TestDispatchObject_Concurrent_PropagatesPanicWhenRecoveryDisabled(t *testing.T) {
+	ec := newTestObjectExecutionContext()
+	ctx := ec.withOpCtx(context.Background())
+
+	sel := makeFieldSel("name", true)
+
+	handlers := []graphql.FieldHandler{
+		{
+			Name:         "name",
+			NonNull:      true,
+			Concurrent:   true,
+			RecoverPanic: false,
+			Resolve: func(ctx context.Context, _ graphql.ObjectExecutionContext, _ graphql.CollectedField, _ any) graphql.Marshaler {
+				panic("boom")
+			},
+		},
+	}
+
+	require.PanicsWithValue(t, "boom", func() {
+		graphql.DispatchObject(
+			ctx, ec, sel, &testUser{}, "User", []string{"User"}, handlers, false,
+		)
+	})
+	require.Empty(t, ec.errs)
+}

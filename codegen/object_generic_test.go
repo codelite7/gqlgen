@@ -31,6 +31,8 @@ func TestObjectDispatcherEmitsTable(t *testing.T) {
 		"expected per-type field handler table declaration for User")
 	require.Contains(t, generated, "userFieldHandlers = []graphql.FieldHandler{",
 		"expected per-type field handler table population for User (in init())")
+	require.Contains(t, generated, "RecoverPanic: true,",
+		"expected generated handler table to enable panic recovery when omit_panic_handler is false")
 	require.Contains(t, generated, "graphql.DispatchObject(",
 		"expected DispatchObject call in collapsed dispatcher")
 
