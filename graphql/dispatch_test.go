@@ -121,3 +121,86 @@ func TestDispatchObject_BasicScalar(t *testing.T) {
 	require.NotNil(t, res)
 	require.Equal(t, `{"name":"alice"}`, string(marshalToBytes(res)))
 }
+
+func TestDispatchObject_NonNullableNullIncrementsInvalids(t *testing.T) {
+	ec := newTestObjectExecutionContext()
+	ctx := ec.withOpCtx(context.Background())
+
+	sel := makeFieldSel("name", true)
+	user := &testUser{}
+
+	handlers := []graphql.FieldHandler{
+		{
+			Name:    "name",
+			NonNull: true,
+			Resolve: func(ctx context.Context, _ graphql.ObjectExecutionContext, _ graphql.CollectedField, _ any) graphql.Marshaler {
+				return graphql.Null
+			},
+		},
+	}
+
+	res := graphql.DispatchObject(
+		ctx, ec, sel, user, "User", []string{"User"}, handlers, false,
+	)
+	// A non-null field resolving to Null bubbles the whole object to Null.
+	require.Equal(t, graphql.Null, res)
+}
+
+func TestDispatchObject_TypenameReturnsImplementor(t *testing.T) {
+	ec := newTestObjectExecutionContext()
+	ctx := ec.withOpCtx(context.Background())
+
+	sel := ast.SelectionSet{
+		&ast.Field{
+			Name:  "__typename",
+			Alias: "__typename",
+			Definition: &ast.FieldDefinition{
+				Name: "__typename",
+				Type: ast.NonNullNamedType("String", nil),
+			},
+		},
+	}
+
+	// No handlers needed for __typename — it's the fast path.
+	res := graphql.DispatchObject(
+		ctx, ec, sel, &testUser{}, "User", []string{"User"}, nil, false,
+	)
+	require.Equal(t, `{"__typename":"User"}`, string(marshalToBytes(res)))
+}
+
+func TestDispatchObject_Concurrent_DispatchesViaGoroutine(t *testing.T) {
+	ec := newTestObjectExecutionContext()
+	ctx := ec.withOpCtx(context.Background())
+
+	// Two concurrent fields so out.Dispatch must spin up at least one
+	// goroutine (FieldSet.Dispatch runs the first delayed task inline and
+	// goroutines the rest — verifies the Concurrently path was used).
+	sel := ast.SelectionSet{
+		&ast.Field{
+			Name: "name", Alias: "name",
+			Definition: &ast.FieldDefinition{Name: "name", Type: ast.NonNullNamedType("String", nil)},
+		},
+		&ast.Field{
+			Name: "other", Alias: "other",
+			Definition: &ast.FieldDefinition{Name: "other", Type: ast.NonNullNamedType("String", nil)},
+		},
+	}
+
+	var calls atomic.Int32
+	resolve := func(ctx context.Context, _ graphql.ObjectExecutionContext, _ graphql.CollectedField, obj any) graphql.Marshaler {
+		calls.Add(1)
+		return graphql.MarshalString(obj.(*testUser).Name)
+	}
+
+	handlers := []graphql.FieldHandler{
+		{Name: "name", NonNull: true, Concurrent: true, Resolve: resolve},
+		{Name: "other", NonNull: true, Concurrent: true, Resolve: resolve},
+	}
+
+	res := graphql.DispatchObject(
+		ctx, ec, sel, &testUser{Name: "alice"}, "User", []string{"User"}, handlers, false,
+	)
+	require.NotNil(t, res)
+	require.Equal(t, int32(2), calls.Load(), "both concurrent handlers should fire")
+	require.Equal(t, `{"name":"alice","other":"alice"}`, string(marshalToBytes(res)))
+}
