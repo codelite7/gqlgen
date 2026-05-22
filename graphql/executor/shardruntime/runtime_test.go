@@ -1239,6 +1239,17 @@ type fakeEC struct {
 	fieldContextHandlers map[string]FieldContextHandler
 }
 
+// fakeECWithOpCtx embeds fakeEC and overrides GetOperationContext to return a
+// non-nil OperationContext with empty Variables, satisfying the args path in
+// buildFieldContext which calls ec.GetOperationContext().Variables.
+type fakeECWithOpCtx struct {
+	fakeEC
+}
+
+func (f *fakeECWithOpCtx) GetOperationContext() *graphql.OperationContext {
+	return &graphql.OperationContext{Variables: map[string]any{}}
+}
+
 func (f *fakeEC) GetOperationContext() *graphql.OperationContext { return nil }
 func (f *fakeEC) MarshalCodec(context.Context, string, ast.SelectionSet, any) graphql.Marshaler {
 	return graphql.Null
@@ -1406,5 +1417,66 @@ func TestBuildFieldContext_NoArgs(t *testing.T) {
 	}
 	if fc.Child == nil {
 		t.Fatal("expected non-nil Child resolver")
+	}
+}
+
+func TestBuildFieldContext_ArgsPath(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	RegisterArgs("scope", "EscrowQueryArgs", func(_ context.Context, _ ObjectExecutionContext, raw map[string]any) (map[string]any, error) {
+		return map[string]any{"id": raw["id"]}, nil
+	})
+
+	ec := &fakeECWithOpCtx{}
+	def := &FieldDef{
+		IsMethod:   true,
+		ReturnType: &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}},
+		ArgsKey:    "EscrowQueryArgs",
+	}
+	// Build a synthetic field with a Definition so ArgumentMap can walk the arg defs.
+	cf := graphql.CollectedField{
+		Field: &ast.Field{
+			Name: "escrow",
+			Arguments: ast.ArgumentList{
+				{Name: "id", Value: &ast.Value{Raw: "abc", Kind: ast.StringValue}},
+			},
+			Definition: &ast.FieldDefinition{
+				Name: "escrow",
+				Arguments: ast.ArgumentDefinitionList{
+					{Name: "id"},
+				},
+			},
+		},
+	}
+
+	fc, err := buildFieldContext(context.Background(), ec, def, "scope", "Query", cf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc.Args["id"] != "abc" {
+		t.Fatalf("unexpected args: %#v", fc.Args)
+	}
+}
+
+func TestBuildFieldContext_ArgsPath_MissingArgsHandler(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	ec := &fakeECWithOpCtx{}
+	def := &FieldDef{
+		ReturnType: &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}},
+		ArgsKey:    "MissingHandler",
+	}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "escrow"}}
+
+	_, err := buildFieldContext(context.Background(), ec, def, "scope", "Query", cf)
+	if err == nil {
+		t.Fatal("expected error for missing args handler")
+	}
+	if err.Error() != `no args handler for "MissingHandler"` {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
