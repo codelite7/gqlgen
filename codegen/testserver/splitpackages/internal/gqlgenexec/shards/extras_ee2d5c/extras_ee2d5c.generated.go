@@ -22,56 +22,6 @@ var type_String = &shardruntime.ObjectChildLookup{
 func init() {
 }
 
-// split_fields_.gotpl — field
-func __splitField_Mutation_pingFromExtras(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Mutation", "pingFromExtras")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Mutation.pingFromExtras")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Mutation", "pingFromExtras", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
-		},
-		true, true,
-	)
-}
-
-// split_fields_.gotpl — field
-func __splitField_Query_goodbyeFromExtras(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Query", "goodbyeFromExtras")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Query.goodbyeFromExtras")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "goodbyeFromExtras", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
-		},
-		true, true,
-	)
-}
-
 // split_fieldcontext_.gotpl — fieldContext for Mutation.pingFromExtras
 func __splitFieldContext_Mutation_pingFromExtras(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{

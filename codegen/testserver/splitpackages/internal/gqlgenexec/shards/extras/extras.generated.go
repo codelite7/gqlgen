@@ -47,56 +47,6 @@ var type___Type = &shardruntime.ObjectChildLookup{
 func init() {
 }
 
-// split_fields_.gotpl — field
-func __splitField_Query___schema(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Query", "__schema")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Query.__schema")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__schema", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", sel, v)
-		},
-		true, false,
-	)
-}
-
-// split_fields_.gotpl — field
-func __splitField_Query___type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Query", "__type")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Query.__type")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__type", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
-		},
-		true, false,
-	)
-}
-
 // split_fieldcontext_.gotpl — fieldContext for Query.__schema
 func __splitFieldContext_Query___schema(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
