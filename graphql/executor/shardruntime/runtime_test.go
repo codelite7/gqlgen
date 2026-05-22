@@ -1327,3 +1327,30 @@ func TestMakeChildResolver_ObjectUnknownField(t *testing.T) {
 		t.Fatalf("unexpected error: got %q want %q", got, expected)
 	}
 }
+
+func TestMakeChildResolver_NilRet(t *testing.T) {
+	ec := &fakeEC{}
+
+	childFn := makeChildResolver(ec, nil)
+	_, err := childFn(context.Background(), graphql.CollectedField{})
+	if err == nil {
+		t.Fatal("expected error for nil return-type lookup")
+	}
+	if got := err.Error(); got != "no return type information for field" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestMakeChildResolver_ObjectHandlerMissing(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "id"}})
+	if err == nil {
+		t.Fatal("expected error when no FieldContext handler is registered")
+	}
+	if got := err.Error(); got != "no field context handler for Escrow.id" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}

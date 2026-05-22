@@ -100,6 +100,15 @@ type ResolverInvokerHandler func(ctx context.Context, ec ObjectExecutionContext,
 
 type ArgsHandler func(ctx context.Context, ec ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error)
 
+// ObjectChildLookup describes the schema-side metadata required to synthesize
+// the Child closure of graphql.FieldContext for fields returning a given output type.
+// Shared across all fields in a shard that return TypeName, instead of one per field.
+type ObjectChildLookup struct {
+	TypeName string
+	Kind     ast.DefinitionKind
+	Children []string // empty if Kind != ast.Object
+}
+
 var (
 	mu                     sync.RWMutex
 	objectByScope          = map[string]map[string]ObjectHandler{}
@@ -731,16 +740,7 @@ func LookupArgs(scope, key string) (ArgsHandler, bool) {
 	return handler, ok
 }
 
-// --- ObjectChildLookup + makeChildResolver ---
-
-// ObjectChildLookup describes the schema-side metadata required to synthesize
-// the Child closure of graphql.FieldContext for fields returning a given output type.
-// Shared across all fields in a shard that return TypeName, instead of one per field.
-type ObjectChildLookup struct {
-	TypeName string
-	Kind     ast.DefinitionKind
-	Children []string // empty if Kind != ast.Object
-}
+// --- Child resolution helpers ---
 
 func makeChildResolver(ec ObjectExecutionContext, ret *ObjectChildLookup) func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	if ret == nil {
