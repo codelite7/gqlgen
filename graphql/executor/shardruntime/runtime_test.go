@@ -1247,7 +1247,12 @@ type fakeECWithOpCtx struct {
 }
 
 func (f *fakeECWithOpCtx) GetOperationContext() *graphql.OperationContext {
-	return &graphql.OperationContext{Variables: map[string]any{}}
+	return &graphql.OperationContext{
+		Variables: map[string]any{},
+		ResolverMiddleware: func(ctx context.Context, next graphql.Resolver) (res any, err error) {
+			return next(ctx)
+		},
+	}
 }
 
 func (f *fakeEC) GetOperationContext() *graphql.OperationContext { return nil }
@@ -1478,5 +1483,45 @@ func TestBuildFieldContext_ArgsPath_MissingArgsHandler(t *testing.T) {
 	}
 	if err.Error() != `no args handler for "MissingHandler"` {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveFromDef_CallsResolve(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+	resetCodecMarshalRegistryForTest()
+
+	called := false
+	RegisterCodecMarshal("scope", "marshalNString", func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+		return graphql.MarshalString(v.(string))
+	})
+
+	def := FieldDef{
+		Resolve: func(_ context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+			called = true
+			return obj.(string) + "_resolved", nil
+		},
+		ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+		MarshalCodec: "marshalNString",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+
+	RegisterFieldDef("scope", "Query", "name", def)
+
+	h, ok := LookupField("scope", "Query", "name")
+	if !ok {
+		t.Fatal("missing handler")
+	}
+	ec := &fakeECWithOpCtx{}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "name"}}
+
+	m := h(context.Background(), ec, cf, "hello")
+	if m == graphql.Null {
+		t.Fatal("expected non-null marshaler from resolveFromDef")
+	}
+	if !called {
+		t.Fatal("Resolve was not invoked")
 	}
 }

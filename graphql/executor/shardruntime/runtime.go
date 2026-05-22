@@ -115,7 +115,7 @@ type ObjectChildLookup struct {
 // previously emitted.
 type FieldDef struct {
 	Resolve      func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
-	Directives   func(next graphql.Resolver) graphql.Resolver
+	Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver
 	MarshalCodec string
 	NonNull      bool
 	PanicHandled bool
@@ -762,9 +762,23 @@ func LookupArgs(scope, key string) (ArgsHandler, bool) {
 
 // --- FieldDef registration ---
 
-// stub — replaced in Task 5 (resolveFromDef)
 func resolveFromDef(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.Null
+	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
+		func(ctx context.Context, f graphql.CollectedField) (*graphql.FieldContext, error) {
+			return buildFieldContext(ctx, ec, def, scope, objectName, f)
+		},
+		func(ctx context.Context) (any, error) {
+			return def.Resolve(ctx, ec, obj)
+		},
+		def.Directives,
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			if def.marshalFn != nil {
+				return def.marshalFn(ctx, ec, sel, v)
+			}
+			return ec.MarshalCodec(ctx, def.MarshalCodec, sel, v)
+		},
+		def.PanicHandled, def.NonNull,
+	)
 }
 
 func buildFieldContext(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
