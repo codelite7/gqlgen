@@ -744,8 +744,8 @@ func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 	require.NotContains(t, contents, "var splitExecutableFieldResolvers")
 	require.NotContains(t, contents, "var splitExecutableStreamFieldResolvers")
 
-	// Stream fields should be registered via RegisterStreamField in shard code,
-	// while regular fields use RegisterField.
+	// Stream fields should be registered via RegisterStreamFieldDef in shard code,
+	// while regular fields use RegisterFieldDef.
 	var foundRegisterField bool
 	var foundRegisterStreamField bool
 	for relPath, shardContents := range snapshot {
@@ -753,26 +753,26 @@ func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 			continue
 		}
 		text := string(shardContents)
-		if strings.Contains(text, "RegisterField(splitScope,") {
+		if strings.Contains(text, "RegisterFieldDef(splitScope,") {
 			foundRegisterField = true
 			// Regular field registrations should not include subscription fields
-			require.NotContains(t, text, `RegisterField(splitScope, "Subscription"`)
+			require.NotContains(t, text, `RegisterFieldDef(splitScope, "Subscription"`)
 		}
-		if strings.Contains(text, "RegisterStreamField(splitScope,") {
+		if strings.Contains(text, "RegisterStreamFieldDef(splitScope,") {
 			foundRegisterStreamField = true
-			require.Contains(t, text, `RegisterStreamField(splitScope, "Subscription", "tick"`)
+			require.Contains(t, text, `RegisterStreamFieldDef(splitScope, "Subscription", "tick"`)
 		}
 	}
 
 	require.True(
 		t,
 		foundRegisterField,
-		"expected shard to register regular fields via RegisterField",
+		"expected shard to register regular fields via RegisterFieldDef",
 	)
 	require.True(
 		t,
 		foundRegisterStreamField,
-		"expected shard to register stream fields via RegisterStreamField",
+		"expected shard to register stream fields via RegisterStreamFieldDef",
 	)
 }
 
@@ -1512,7 +1512,7 @@ func TestSplitInputRegistrationEmission(t *testing.T) {
 
 	err = templates.Render(templates.Options{
 		PackageName: "splitinputstest",
-		Template:    splitRegisterTemplate,
+		Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
 		Filename:    registerPath,
 		Data:        templateData,
 		Packages:    internalcode.NewPackages(),
@@ -1535,7 +1535,7 @@ func TestSplitInputRegistrationEmission(t *testing.T) {
 }
 
 var splitRegistrationPattern = regexp.MustCompile(
-	`Register(?:Stream)?Field\(splitScope,\s*"([^"]+)",\s*"([^"]+)"`,
+	`Register(?:Stream)?FieldDef\(splitScope,\s*"([^"]+)",\s*"([^"]+)"`,
 )
 
 func splitRegistrationOrder(contents string) []string {

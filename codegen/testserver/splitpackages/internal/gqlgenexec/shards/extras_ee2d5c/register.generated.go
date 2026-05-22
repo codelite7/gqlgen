@@ -5,18 +5,32 @@ package extras_ee2d5c
 import (
 	"context"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
 )
 
 func init() {
-	shardruntime.RegisterField(splitScope, "Mutation", "pingFromExtras", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Mutation_pingFromExtras(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "Mutation", "pingFromExtras", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return ec.InvokeResolver(ctx, "Mutation", "pingFromExtras", obj)
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   true,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "Query", "goodbyeFromExtras", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Query_goodbyeFromExtras(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "Query", "goodbyeFromExtras", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return ec.InvokeResolver(ctx, "Query", "goodbyeFromExtras", obj)
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   true,
+		ArgsKey:      "field_Query_goodbyeFromExtras_args",
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterFieldContext(splitScope, "Mutation", "pingFromExtras", __splitFieldContext_Mutation_pingFromExtras)
-	shardruntime.RegisterFieldContext(splitScope, "Query", "goodbyeFromExtras", __splitFieldContext_Query_goodbyeFromExtras)
 	shardruntime.RegisterArgs(splitScope, "field_Query_goodbyeFromExtras_args", __splitArgs_field_Query_goodbyeFromExtras_args)
 }

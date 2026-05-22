@@ -14,6 +14,11 @@ import (
 
 const splitScope = "github.com/99designs/gqlgen/codegen/testserver/splitpackages"
 
+var type_String = &shardruntime.ObjectChildLookup{
+	TypeName: "String",
+	Kind:     ast.Scalar,
+}
+
 func init() {
 }
 

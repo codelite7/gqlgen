@@ -353,7 +353,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 		registerPath := filepath.Join(shardDir, "register.generated.go")
 		if err := templates.Render(templates.Options{
 			PackageName: pkg,
-			Template:    splitRegisterTemplate,
+			Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
 			Filename:    registerPath,
 			Data: splitShardTemplateData{
 				Data:                build,

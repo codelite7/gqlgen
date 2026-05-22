@@ -7,162 +7,435 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
+	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func init() {
-	shardruntime.RegisterField(splitScope, "__Directive", "args", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Directive_args(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Directive", "args", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Directive).Args, nil
+		},
+		MarshalCodec: "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ArgsKey:      "field___Directive_args_args",
+		ReturnType:   type___InputValue,
 	})
-	shardruntime.RegisterField(splitScope, "__Directive", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Directive_description(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Directive", "description", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Directive).Description(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Directive", "isRepeatable", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Directive_isRepeatable(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Directive", "isRepeatable", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Directive).IsRepeatable, nil
+		},
+		MarshalCodec: "marshalNBoolean2bool",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type_Boolean,
 	})
-	shardruntime.RegisterField(splitScope, "__Directive", "locations", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Directive_locations(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Directive", "locations", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Directive).Locations, nil
+		},
+		MarshalCodec: "marshalN__DirectiveLocation2ᚕstringᚄ",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type___DirectiveLocation,
 	})
-	shardruntime.RegisterField(splitScope, "__Directive", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Directive_name(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Directive", "name", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Directive).Name, nil
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__EnumValue", "deprecationReason", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___EnumValue_deprecationReason(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "deprecationReason", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.EnumValue).DeprecationReason(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__EnumValue", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___EnumValue_description(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "description", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.EnumValue).Description(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__EnumValue", "isDeprecated", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___EnumValue_isDeprecated(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "isDeprecated", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.EnumValue).IsDeprecated(), nil
+		},
+		MarshalCodec: "marshalNBoolean2bool",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_Boolean,
 	})
-	shardruntime.RegisterField(splitScope, "__EnumValue", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___EnumValue_name(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "name", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.EnumValue).Name, nil
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Field", "args", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Field_args(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Field", "args", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Field).Args, nil
+		},
+		MarshalCodec: "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ArgsKey:      "field___Field_args_args",
+		ReturnType:   type___InputValue,
 	})
-	shardruntime.RegisterField(splitScope, "__Field", "deprecationReason", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Field_deprecationReason(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Field", "deprecationReason", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Field).DeprecationReason(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Field", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Field_description(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Field", "description", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Field).Description(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Field", "isDeprecated", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Field_isDeprecated(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Field", "isDeprecated", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Field).IsDeprecated(), nil
+		},
+		MarshalCodec: "marshalNBoolean2bool",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_Boolean,
 	})
-	shardruntime.RegisterField(splitScope, "__Field", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Field_name(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Field", "name", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Field).Name, nil
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Field", "type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Field_type(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Field", "type", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Field).Type, nil
+		},
+		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__InputValue", "defaultValue", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___InputValue_defaultValue(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "defaultValue", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.InputValue).DefaultValue, nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__InputValue", "deprecationReason", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___InputValue_deprecationReason(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "deprecationReason", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.InputValue).DeprecationReason(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__InputValue", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___InputValue_description(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "description", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.InputValue).Description(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__InputValue", "isDeprecated", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___InputValue_isDeprecated(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "isDeprecated", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.InputValue).IsDeprecated(), nil
+		},
+		MarshalCodec: "marshalNBoolean2bool",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_Boolean,
 	})
-	shardruntime.RegisterField(splitScope, "__InputValue", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___InputValue_name(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "name", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.InputValue).Name, nil
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__InputValue", "type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___InputValue_type(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "type", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.InputValue).Type, nil
+		},
+		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     false,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Schema", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Schema_description(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Schema", "description", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Schema).Description(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Schema", "directives", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Schema_directives(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Schema", "directives", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Schema).Directives(), nil
+		},
+		MarshalCodec: "marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Directive,
 	})
-	shardruntime.RegisterField(splitScope, "__Schema", "mutationType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Schema_mutationType(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Schema", "mutationType", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Schema).MutationType(), nil
+		},
+		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Schema", "queryType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Schema_queryType(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Schema", "queryType", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Schema).QueryType(), nil
+		},
+		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Schema", "subscriptionType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Schema_subscriptionType(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Schema", "subscriptionType", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Schema).SubscriptionType(), nil
+		},
+		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Schema", "types", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Schema_types(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Schema", "types", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Schema).Types(), nil
+		},
+		MarshalCodec: "marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "description", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_description(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "description", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).Description(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "enumValues", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_enumValues(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "enumValues", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.(*introspection.Type).EnumValues(fc.Args["includeDeprecated"].(bool)), nil
+		},
+		MarshalCodec: "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ArgsKey:      "field___Type_enumValues_args",
+		ReturnType:   type___EnumValue,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "fields", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_fields(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "fields", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.(*introspection.Type).Fields(fc.Args["includeDeprecated"].(bool)), nil
+		},
+		MarshalCodec: "marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ArgsKey:      "field___Type_fields_args",
+		ReturnType:   type___Field,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "inputFields", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_inputFields(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "inputFields", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).InputFields(), nil
+		},
+		MarshalCodec: "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___InputValue,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "interfaces", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_interfaces(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "interfaces", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).Interfaces(), nil
+		},
+		MarshalCodec: "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "isOneOf", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_isOneOf(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "isOneOf", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).IsOneOf(), nil
+		},
+		MarshalCodec: "marshalOBoolean2bool",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_Boolean,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "kind", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_kind(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "kind", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).Kind(), nil
+		},
+		MarshalCodec: "marshalN__TypeKind2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___TypeKind,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "name", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_name(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "name", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).Name(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "ofType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_ofType(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "ofType", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).OfType(), nil
+		},
+		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "possibleTypes", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_possibleTypes(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "possibleTypes", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).PossibleTypes(), nil
+		},
+		MarshalCodec: "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterField(splitScope, "__Type", "specifiedByURL", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField___Type_specifiedByURL(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "__Type", "specifiedByURL", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return obj.(*introspection.Type).SpecifiedByURL(), nil
+		},
+		MarshalCodec: "marshalOString2ᚖstring",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterFieldContext(splitScope, "__Directive", "args", __splitFieldContext___Directive_args)
-	shardruntime.RegisterFieldContext(splitScope, "__Directive", "description", __splitFieldContext___Directive_description)
-	shardruntime.RegisterFieldContext(splitScope, "__Directive", "isRepeatable", __splitFieldContext___Directive_isRepeatable)
-	shardruntime.RegisterFieldContext(splitScope, "__Directive", "locations", __splitFieldContext___Directive_locations)
-	shardruntime.RegisterFieldContext(splitScope, "__Directive", "name", __splitFieldContext___Directive_name)
-	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "deprecationReason", __splitFieldContext___EnumValue_deprecationReason)
-	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "description", __splitFieldContext___EnumValue_description)
-	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "isDeprecated", __splitFieldContext___EnumValue_isDeprecated)
-	shardruntime.RegisterFieldContext(splitScope, "__EnumValue", "name", __splitFieldContext___EnumValue_name)
-	shardruntime.RegisterFieldContext(splitScope, "__Field", "args", __splitFieldContext___Field_args)
-	shardruntime.RegisterFieldContext(splitScope, "__Field", "deprecationReason", __splitFieldContext___Field_deprecationReason)
-	shardruntime.RegisterFieldContext(splitScope, "__Field", "description", __splitFieldContext___Field_description)
-	shardruntime.RegisterFieldContext(splitScope, "__Field", "isDeprecated", __splitFieldContext___Field_isDeprecated)
-	shardruntime.RegisterFieldContext(splitScope, "__Field", "name", __splitFieldContext___Field_name)
-	shardruntime.RegisterFieldContext(splitScope, "__Field", "type", __splitFieldContext___Field_type)
-	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "defaultValue", __splitFieldContext___InputValue_defaultValue)
-	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "deprecationReason", __splitFieldContext___InputValue_deprecationReason)
-	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "description", __splitFieldContext___InputValue_description)
-	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "isDeprecated", __splitFieldContext___InputValue_isDeprecated)
-	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "name", __splitFieldContext___InputValue_name)
-	shardruntime.RegisterFieldContext(splitScope, "__InputValue", "type", __splitFieldContext___InputValue_type)
-	shardruntime.RegisterFieldContext(splitScope, "__Schema", "description", __splitFieldContext___Schema_description)
-	shardruntime.RegisterFieldContext(splitScope, "__Schema", "directives", __splitFieldContext___Schema_directives)
-	shardruntime.RegisterFieldContext(splitScope, "__Schema", "mutationType", __splitFieldContext___Schema_mutationType)
-	shardruntime.RegisterFieldContext(splitScope, "__Schema", "queryType", __splitFieldContext___Schema_queryType)
-	shardruntime.RegisterFieldContext(splitScope, "__Schema", "subscriptionType", __splitFieldContext___Schema_subscriptionType)
-	shardruntime.RegisterFieldContext(splitScope, "__Schema", "types", __splitFieldContext___Schema_types)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "description", __splitFieldContext___Type_description)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "enumValues", __splitFieldContext___Type_enumValues)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "fields", __splitFieldContext___Type_fields)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "inputFields", __splitFieldContext___Type_inputFields)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "interfaces", __splitFieldContext___Type_interfaces)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "isOneOf", __splitFieldContext___Type_isOneOf)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "kind", __splitFieldContext___Type_kind)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "name", __splitFieldContext___Type_name)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "ofType", __splitFieldContext___Type_ofType)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "possibleTypes", __splitFieldContext___Type_possibleTypes)
-	shardruntime.RegisterFieldContext(splitScope, "__Type", "specifiedByURL", __splitFieldContext___Type_specifiedByURL)
 	shardruntime.RegisterArgs(splitScope, "field___Directive_args_args", __splitArgs_field___Directive_args_args)
 	shardruntime.RegisterArgs(splitScope, "field___Field_args_args", __splitArgs_field___Field_args_args)
 	shardruntime.RegisterArgs(splitScope, "field___Type_enumValues_args", __splitArgs_field___Type_enumValues_args)

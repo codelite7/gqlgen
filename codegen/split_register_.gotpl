@@ -8,22 +8,57 @@ func init() {
 {{- range $key := .Ownership.FieldOwnerKeys }}
 {{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
 {{- with $field := index $.FieldByLookupKey $key }}
+{{- if $field.TypeReference }}
 {{- if $field.Object.Stream }}
-	shardruntime.RegisterStreamField(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
-		return __splitStreamField_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, field, obj)
+	shardruntime.RegisterStreamFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.StreamFieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
+			{{- else }}
+			{{- template "splitFieldAccess" $field }}
+			{{- end }}
+		},
+		{{- if $field.HasDirectives }}
+		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		},
+		{{- end }}
+		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
+		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+		PanicHandled: {{ not $.Config.OmitPanicHandler }},
+		IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
+		IsResolver:   {{ $field.IsResolver }},
+		{{- if gt (len $field.Args) 0 }}
+		ArgsKey:      {{ $field.ArgsFunc | quote }},
+		{{- end }}
+		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
 	})
 {{- else }}
-	shardruntime.RegisterField(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
+			{{- else }}
+			{{- template "splitFieldAccess" $field }}
+			{{- end }}
+		},
+		{{- if $field.HasDirectives }}
+		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		},
+		{{- end }}
+		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
+		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+		PanicHandled: {{ not $.Config.OmitPanicHandler }},
+		IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
+		IsResolver:   {{ $field.IsResolver }},
+		{{- if gt (len $field.Args) 0 }}
+		ArgsKey:      {{ $field.ArgsFunc | quote }},
+		{{- end }}
+		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
 	})
 {{- end }}
 {{- end }}
-{{- end }}
-{{- end }}
-{{- range $key := .Ownership.FieldOwnerKeys }}
-{{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
-{{- with $field := index $.FieldByLookupKey $key }}
-	shardruntime.RegisterFieldContext(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, __splitFieldContext_{{ $field.Object.Name }}_{{ $field.Name }})
 {{- end }}
 {{- end }}
 {{- end }}

@@ -5,19 +5,34 @@ package schema
 import (
 	"context"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
 )
 
 func init() {
-	shardruntime.RegisterField(splitScope, "Mutation", "greet", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Mutation_greet(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "Mutation", "greet", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return ec.InvokeResolver(ctx, "Mutation", "greet", obj)
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   true,
+		ArgsKey:      "field_Mutation_greet_args",
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterField(splitScope, "Query", "hello", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Query_hello(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "Query", "hello", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return ec.InvokeResolver(ctx, "Query", "hello", obj)
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   true,
+		ArgsKey:      "field_Query_hello_args",
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterFieldContext(splitScope, "Mutation", "greet", __splitFieldContext_Mutation_greet)
-	shardruntime.RegisterFieldContext(splitScope, "Query", "hello", __splitFieldContext_Query_hello)
 	shardruntime.RegisterArgs(splitScope, "field_Mutation_greet_args", __splitArgs_field_Mutation_greet_args)
 	shardruntime.RegisterArgs(splitScope, "field_Query_hello_args", __splitArgs_field_Query_hello_args)
 }
