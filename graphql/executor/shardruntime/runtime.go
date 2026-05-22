@@ -2,6 +2,8 @@ package shardruntime
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"maps"
 	"reflect"
 	"sort"
@@ -727,4 +729,51 @@ func RegisterArgs(scope, key string, handler ArgsHandler) {
 func LookupArgs(scope, key string) (ArgsHandler, bool) {
 	handler, ok := loadArgsLookupSnapshot()[argsKey(scope, key)]
 	return handler, ok
+}
+
+// --- ObjectChildLookup + makeChildResolver ---
+
+// ObjectChildLookup describes the schema-side metadata required to synthesize
+// the Child closure of graphql.FieldContext for fields returning a given output type.
+// Shared across all fields in a shard that return TypeName, instead of one per field.
+type ObjectChildLookup struct {
+	TypeName string
+	Kind     ast.DefinitionKind
+	Children []string // empty if Kind != ast.Object
+}
+
+func makeChildResolver(ec ObjectExecutionContext, ret *ObjectChildLookup) func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	if ret == nil {
+		return func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("no return type information for field")
+		}
+	}
+	switch {
+	case ret.Kind == ast.Scalar || ret.Kind == ast.Enum:
+		// Leaf types have no child fields by definition.
+		return func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, fmt.Errorf("field of type %s does not have child fields", ret.TypeName)
+		}
+	case ret.Kind != ast.Object:
+		return func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, fmt.Errorf("FieldContext.Child cannot be called on type %s", ret.Kind)
+		}
+	}
+	// OBJECT case: look up child handler by field name.
+	typeName := ret.TypeName
+	known := make(map[string]struct{}, len(ret.Children))
+	for _, c := range ret.Children {
+		known[c] = struct{}{}
+	}
+	return func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+		name := field.Name
+		if _, ok := known[name]; !ok {
+			return nil, fmt.Errorf("no field named %q was found under type %s", name, typeName)
+		}
+		handler, ok := ec.LookupFieldContextHandler(typeName, name)
+		if !ok {
+			return nil, fmt.Errorf("no field context handler for %s.%s", typeName, name)
+		}
+		return handler(ctx, ec, field)
+	}
 }

@@ -1233,3 +1233,97 @@ func TestArgsRegistry(t *testing.T) {
 
 	RegisterArgs("scope", "Query.name", h)
 }
+
+// fakeEC is a test-only implementation of ObjectExecutionContext.
+type fakeEC struct {
+	fieldContextHandlers map[string]FieldContextHandler
+}
+
+func (f *fakeEC) GetOperationContext() *graphql.OperationContext { return nil }
+func (f *fakeEC) MarshalCodec(context.Context, string, ast.SelectionSet, any) graphql.Marshaler {
+	return graphql.Null
+}
+func (f *fakeEC) UnmarshalCodec(context.Context, string, any) (any, error) { return nil, nil }
+func (f *fakeEC) ParseFieldArgs(context.Context, string, map[string]any) (map[string]any, error) {
+	return nil, nil
+}
+func (f *fakeEC) ResolveField(context.Context, string, string, graphql.CollectedField, any) graphql.Marshaler {
+	return graphql.Null
+}
+func (f *fakeEC) ResolveStreamField(context.Context, string, string, graphql.CollectedField, any) func(context.Context) graphql.Marshaler {
+	return func(context.Context) graphql.Marshaler { return graphql.Null }
+}
+func (f *fakeEC) InvokeResolver(context.Context, string, string, any) (any, error) {
+	return nil, nil
+}
+func (f *fakeEC) LookupFieldContextHandler(obj, field string) (FieldContextHandler, bool) {
+	h, ok := f.fieldContextHandlers[obj+"."+field]
+	return h, ok
+}
+func (f *fakeEC) ProcessDeferredGroup(graphql.DeferredGroup) {}
+func (f *fakeEC) AddDeferred(int32)                          {}
+func (f *fakeEC) Error(context.Context, error)               {}
+func (f *fakeEC) Recover(_ context.Context, r any) error     { return fmt.Errorf("%v", r) }
+
+func TestMakeChildResolver_Scalar(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "UUID", Kind: ast.Scalar}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{})
+	if err == nil {
+		t.Fatal("expected error for scalar Child resolution")
+	}
+	if got := err.Error(); got != "field of type UUID does not have child fields" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestMakeChildResolver_NonObjectComposite(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "MyInput", Kind: ast.InputObject}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{})
+	if err == nil {
+		t.Fatal("expected error for input-object Child resolution")
+	}
+	if got := err.Error(); got != "FieldContext.Child cannot be called on type INPUT_OBJECT" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestMakeChildResolver_ObjectKnownField(t *testing.T) {
+	ec := &fakeEC{
+		fieldContextHandlers: map[string]FieldContextHandler{
+			"Escrow.id": func(_ context.Context, _ ObjectExecutionContext, _ graphql.CollectedField) (*graphql.FieldContext, error) {
+				return &graphql.FieldContext{Object: "Escrow", Field: graphql.CollectedField{Field: &ast.Field{Name: "id"}}}, nil
+			},
+		},
+	}
+	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id", "address"}}
+
+	childFn := makeChildResolver(ec, lookup)
+	fc, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "id"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc == nil || fc.Object != "Escrow" {
+		t.Fatalf("unexpected FieldContext: %+v", fc)
+	}
+}
+
+func TestMakeChildResolver_ObjectUnknownField(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "nonexistent"}})
+	if err == nil {
+		t.Fatal("expected error for unknown child field")
+	}
+	expected := `no field named "nonexistent" was found under type Escrow`
+	if got := err.Error(); got != expected {
+		t.Fatalf("unexpected error: got %q want %q", got, expected)
+	}
+}
