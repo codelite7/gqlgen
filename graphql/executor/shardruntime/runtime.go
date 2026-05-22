@@ -114,7 +114,9 @@ type ObjectChildLookup struct {
 // __splitField_* + __splitFieldContext_* function declarations the templates
 // previously emitted.
 type FieldDef struct {
-	Resolve      func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
+	Resolve func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
+	// Directives is the middleware chain passed to graphql.ResolveField; its
+	// signature must match graphql.ResolveField's middlewareChain parameter.
 	Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver
 	MarshalCodec string
 	NonNull      bool
