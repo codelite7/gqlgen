@@ -14,6 +14,7 @@ import (
 	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/99designs/gqlgen/codegen/templates"
 	internalcode "github.com/99designs/gqlgen/internal/code"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 //go:embed split_root_.gotpl
@@ -65,13 +66,14 @@ type splitRootTemplateData struct {
 
 type splitShardTemplateData struct {
 	*Data
-	Scope            string
-	ShardName        string
-	Ownership        *splitOwnershipPlanner
-	FieldByLookupKey map[string]*Field
-	FieldByArgsFunc  map[string]*Field
-	InputByName      map[string]*Object
-	CodecByFunc      map[string]*config.TypeReference
+	Scope               string
+	ShardName           string
+	Ownership           *splitOwnershipPlanner
+	FieldByLookupKey    map[string]*Field
+	FieldByArgsFunc     map[string]*Field
+	InputByName         map[string]*Object
+	CodecByFunc         map[string]*config.TypeReference
+	DistinctReturnTypes []*ast.Definition
 }
 
 type splitImportsTemplateData struct {
@@ -331,14 +333,15 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 			Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
 			Filename:    shardPath,
 			Data: splitShardTemplateData{
-				Data:             build,
-				Scope:            scope,
-				ShardName:        shardName,
-				Ownership:        ownership,
-				FieldByLookupKey: buildFieldLookupMap(build),
-				FieldByArgsFunc:  buildArgsFuncLookupMap(build),
-				InputByName:      buildInputLookupMap(data),
-				CodecByFunc:      buildCodecLookupMap(data),
+				Data:                build,
+				Scope:               scope,
+				ShardName:           shardName,
+				Ownership:           ownership,
+				FieldByLookupKey:    buildFieldLookupMap(build),
+				FieldByArgsFunc:     buildArgsFuncLookupMap(build),
+				InputByName:         buildInputLookupMap(data),
+				CodecByFunc:         buildCodecLookupMap(data),
+				DistinctReturnTypes: buildDistinctReturnTypesForShard(build, shardName, buildFieldLookupMap(build), ownership.FieldOwner),
 			},
 			RegionTags:      false,
 			GeneratedHeader: true,
@@ -353,14 +356,15 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 			Template:    splitRegisterTemplate,
 			Filename:    registerPath,
 			Data: splitShardTemplateData{
-				Data:             build,
-				Scope:            scope,
-				ShardName:        shardName,
-				Ownership:        ownership,
-				FieldByLookupKey: buildFieldLookupMap(build),
-				FieldByArgsFunc:  buildArgsFuncLookupMap(build),
-				InputByName:      buildInputLookupMap(data),
-				CodecByFunc:      buildCodecLookupMap(data),
+				Data:                build,
+				Scope:               scope,
+				ShardName:           shardName,
+				Ownership:           ownership,
+				FieldByLookupKey:    buildFieldLookupMap(build),
+				FieldByArgsFunc:     buildArgsFuncLookupMap(build),
+				InputByName:         buildInputLookupMap(data),
+				CodecByFunc:         buildCodecLookupMap(data),
+				DistinctReturnTypes: buildDistinctReturnTypesForShard(build, shardName, buildFieldLookupMap(build), ownership.FieldOwner),
 			},
 			RegionTags:      false,
 			GeneratedHeader: true,
@@ -396,6 +400,35 @@ func buildFieldLookupMap(data *Data) map[string]*Field {
 	}
 
 	return fieldByLookupKey
+}
+
+// buildDistinctReturnTypesForShard returns the sorted unique set of
+// ast.Definition values referenced by the return types of all fields
+// owned by the given shard. Used by split_shard_.gotpl to emit one
+// ObjectChildLookup var per distinct return type.
+func buildDistinctReturnTypesForShard(data *Data, shardName string, fieldByKey map[string]*Field, owners map[string]string) []*ast.Definition {
+	seen := map[string]*ast.Definition{}
+	for key, owner := range owners {
+		if owner != shardName {
+			continue
+		}
+		f := fieldByKey[key]
+		if f == nil || f.TypeReference == nil || f.TypeReference.Definition == nil {
+			continue
+		}
+		def := f.TypeReference.Definition
+		seen[def.Name] = def
+	}
+	names := make([]string, 0, len(seen))
+	for n := range seen {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	out := make([]*ast.Definition, 0, len(names))
+	for _, n := range names {
+		out = append(out, seen[n])
+	}
+	return out
 }
 
 func buildArgsFuncLookupMap(data *Data) map[string]*Field {
