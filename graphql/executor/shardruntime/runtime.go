@@ -121,7 +121,7 @@ type FieldDef struct {
 	PanicHandled bool
 
 	// FieldContext data (folded in)
-	IsMethod   bool // pre-OR'd with IsResolver at codegen time
+	IsMethod   bool // codegen sets this to (IsMethod || IsResolver); runtime copies it as-is
 	IsResolver bool
 	ArgsKey    string
 	ReturnType *ObjectChildLookup
@@ -762,13 +762,39 @@ func LookupArgs(scope, key string) (ArgsHandler, bool) {
 
 // --- FieldDef registration ---
 
-// stub — replaced in Task 3 (buildFieldContext) and Task 5 (resolveFromDef)
+// stub — replaced in Task 5 (resolveFromDef)
 func resolveFromDef(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField, obj any) graphql.Marshaler {
 	return graphql.Null
 }
 
-func buildFieldContext(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField) (*graphql.FieldContext, error) {
-	return &graphql.FieldContext{Object: objectName, Field: field}, nil
+func buildFieldContext(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     objectName,
+		Field:      field,
+		IsMethod:   def.IsMethod,
+		IsResolver: def.IsResolver,
+		Child:      makeChildResolver(ec, def.ReturnType),
+	}
+	if def.ArgsKey == "" {
+		return fc, nil
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
+	argsHandler, ok := LookupArgs(scope, def.ArgsKey)
+	if !ok {
+		return nil, fmt.Errorf("no args handler for %q", def.ArgsKey)
+	}
+	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
 }
 
 // RegisterFieldDef registers a FieldHandler + FieldContextHandler pair for the

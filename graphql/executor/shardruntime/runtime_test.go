@@ -1378,3 +1378,33 @@ func TestRegisterFieldDef_BasicRegistration(t *testing.T) {
 		t.Fatal("expected RegisterFieldDef to register a FieldContextHandler")
 	}
 }
+
+func TestBuildFieldContext_NoArgs(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	ec := &fakeEC{
+		fieldContextHandlers: map[string]FieldContextHandler{},
+	}
+	def := &FieldDef{
+		IsMethod:   true,
+		IsResolver: false,
+		ReturnType: &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+	}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "id"}}
+
+	fc, err := buildFieldContext(context.Background(), ec, def, "scope", "Escrow", cf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc.Object != "Escrow" {
+		t.Fatalf("unexpected Object: got %q want Escrow", fc.Object)
+	}
+	if fc.IsMethod != true || fc.IsResolver != false {
+		t.Fatalf("unexpected flags: IsMethod=%v IsResolver=%v", fc.IsMethod, fc.IsResolver)
+	}
+	if fc.Child == nil {
+		t.Fatal("expected non-nil Child resolver")
+	}
+}
