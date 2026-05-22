@@ -109,6 +109,26 @@ type ObjectChildLookup struct {
 	Children []string // empty if Kind != ast.Object
 }
 
+// FieldDef holds all per-field data needed to synthesize the FieldHandler +
+// FieldContextHandler pair at registration time. Replaces the per-field
+// __splitField_* + __splitFieldContext_* function declarations the templates
+// previously emitted.
+type FieldDef struct {
+	Resolve      func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
+	Directives   func(next graphql.Resolver) graphql.Resolver
+	MarshalCodec string
+	NonNull      bool
+	PanicHandled bool
+
+	// FieldContext data (folded in)
+	IsMethod   bool // pre-OR'd with IsResolver at codegen time
+	IsResolver bool
+	ArgsKey    string
+	ReturnType *ObjectChildLookup
+
+	marshalFn CodecMarshalHandler // cached at register time; nil falls back to ec.MarshalCodec
+}
+
 var (
 	mu                     sync.RWMutex
 	objectByScope          = map[string]map[string]ObjectHandler{}
@@ -738,6 +758,38 @@ func RegisterArgs(scope, key string, handler ArgsHandler) {
 func LookupArgs(scope, key string) (ArgsHandler, bool) {
 	handler, ok := loadArgsLookupSnapshot()[argsKey(scope, key)]
 	return handler, ok
+}
+
+// --- FieldDef registration ---
+
+// stub — replaced in Task 3 (buildFieldContext) and Task 5 (resolveFromDef)
+func resolveFromDef(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField, obj any) graphql.Marshaler {
+	return graphql.Null
+}
+
+func buildFieldContext(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	return &graphql.FieldContext{Object: objectName, Field: field}, nil
+}
+
+// RegisterFieldDef registers a FieldHandler + FieldContextHandler pair for the
+// given (scope, objectName, fieldName), backed by the supplied FieldDef data.
+// Internally it wraps def in a closure and calls RegisterField / RegisterFieldContext;
+// all existing lookup paths continue to work unchanged.
+func RegisterFieldDef(scope, objectName, fieldName string, def FieldDef) {
+	if def.MarshalCodec != "" {
+		if fn, ok := LookupCodecMarshal(scope, def.MarshalCodec); ok {
+			def.marshalFn = fn
+		}
+		// else: marshalFn stays nil; runtime falls back to ec.MarshalCodec by string.
+	}
+	handler := func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+		return resolveFromDef(ctx, ec, &def, scope, objectName, field, obj)
+	}
+	fcHandler := func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField) (*graphql.FieldContext, error) {
+		return buildFieldContext(ctx, ec, &def, scope, objectName, field)
+	}
+	RegisterField(scope, objectName, fieldName, handler)
+	RegisterFieldContext(scope, objectName, fieldName, fcHandler)
 }
 
 // --- Child resolution helpers ---

@@ -1354,3 +1354,27 @@ func TestMakeChildResolver_ObjectHandlerMissing(t *testing.T) {
 		t.Fatalf("unexpected error: got %q", got)
 	}
 }
+
+func TestRegisterFieldDef_BasicRegistration(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+
+	def := FieldDef{
+		Resolve: func(ctx context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+			return "value", nil
+		},
+		ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+		MarshalCodec: "marshalNString",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+
+	RegisterFieldDef("scope-x", "MyObj", "myField", def)
+
+	if _, ok := LookupField("scope-x", "MyObj", "myField"); !ok {
+		t.Fatal("expected RegisterFieldDef to register a FieldHandler")
+	}
+	if _, ok := LookupFieldContext("scope-x", "MyObj", "myField"); !ok {
+		t.Fatal("expected RegisterFieldDef to register a FieldContextHandler")
+	}
+}
