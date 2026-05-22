@@ -1525,3 +1525,32 @@ func TestResolveFromDef_CallsResolve(t *testing.T) {
 		t.Fatal("Resolve was not invoked")
 	}
 }
+
+func TestRegisterStreamFieldDef(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetStreamFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetCodecMarshalRegistryForTest()
+
+	RegisterCodecMarshal("scope", "marshalNChat", func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, _ any) graphql.Marshaler {
+		return graphql.MarshalString("chat")
+	})
+
+	def := StreamFieldDef{
+		Resolve: func(_ context.Context, _ ObjectExecutionContext, _ any) (any, error) {
+			return make(<-chan string), nil
+		},
+		ReturnType:   &ObjectChildLookup{TypeName: "Chat", Kind: ast.Object, Children: []string{"id"}},
+		MarshalCodec: "marshalNChat",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+	RegisterStreamFieldDef("scope", "Subscription", "chat", def)
+
+	if _, ok := LookupStreamField("scope", "Subscription", "chat"); !ok {
+		t.Fatal("expected stream field handler registered")
+	}
+	if _, ok := LookupFieldContext("scope", "Subscription", "chat"); !ok {
+		t.Fatal("expected field context handler registered (shared with non-streaming)")
+	}
+}

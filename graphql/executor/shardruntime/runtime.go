@@ -813,6 +813,80 @@ func buildFieldContext(ctx context.Context, ec ObjectExecutionContext, def *Fiel
 	return fc, nil
 }
 
+// StreamFieldDef holds all per-field data needed to synthesize the StreamFieldHandler +
+// FieldContextHandler pair at registration time for subscription (streaming) fields.
+// Mirrors FieldDef but targets graphql.ResolveFieldStream instead of graphql.ResolveField.
+type StreamFieldDef struct {
+	Resolve func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
+	// Directives is the middleware chain passed to graphql.ResolveFieldStream; its
+	// signature must match graphql.ResolveFieldStream's middlewareChain parameter.
+	Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver
+	MarshalCodec string
+	NonNull      bool
+	PanicHandled bool
+
+	// FieldContext data (folded in)
+	IsMethod   bool // codegen sets this to (IsMethod || IsResolver); runtime copies it as-is
+	IsResolver bool
+	ArgsKey    string
+	ReturnType *ObjectChildLookup
+
+	marshalFn CodecMarshalHandler // cached at register time; nil falls back to ec.MarshalCodec
+}
+
+// RegisterStreamFieldDef registers a StreamFieldHandler + FieldContextHandler pair for the
+// given (scope, objectName, fieldName), backed by the supplied StreamFieldDef data.
+// The FieldContext side is shared with the non-streaming path via buildFieldContext.
+func RegisterStreamFieldDef(scope, objectName, fieldName string, def StreamFieldDef) {
+	if def.MarshalCodec != "" {
+		if fn, ok := LookupCodecMarshal(scope, def.MarshalCodec); ok {
+			def.marshalFn = fn
+		}
+		// else: marshalFn stays nil; runtime falls back to ec.MarshalCodec by string.
+	}
+	handler := func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
+		return resolveStreamFromDef(ctx, ec, &def, scope, objectName, field, obj)
+	}
+	// For the FieldContext side of streaming fields, reuse the same
+	// buildFieldContext path via an adapter FieldDef.
+	fcDef := FieldDef{
+		IsMethod:   def.IsMethod,
+		IsResolver: def.IsResolver,
+		ArgsKey:    def.ArgsKey,
+		ReturnType: def.ReturnType,
+	}
+	fcHandler := func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField) (*graphql.FieldContext, error) {
+		return buildFieldContext(ctx, ec, &fcDef, scope, objectName, field)
+	}
+	RegisterStreamField(scope, objectName, fieldName, handler)
+	RegisterFieldContext(scope, objectName, fieldName, fcHandler)
+}
+
+func resolveStreamFromDef(ctx context.Context, ec ObjectExecutionContext, def *StreamFieldDef, scope, objectName string, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
+	return graphql.ResolveFieldStream[any](ctx, ec.GetOperationContext(), field,
+		func(ctx context.Context, f graphql.CollectedField) (*graphql.FieldContext, error) {
+			fcDef := FieldDef{
+				IsMethod:   def.IsMethod,
+				IsResolver: def.IsResolver,
+				ArgsKey:    def.ArgsKey,
+				ReturnType: def.ReturnType,
+			}
+			return buildFieldContext(ctx, ec, &fcDef, scope, objectName, f)
+		},
+		func(ctx context.Context) (any, error) {
+			return def.Resolve(ctx, ec, obj)
+		},
+		def.Directives,
+		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+			if def.marshalFn != nil {
+				return def.marshalFn(ctx, ec, sel, v)
+			}
+			return ec.MarshalCodec(ctx, def.MarshalCodec, sel, v)
+		},
+		def.PanicHandled, def.NonNull,
+	)
+}
+
 // RegisterFieldDef registers a FieldHandler + FieldContextHandler pair for the
 // given (scope, objectName, fieldName), backed by the supplied FieldDef data.
 // Internally it wraps def in a closure and calls RegisterField / RegisterFieldContext;
