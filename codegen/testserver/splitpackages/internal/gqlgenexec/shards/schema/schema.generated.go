@@ -4,8 +4,6 @@ package schema
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
@@ -20,66 +18,6 @@ var type_String = &shardruntime.ObjectChildLookup{
 }
 
 func init() {
-}
-
-// split_fieldcontext_.gotpl — fieldContext for Mutation.greet
-func __splitFieldContext_Mutation_greet(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
-	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field_Mutation_greet_args")
-	if !ok {
-		return nil, fmt.Errorf("no args handler for %q", "field_Mutation_greet_args")
-	}
-	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-// split_fieldcontext_.gotpl — fieldContext for Query.hello
-func __splitFieldContext_Query_hello(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
-	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field_Query_hello_args")
-	if !ok {
-		return nil, fmt.Errorf("no args handler for %q", "field_Query_hello_args")
-	}
-	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
 }
 
 // split_args_.gotpl — args for Mutation.greet
