@@ -4,6 +4,75 @@
 {{ reserveImport "github.com/99designs/gqlgen/graphql" }}
 {{ reserveImport "github.com/99designs/gqlgen/graphql/executor/shardruntime" }}
 
+{{- /*
+  Field registrations:
+  - When OwnedFieldKeyChunks is populated (chunkSize=50), emit one init() per
+    chunk. This splits what would otherwise be one giant init() into multiple
+    smaller functions, exposing function-level parallelism to the Go compiler.
+  - When OwnedFieldKeyChunks is nil (legacy/test paths), fall back to the
+    original single-init approach over FieldOwnerKeys for backward compatibility.
+*/}}
+{{- if .OwnedFieldKeyChunks }}
+{{- range $chunk := .OwnedFieldKeyChunks }}
+func init() {
+{{- range $key := $chunk }}
+{{- with $field := index $.FieldByLookupKey $key }}
+{{- if $field.TypeReference }}
+{{- if $field.Object.Stream }}
+	shardruntime.RegisterStreamFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.StreamFieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
+			{{- else }}
+			{{- template "splitFieldAccess" $field }}
+			{{- end }}
+		},
+		{{- if $field.HasDirectives }}
+		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		},
+		{{- end }}
+		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
+		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+		PanicHandled: {{ not $.Config.OmitPanicHandler }},
+		IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
+		IsResolver:   {{ $field.IsResolver }},
+		{{- if gt (len $field.Args) 0 }}
+		ArgsKey:      {{ $field.ArgsFunc | quote }},
+		{{- end }}
+		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
+	})
+{{- else }}
+	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
+			{{- else }}
+			{{- template "splitFieldAccess" $field }}
+			{{- end }}
+		},
+		{{- if $field.HasDirectives }}
+		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		},
+		{{- end }}
+		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
+		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+		PanicHandled: {{ not $.Config.OmitPanicHandler }},
+		IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
+		IsResolver:   {{ $field.IsResolver }},
+		{{- if gt (len $field.Args) 0 }}
+		ArgsKey:      {{ $field.ArgsFunc | quote }},
+		{{- end }}
+		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
+	})
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+}
+{{ end }}
+{{- else }}
 func init() {
 {{- range $key := .Ownership.FieldOwnerKeys }}
 {{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
@@ -95,3 +164,43 @@ func init() {
 {{- end }}
 {{- end }}
 }
+{{- end }}
+
+{{- /* When using chunked mode (OwnedFieldKeyChunks != nil), emit a separate
+       init() for args, inputs, and codecs. */}}
+{{- if .OwnedFieldKeyChunks }}
+func init() {
+{{- range $key := .Ownership.ArgsOwnerKeys }}
+{{- if eq (index $.Ownership.ArgsOwner $key) $.ShardName }}
+	shardruntime.RegisterArgs(splitScope, {{ $key | quote }}, __splitArgs_{{ $key }})
+{{- end }}
+{{- end }}
+{{- range $inputName := .Ownership.InputOwnerKeys }}
+{{- if eq (index $.Ownership.InputOwner $inputName) $.ShardName }}
+{{- with $input := index $.InputByName $inputName }}
+	{{- if not $input.HasUnmarshal }}
+	shardruntime.RegisterInputUnmarshaler(splitScope, {{ $input.Name | quote }}, __splitInput_{{ $input.Name }})
+	{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- /* Complexity is computed in the root executableSchema.Complexity method
+       (it needs ec.complexity, a root-package type), so no per-shard
+       complexity handlers are registered. */}}
+{{- range $key := .Ownership.CodecOwnerKeys }}
+{{- if eq (index $.Ownership.CodecOwner $key) $.ShardName }}
+{{- with $type := index $.CodecByFunc $key }}
+{{- if eq $key ($type.MarshalFunc) }}
+	shardruntime.RegisterCodecMarshal(splitScope, {{ $key | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
+		return {{ $key }}(ctx, ec, sel, value)
+	})
+{{- else if eq $key ($type.UnmarshalFunc) }}
+	shardruntime.RegisterCodecUnmarshal(splitScope, {{ $key | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return {{ $key }}(ctx, ec, value)
+	})
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+}
+{{- end }}

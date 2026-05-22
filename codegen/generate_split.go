@@ -66,14 +66,15 @@ type splitRootTemplateData struct {
 
 type splitShardTemplateData struct {
 	*Data
-	Scope               string
-	ShardName           string
-	Ownership           *splitOwnershipPlanner
-	FieldByLookupKey    map[string]*Field
-	FieldByArgsFunc     map[string]*Field
-	InputByName         map[string]*Object
-	CodecByFunc         map[string]*config.TypeReference
-	DistinctReturnTypes []*ast.Definition
+	Scope                string
+	ShardName            string
+	Ownership            *splitOwnershipPlanner
+	FieldByLookupKey     map[string]*Field
+	FieldByArgsFunc      map[string]*Field
+	InputByName          map[string]*Object
+	CodecByFunc          map[string]*config.TypeReference
+	DistinctReturnTypes  []*ast.Definition
+	OwnedFieldKeyChunks  [][]string
 }
 
 type splitImportsTemplateData struct {
@@ -285,6 +286,32 @@ func generateSplitRootRuntime(data *Data) error {
 	})
 }
 
+// buildOwnedFieldKeyChunksForShard returns the field-owner keys belonging to
+// shardName, split into chunks of chunkSize. The result is deterministic
+// (input keys are already sorted by planSplitOwnership). Used by the register
+// template to emit one init() per chunk instead of one giant init(), which
+// exposes function-level parallelism to the Go compiler.
+func buildOwnedFieldKeyChunksForShard(ownership *splitOwnershipPlanner, shardName string, chunkSize int) [][]string {
+	var owned []string
+	for _, key := range ownership.FieldOwnerKeys {
+		if ownership.FieldOwner[key] == shardName {
+			owned = append(owned, key)
+		}
+	}
+	if len(owned) == 0 {
+		return nil
+	}
+	var chunks [][]string
+	for i := 0; i < len(owned); i += chunkSize {
+		end := i + chunkSize
+		if end > len(owned) {
+			end = len(owned)
+		}
+		chunks = append(chunks, owned[i:end])
+	}
+	return chunks
+}
+
 func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 	ownership, err := planSplitOwnership(data)
 	if err != nil {
@@ -365,6 +392,7 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 				InputByName:         buildInputLookupMap(data),
 				CodecByFunc:         buildCodecLookupMap(data),
 				DistinctReturnTypes: buildDistinctReturnTypesForShard(build, shardName, buildFieldLookupMap(build), ownership.FieldOwner),
+				OwnedFieldKeyChunks: buildOwnedFieldKeyChunksForShard(ownership, shardName, 50),
 			},
 			RegionTags:      false,
 			GeneratedHeader: true,
