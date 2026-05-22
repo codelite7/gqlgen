@@ -2822,19 +2822,6 @@ func marshalNBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionCo
 }
 
 // split_codecs_.gotpl — marshal
-func marshalNString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	_ = sel
-	v := value.(string)
-	res := graphql.MarshalString(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-// split_codecs_.gotpl — marshal
 func marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 	handler, ok := shardruntime.LookupObject(splitScope, "__Directive")
 	if !ok {
@@ -3336,23 +3323,6 @@ func marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintro
 }
 
 // split_codecs_.gotpl — marshal
-func marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
-	if !ok {
-		panic("missing object shard handler for __Type")
-	}
-	{
-		rv := reflect.ValueOf(value)
-		if rv.Kind() == reflect.Struct {
-			ptr := reflect.New(rv.Type())
-			ptr.Elem().Set(rv)
-			value = ptr.Interface()
-		}
-	}
-	return handler(ctx, ec, sel, value)
-}
-
-// split_codecs_.gotpl — marshal
 func marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 	if value == nil {
 		return graphql.Null
@@ -3397,36 +3367,9 @@ func marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospecti
 	return ret
 }
 
-// split_codecs_.gotpl — marshal
-func marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	if value == nil {
-		return graphql.Null
-	}
-	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
-		return graphql.Null
-	}
-	if rv.Kind() == reflect.Struct {
-		ptr := reflect.New(rv.Type())
-		ptr.Elem().Set(rv)
-		value = ptr.Interface()
-	}
-	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
-	if !ok {
-		panic("missing object shard handler for __Type")
-	}
-	return handler(ctx, ec, sel, value)
-}
-
 // split_codecs_.gotpl — unmarshal
 func unmarshalNBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	res, err := graphql.UnmarshalBoolean(value)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-// split_codecs_.gotpl — unmarshal
-func unmarshalNString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	res, err := graphql.UnmarshalString(value)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

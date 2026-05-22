@@ -7,17 +7,37 @@ import (
 )
 
 type Stub struct {
+	MutationResolver struct {
+		Greet          func(ctx context.Context, name string) (string, error)
+		PingFromExtras func(ctx context.Context) (string, error)
+	}
 	QueryResolver struct {
-		Hello func(ctx context.Context, name string) (string, error)
+		Hello             func(ctx context.Context, name string) (string, error)
+		GoodbyeFromExtras func(ctx context.Context, name string) (string, error)
 	}
 }
 
+func (r *Stub) Mutation() MutationResolver {
+	return &stubMutation{r}
+}
 func (r *Stub) Query() QueryResolver {
 	return &stubQuery{r}
+}
+
+type stubMutation struct{ *Stub }
+
+func (r *stubMutation) Greet(ctx context.Context, name string) (string, error) {
+	return r.MutationResolver.Greet(ctx, name)
+}
+func (r *stubMutation) PingFromExtras(ctx context.Context) (string, error) {
+	return r.MutationResolver.PingFromExtras(ctx)
 }
 
 type stubQuery struct{ *Stub }
 
 func (r *stubQuery) Hello(ctx context.Context, name string) (string, error) {
 	return r.QueryResolver.Hello(ctx, name)
+}
+func (r *stubQuery) GoodbyeFromExtras(ctx context.Context, name string) (string, error) {
+	return r.QueryResolver.GoodbyeFromExtras(ctx, name)
 }

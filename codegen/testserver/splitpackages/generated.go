@@ -35,6 +35,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -42,13 +43,24 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Mutation struct {
+		Greet          func(childComplexity int, name string) int
+		PingFromExtras func(childComplexity int) int
+	}
+
 	Query struct {
-		Hello func(childComplexity int, name string) int
+		GoodbyeFromExtras func(childComplexity int, name string) int
+		Hello             func(childComplexity int, name string) int
 	}
 }
 
+type MutationResolver interface {
+	Greet(ctx context.Context, name string) (string, error)
+	PingFromExtras(ctx context.Context) (string, error)
+}
 type QueryResolver interface {
 	Hello(ctx context.Context, name string) (string, error)
+	GoodbyeFromExtras(ctx context.Context, name string) (string, error)
 }
 
 type executableSchema struct {
@@ -69,6 +81,45 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Mutation.greet":
+		if e.complexity.Mutation.Greet == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Mutation_greet_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Greet(childComplexity, args["name"].(string)), true
+
+	case "Mutation.pingFromExtras":
+		if e.complexity.Mutation.PingFromExtras == nil {
+			break
+		}
+
+		return e.complexity.Mutation.PingFromExtras(childComplexity), true
+
+	case "Query.goodbyeFromExtras":
+		if e.complexity.Query.GoodbyeFromExtras == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_goodbyeFromExtras_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GoodbyeFromExtras(childComplexity, args["name"].(string)), true
 
 	case "Query.hello":
 		if e.complexity.Query.Hello == nil {
@@ -128,6 +179,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 
 			return &response
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
 		}
 
 	default:
@@ -240,12 +306,73 @@ func (ec *executionContext) InvokeResolver(ctx context.Context, objectName, fiel
 func (ec *executionContext) LookupFieldContextHandler(objectName, fieldName string) (shardruntime.FieldContextHandler, bool) {
 	return shardruntime.LookupFieldContext("github.com/99designs/gqlgen/codegen/testserver/splitpackages", objectName, fieldName)
 }
-func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "Query")
-	if !ok {
-		panic(fmt.Sprintf("missing object shard handler for %s", "Query"))
+
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	for i, field := range fields {
+		if field.Name == "__typename" {
+			out.Values[i] = graphql.MarshalString("Mutation")
+			continue
+		}
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+		fieldName := field.Name
+		collected := field
+		out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+			return ec.ResolveField(ctx, "Mutation", fieldName, collected, nil)
+		})
+		if out.Values[i] == graphql.Null {
+			out.Invalids++
+		}
 	}
-	return handler(ctx, ec, sel, nil)
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var queryImplementors = []string{"Query"}
+
+func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, queryImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Query",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	for i, field := range fields {
+		if field.Name == "__typename" {
+			out.Values[i] = graphql.MarshalString("Query")
+			continue
+		}
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+		fieldName := field.Name
+		collected := field
+		out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+			return ec.ResolveField(ctx, "Query", fieldName, collected, nil)
+		})
+		if out.Values[i] == graphql.Null {
+			out.Invalids++
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+	return out
 }
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
 	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "__Directive")
@@ -292,11 +419,29 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 func init() {
 	scope := "github.com/99designs/gqlgen/codegen/testserver/splitpackages"
 	_ = scope
+	shardruntime.RegisterResolverInvoker(scope, "Mutation", "greet", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Mutation().Greet(ctx, fc.Args["name"].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Mutation", "pingFromExtras", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Mutation().PingFromExtras(ctx)
+	})
 	shardruntime.RegisterResolverInvoker(scope, "Query", "hello", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
 		fc := graphql.GetFieldContext(ctx)
 		_ = fc
 		return ec.resolvers.Query().Hello(ctx, fc.Args["name"].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "goodbyeFromExtras", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().GoodbyeFromExtras(ctx, fc.Args["name"].(string))
 	})
 	shardruntime.RegisterResolverInvoker(scope, "Query", "__type", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
@@ -310,7 +455,7 @@ func init() {
 	})
 }
 
-//go:embed "schema.graphql"
+//go:embed "extras.graphql" "schema.graphql"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -322,6 +467,7 @@ func sourceData(filename string) string {
 }
 
 var sources = []*ast.Source{
+	{Name: "extras.graphql", Input: sourceData("extras.graphql"), BuiltIn: false},
 	{Name: "schema.graphql", Input: sourceData("schema.graphql"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

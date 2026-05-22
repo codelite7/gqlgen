@@ -10,23 +10,24 @@ const splitScope = {{ .Scope | quote }}
 
 func init() {
 {{- range $object := .Objects }}
-	{{- if $object.Stream }}
+	{{- /* Root types (Query, Mutation, Subscription) are sliced across shards by */}}
+	{{- /* declaring field file; the gateway emits a single root dispatcher and  */}}
+	{{- /* shards only register their per-field handlers (see split_register_).   */}}
+	{{- if $object.Root }}
+	{{- else if $object.Stream }}
 	shardruntime.RegisterStreamObject(splitScope, {{ $object.Name | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet) func(context.Context) graphql.Marshaler {
 		return _{{ $object.Name }}(ctx, ec, sel)
 	})
 	{{- else }}
 	shardruntime.RegisterObject(splitScope, {{ $object.Name | quote }}, func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, obj any) graphql.Marshaler {
-		{{- if $object.Root }}
-		return _{{ $object.Name }}(ctx, ec, sel)
-		{{- else }}
 		return _{{ $object.Name }}(ctx, ec, sel, obj)
-		{{- end }}
 	})
 	{{- end }}
 {{- end }}
 }
 
 {{- range $object := .Objects }}
+{{- if $object.Root }}{{ continue }}{{ end }}
 
 var {{ $object.Name|lcFirst}}Implementors = {{$object.Implementors}}
 

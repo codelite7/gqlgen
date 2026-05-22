@@ -160,6 +160,11 @@ func generateRootFile(data *Data) error {
 
 func addObjects(data *Data, builds *map[string]*Data) error {
 	for _, o := range data.Objects {
+		if data.Config.Exec.Layout == config.ExecLayoutSplitPackages && o.Root && len(o.Fields) > 0 {
+			addRootObjectSlices(data, o, builds)
+			continue
+		}
+
 		filename := filename(o.Position, data.Config)
 		if (*builds)[filename] == nil {
 			addBuild(filename, o.Position, data, builds)
@@ -168,6 +173,34 @@ func addObjects(data *Data, builds *map[string]*Data) error {
 		(*builds)[filename].Objects = append((*builds)[filename].Objects, o)
 	}
 	return nil
+}
+
+// addRootObjectSlices slices a root Object (Query, Mutation, Subscription) by
+// the declaring .graphql file of each of its fields, and buckets one slice
+// into the build for each file. Root types are routinely extended across many
+// .graphql files; without this, the whole root's machinery (every field's
+// resolver, args parser, fieldContext, codec) lands in the build whose
+// position the parser happened to assign — typically the alphabetically-first
+// extend. The slice copies the Object's metadata (name, type, root flags,
+// directives, implements set) but overrides Fields to that file's fields only.
+// The root dispatcher itself is emitted by the gateway template (split_root_)
+// rather than in any shard, and shards skip RegisterObject for root types, so
+// shard slices can coexist without conflicting on the registry key.
+func addRootObjectSlices(data *Data, o *Object, builds *map[string]*Data) {
+	fieldsByFile := map[string][]*Field{}
+	for _, f := range o.Fields {
+		fname := filename(f.Position, data.Config)
+		fieldsByFile[fname] = append(fieldsByFile[fname], f)
+	}
+	for fname, fields := range fieldsByFile {
+		representativePos := fields[0].Position
+		if (*builds)[fname] == nil {
+			addBuild(fname, representativePos, data, builds)
+		}
+		slice := *o
+		slice.Fields = fields
+		(*builds)[fname].Objects = append((*builds)[fname].Objects, &slice)
+	}
 }
 
 func addInputs(data *Data, builds *map[string]*Data) error {

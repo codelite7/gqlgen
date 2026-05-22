@@ -2,3 +2,6 @@ type Query {
 	hello(name: String!): String!
 }
 
+type Mutation {
+	greet(name: String!): String!
+}

@@ -7,28 +7,17 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
-	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func init() {
-	shardruntime.RegisterField(splitScope, "Query", "__schema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Query___schema(ctx, ec, field, obj)
-	})
-	shardruntime.RegisterField(splitScope, "Query", "__type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Query___type(ctx, ec, field, obj)
+	shardruntime.RegisterField(splitScope, "Mutation", "greet", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
+		return __splitField_Mutation_greet(ctx, ec, field, obj)
 	})
 	shardruntime.RegisterField(splitScope, "Query", "hello", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 		return __splitField_Query_hello(ctx, ec, field, obj)
 	})
-	shardruntime.RegisterFieldContext(splitScope, "Query", "__schema", __splitFieldContext_Query___schema)
-	shardruntime.RegisterFieldContext(splitScope, "Query", "__type", __splitFieldContext_Query___type)
+	shardruntime.RegisterFieldContext(splitScope, "Mutation", "greet", __splitFieldContext_Mutation_greet)
 	shardruntime.RegisterFieldContext(splitScope, "Query", "hello", __splitFieldContext_Query_hello)
-	shardruntime.RegisterArgs(splitScope, "field_Query___type_args", __splitArgs_field_Query___type_args)
+	shardruntime.RegisterArgs(splitScope, "field_Mutation_greet_args", __splitArgs_field_Mutation_greet_args)
 	shardruntime.RegisterArgs(splitScope, "field_Query_hello_args", __splitArgs_field_Query_hello_args)
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, ec, sel, value)
-	})
 }
