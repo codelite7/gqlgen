@@ -17,7 +17,7 @@ import (
 type testObjectExecutionContext struct {
 	opCtx           *graphql.OperationContext
 	errs            []error
-	deferred        int32
+	deferred        atomic.Int32
 	deferredGroups  []graphql.DeferredGroup
 	recoverPassthru bool
 }
@@ -53,7 +53,7 @@ func (e *testObjectExecutionContext) Recover(_ context.Context, r any) error {
 }
 
 func (e *testObjectExecutionContext) AddDeferred(delta int32) {
-	atomic.AddInt32(&e.deferred, delta)
+	e.deferred.Add(delta)
 }
 
 func (e *testObjectExecutionContext) ProcessDeferredGroup(dg graphql.DeferredGroup) {
@@ -119,7 +119,7 @@ func TestDispatchObject_BasicScalar(t *testing.T) {
 		ctx, ec, sel, user, "User", []string{"User"}, handlers, false,
 	)
 	require.NotNil(t, res)
-	require.Equal(t, `{"name":"alice"}`, string(marshalToBytes(res)))
+	require.JSONEq(t, `{"name":"alice"}`, string(marshalToBytes(res)))
 }
 
 func TestDispatchObject_NonNullableNullIncrementsInvalids(t *testing.T) {
@@ -165,7 +165,7 @@ func TestDispatchObject_TypenameReturnsImplementor(t *testing.T) {
 	res := graphql.DispatchObject(
 		ctx, ec, sel, &testUser{}, "User", []string{"User"}, nil, false,
 	)
-	require.Equal(t, `{"__typename":"User"}`, string(marshalToBytes(res)))
+	require.JSONEq(t, `{"__typename":"User"}`, string(marshalToBytes(res)))
 }
 
 func TestDispatchObject_Concurrent_DispatchesViaGoroutine(t *testing.T) {
@@ -178,11 +178,17 @@ func TestDispatchObject_Concurrent_DispatchesViaGoroutine(t *testing.T) {
 	sel := ast.SelectionSet{
 		&ast.Field{
 			Name: "name", Alias: "name",
-			Definition: &ast.FieldDefinition{Name: "name", Type: ast.NonNullNamedType("String", nil)},
+			Definition: &ast.FieldDefinition{
+				Name: "name",
+				Type: ast.NonNullNamedType("String", nil),
+			},
 		},
 		&ast.Field{
 			Name: "other", Alias: "other",
-			Definition: &ast.FieldDefinition{Name: "other", Type: ast.NonNullNamedType("String", nil)},
+			Definition: &ast.FieldDefinition{
+				Name: "other",
+				Type: ast.NonNullNamedType("String", nil),
+			},
 		},
 	}
 
@@ -202,7 +208,7 @@ func TestDispatchObject_Concurrent_DispatchesViaGoroutine(t *testing.T) {
 	)
 	require.NotNil(t, res)
 	require.Equal(t, int32(2), calls.Load(), "both concurrent handlers should fire")
-	require.Equal(t, `{"name":"alice","other":"alice"}`, string(marshalToBytes(res)))
+	require.JSONEq(t, `{"name":"alice","other":"alice"}`, string(marshalToBytes(res)))
 }
 
 func TestDispatchObject_Concurrent_PropagatesPanicWhenRecoveryDisabled(t *testing.T) {

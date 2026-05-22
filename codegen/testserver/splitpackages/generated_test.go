@@ -55,8 +55,8 @@ func TestMultiFileRootFields(t *testing.T) {
 
 	t.Run("query fields from both files resolve", func(t *testing.T) {
 		var resp struct {
-			Hello    string
-			Goodbye  string `json:"goodbyeFromExtras"`
+			Hello   string
+			Goodbye string `json:"goodbyeFromExtras"`
 		}
 		c.MustPost(`query { hello(name:"Ada") goodbyeFromExtras(name:"Ada") }`, &resp)
 		require.Equal(t, "Hello Ada", resp.Hello)
@@ -82,10 +82,10 @@ func TestRootTypeShardDistribution(t *testing.T) {
 	shardsDir := filepath.Join("internal", "gqlgenexec", "shards")
 
 	want := map[string]struct{}{
-		"Query.hello":              {}, // schema.graphql
-		"Mutation.greet":           {}, // schema.graphql
-		"Query.goodbyeFromExtras":  {}, // extras.graphql
-		"Mutation.pingFromExtras":  {}, // extras.graphql
+		"Query.hello":             {}, // schema.graphql
+		"Mutation.greet":          {}, // schema.graphql
+		"Query.goodbyeFromExtras": {}, // extras.graphql
+		"Mutation.pingFromExtras": {}, // extras.graphql
 	}
 	got := map[string]string{} // "Query.hello" -> shard pkg dir
 
@@ -109,11 +109,11 @@ func TestRootTypeShardDistribution(t *testing.T) {
 					break
 				}
 				rest = rest[i+len(marker):]
-				j := strings.Index(rest, `"`)
-				if j < 0 {
+				before, _, ok := strings.Cut(rest, `"`)
+				if !ok {
 					break
 				}
-				name := rest[:j]
+				name := before
 				if name == "__schema" || name == "__type" {
 					continue
 				}
@@ -134,8 +134,12 @@ func TestRootTypeShardDistribution(t *testing.T) {
 		"schema.graphql and extras.graphql fields must live in different shards")
 	require.Equal(t, schemaShard, got["Mutation.greet"],
 		"Mutation.greet (declared in schema.graphql) must live with Query.hello")
-	require.Equal(t, extrasShard, got["Mutation.pingFromExtras"],
-		"Mutation.pingFromExtras (declared in extras.graphql) must live with Query.goodbyeFromExtras")
+	require.Equal(
+		t,
+		extrasShard,
+		got["Mutation.pingFromExtras"],
+		"Mutation.pingFromExtras (declared in extras.graphql) must live with Query.goodbyeFromExtras",
+	)
 }
 
 func TestSplitPackagesCodecCompile(t *testing.T) {
@@ -162,7 +166,13 @@ func TestSplitComplexityParity(t *testing.T) {
 			},
 		})
 
-		value, ok := schema.Complexity(context.Background(), "Query", "hello", 4, map[string]any{"name": "Ada"})
+		value, ok := schema.Complexity(
+			context.Background(),
+			"Query",
+			"hello",
+			4,
+			map[string]any{"name": "Ada"},
+		)
 		require.True(t, ok)
 		require.Equal(t, 7, value)
 	})
@@ -170,7 +180,13 @@ func TestSplitComplexityParity(t *testing.T) {
 	t.Run("returns false when complexity function is unset", func(t *testing.T) {
 		schema := NewExecutableSchema(Config{Resolvers: &Stub{}})
 
-		value, ok := schema.Complexity(context.Background(), "Query", "hello", 2, map[string]any{"name": "Ada"})
+		value, ok := schema.Complexity(
+			context.Background(),
+			"Query",
+			"hello",
+			2,
+			map[string]any{"name": "Ada"},
+		)
 		require.False(t, ok)
 		require.Equal(t, 0, value)
 	})
@@ -188,7 +204,13 @@ func TestSplitComplexityParity(t *testing.T) {
 			},
 		})
 
-		value, ok := schema.Complexity(context.Background(), "Query", "hello", 3, map[string]any{"name": []int{1}})
+		value, ok := schema.Complexity(
+			context.Background(),
+			"Query",
+			"hello",
+			3,
+			map[string]any{"name": []int{1}},
+		)
 		require.False(t, ok)
 		require.Equal(t, 0, value)
 	})

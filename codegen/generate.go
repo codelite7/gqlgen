@@ -160,7 +160,8 @@ func generateRootFile(data *Data) error {
 
 func addObjects(data *Data, builds *map[string]*Data) error {
 	for _, o := range data.Objects {
-		if data.Config.Exec.Layout == config.ExecLayoutSplitPackages && o.Root && len(o.Fields) > 0 {
+		if data.Config.Exec.Layout == config.ExecLayoutSplitPackages && o.Root &&
+			len(o.Fields) > 0 {
 			addRootObjectSlices(data, o, builds)
 			continue
 		}
