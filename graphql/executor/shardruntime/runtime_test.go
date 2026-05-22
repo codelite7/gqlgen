@@ -1526,6 +1526,31 @@ func TestResolveFromDef_CallsResolve(t *testing.T) {
 	}
 }
 
+func TestBuildFieldContext_ArgsPath_PanicRecovered(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	RegisterArgs("scope", "PanickingArgs", func(_ context.Context, _ ObjectExecutionContext, _ map[string]any) (map[string]any, error) {
+		panic("boom")
+	})
+
+	ec := &fakeECWithOpCtx{}
+	def := &FieldDef{
+		ReturnType: &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}},
+		ArgsKey:    "PanickingArgs",
+	}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "escrow"}}
+
+	_, err := buildFieldContext(context.Background(), ec, def, "scope", "Query", cf)
+	if err == nil {
+		t.Fatal("expected error from recovered panic")
+	}
+	if err.Error() != "boom" {
+		t.Fatalf("expected recovered panic message, got %v", err)
+	}
+}
+
 func TestRegisterStreamFieldDef(t *testing.T) {
 	resetFieldRegistryForTest()
 	resetStreamFieldRegistryForTest()
