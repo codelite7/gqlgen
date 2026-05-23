@@ -1263,15 +1263,31 @@ func (f *fakeEC) UnmarshalCodec(context.Context, string, any) (any, error) { ret
 func (f *fakeEC) ParseFieldArgs(context.Context, string, map[string]any) (map[string]any, error) {
 	return nil, nil
 }
-func (f *fakeEC) ResolveField(context.Context, string, string, graphql.CollectedField, any) graphql.Marshaler {
+
+func (f *fakeEC) ResolveField(
+	context.Context,
+	string,
+	string,
+	graphql.CollectedField,
+	any,
+) graphql.Marshaler {
 	return graphql.Null
 }
-func (f *fakeEC) ResolveStreamField(context.Context, string, string, graphql.CollectedField, any) func(context.Context) graphql.Marshaler {
+
+func (f *fakeEC) ResolveStreamField(
+	context.Context,
+	string,
+	string,
+	graphql.CollectedField,
+	any,
+) func(context.Context) graphql.Marshaler {
 	return func(context.Context) graphql.Marshaler { return graphql.Null }
 }
+
 func (f *fakeEC) InvokeResolver(context.Context, string, string, any) (any, error) {
 	return nil, nil
 }
+
 func (f *fakeEC) LookupFieldContextHandler(obj, field string) (FieldContextHandler, bool) {
 	h, ok := f.fieldContextHandlers[obj+"."+field]
 	return h, ok
@@ -1313,11 +1329,18 @@ func TestMakeChildResolver_ObjectKnownField(t *testing.T) {
 	ec := &fakeEC{
 		fieldContextHandlers: map[string]FieldContextHandler{
 			"Escrow.id": func(_ context.Context, _ ObjectExecutionContext, _ graphql.CollectedField) (*graphql.FieldContext, error) {
-				return &graphql.FieldContext{Object: "Escrow", Field: graphql.CollectedField{Field: &ast.Field{Name: "id"}}}, nil
+				return &graphql.FieldContext{
+					Object: "Escrow",
+					Field:  graphql.CollectedField{Field: &ast.Field{Name: "id"}},
+				}, nil
 			},
 		},
 	}
-	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id", "address"}}
+	lookup := &ObjectChildLookup{
+		TypeName: "Escrow",
+		Kind:     ast.Object,
+		Children: []string{"id", "address"},
+	}
 
 	childFn := makeChildResolver(ec, lookup)
 	fc, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "id"}})
@@ -1334,7 +1357,10 @@ func TestMakeChildResolver_ObjectUnknownField(t *testing.T) {
 	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}}
 
 	childFn := makeChildResolver(ec, lookup)
-	_, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "nonexistent"}})
+	_, err := childFn(
+		context.Background(),
+		graphql.CollectedField{Field: &ast.Field{Name: "nonexistent"}},
+	)
 	if err == nil {
 		t.Fatal("expected error for unknown child field")
 	}
@@ -1430,15 +1456,23 @@ func TestBuildFieldContext_ArgsPath(t *testing.T) {
 	resetFieldContextRegistryForTest()
 	resetArgsRegistryForTest()
 
-	RegisterArgs("scope", "EscrowQueryArgs", func(_ context.Context, _ ObjectExecutionContext, raw map[string]any) (map[string]any, error) {
-		return map[string]any{"id": raw["id"]}, nil
-	})
+	RegisterArgs(
+		"scope",
+		"EscrowQueryArgs",
+		func(_ context.Context, _ ObjectExecutionContext, raw map[string]any) (map[string]any, error) {
+			return map[string]any{"id": raw["id"]}, nil
+		},
+	)
 
 	ec := &fakeECWithOpCtx{}
 	def := &FieldDef{
-		IsMethod:   true,
-		ReturnType: &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}},
-		ArgsKey:    "EscrowQueryArgs",
+		IsMethod: true,
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Escrow",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		ArgsKey: "EscrowQueryArgs",
 	}
 	// Build a synthetic field with a Definition so ArgumentMap can walk the arg defs.
 	cf := graphql.CollectedField{
@@ -1472,8 +1506,12 @@ func TestBuildFieldContext_ArgsPath_MissingArgsHandler(t *testing.T) {
 
 	ec := &fakeECWithOpCtx{}
 	def := &FieldDef{
-		ReturnType: &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}},
-		ArgsKey:    "MissingHandler",
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Escrow",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		ArgsKey: "MissingHandler",
 	}
 	cf := graphql.CollectedField{Field: &ast.Field{Name: "escrow"}}
 
@@ -1493,9 +1531,13 @@ func TestResolveFromDef_CallsResolve(t *testing.T) {
 	resetCodecMarshalRegistryForTest()
 
 	called := false
-	RegisterCodecMarshal("scope", "marshalNString", func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
-		return graphql.MarshalString(v.(string))
-	})
+	RegisterCodecMarshal(
+		"scope",
+		"marshalNString",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+			return graphql.MarshalString(v.(string))
+		},
+	)
 
 	def := FieldDef{
 		Resolve: func(_ context.Context, _ ObjectExecutionContext, obj any) (any, error) {
@@ -1531,14 +1573,22 @@ func TestBuildFieldContext_ArgsPath_PanicRecovered(t *testing.T) {
 	resetFieldContextRegistryForTest()
 	resetArgsRegistryForTest()
 
-	RegisterArgs("scope", "PanickingArgs", func(_ context.Context, _ ObjectExecutionContext, _ map[string]any) (map[string]any, error) {
-		panic("boom")
-	})
+	RegisterArgs(
+		"scope",
+		"PanickingArgs",
+		func(_ context.Context, _ ObjectExecutionContext, _ map[string]any) (map[string]any, error) {
+			panic("boom")
+		},
+	)
 
 	ec := &fakeECWithOpCtx{}
 	def := &FieldDef{
-		ReturnType: &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}},
-		ArgsKey:    "PanickingArgs",
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Escrow",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		ArgsKey: "PanickingArgs",
 	}
 	cf := graphql.CollectedField{Field: &ast.Field{Name: "escrow"}}
 
@@ -1557,15 +1607,23 @@ func TestRegisterStreamFieldDef(t *testing.T) {
 	resetFieldContextRegistryForTest()
 	resetCodecMarshalRegistryForTest()
 
-	RegisterCodecMarshal("scope", "marshalNChat", func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, _ any) graphql.Marshaler {
-		return graphql.MarshalString("chat")
-	})
+	RegisterCodecMarshal(
+		"scope",
+		"marshalNChat",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, _ any) graphql.Marshaler {
+			return graphql.MarshalString("chat")
+		},
+	)
 
 	def := StreamFieldDef{
 		Resolve: func(_ context.Context, _ ObjectExecutionContext, _ any) (any, error) {
 			return make(<-chan string), nil
 		},
-		ReturnType:   &ObjectChildLookup{TypeName: "Chat", Kind: ast.Object, Children: []string{"id"}},
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Chat",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
 		MarshalCodec: "marshalNChat",
 		NonNull:      true,
 		PanicHandled: true,

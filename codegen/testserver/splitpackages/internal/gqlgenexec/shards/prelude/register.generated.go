@@ -436,6 +436,9 @@ func init() {
 		IsResolver:   false,
 		ReturnType:   type_String,
 	})
+}
+
+func init() {
 	shardruntime.RegisterArgs(splitScope, "field___Directive_args_args", __splitArgs_field___Directive_args_args)
 	shardruntime.RegisterArgs(splitScope, "field___Field_args_args", __splitArgs_field___Field_args_args)
 	shardruntime.RegisterArgs(splitScope, "field___Type_enumValues_args", __splitArgs_field___Type_enumValues_args)

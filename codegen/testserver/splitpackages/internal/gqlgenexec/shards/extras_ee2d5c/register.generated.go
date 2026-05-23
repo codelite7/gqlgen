@@ -32,5 +32,8 @@ func init() {
 		ArgsKey:      "field_Query_goodbyeFromExtras_args",
 		ReturnType:   type_String,
 	})
+}
+
+func init() {
 	shardruntime.RegisterArgs(splitScope, "field_Query_goodbyeFromExtras_args", __splitArgs_field_Query_goodbyeFromExtras_args)
 }

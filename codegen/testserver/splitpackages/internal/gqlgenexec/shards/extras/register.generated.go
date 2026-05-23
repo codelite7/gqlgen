@@ -34,6 +34,9 @@ func init() {
 		ArgsKey:      "field_Query___type_args",
 		ReturnType:   type___Type,
 	})
+}
+
+func init() {
 	shardruntime.RegisterArgs(splitScope, "field_Query___type_args", __splitArgs_field_Query___type_args)
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalNString2string(ctx, ec, sel, value)

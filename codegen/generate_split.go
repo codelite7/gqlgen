@@ -11,10 +11,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/vektah/gqlparser/v2/ast"
+
 	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/99designs/gqlgen/codegen/templates"
 	internalcode "github.com/99designs/gqlgen/internal/code"
-	"github.com/vektah/gqlparser/v2/ast"
 )
 
 //go:embed split_root_.gotpl
@@ -66,15 +67,15 @@ type splitRootTemplateData struct {
 
 type splitShardTemplateData struct {
 	*Data
-	Scope                string
-	ShardName            string
-	Ownership            *splitOwnershipPlanner
-	FieldByLookupKey     map[string]*Field
-	FieldByArgsFunc      map[string]*Field
-	InputByName          map[string]*Object
-	CodecByFunc          map[string]*config.TypeReference
-	DistinctReturnTypes  []*ast.Definition
-	OwnedFieldKeyChunks  [][]string
+	Scope               string
+	ShardName           string
+	Ownership           *splitOwnershipPlanner
+	FieldByLookupKey    map[string]*Field
+	FieldByArgsFunc     map[string]*Field
+	InputByName         map[string]*Object
+	CodecByFunc         map[string]*config.TypeReference
+	DistinctReturnTypes []*ast.Definition
+	OwnedFieldKeyChunks [][]string
 }
 
 type splitImportsTemplateData struct {
@@ -291,7 +292,11 @@ func generateSplitRootRuntime(data *Data) error {
 // (input keys are already sorted by planSplitOwnership). Used by the register
 // template to emit one init() per chunk instead of one giant init(), which
 // exposes function-level parallelism to the Go compiler.
-func buildOwnedFieldKeyChunksForShard(ownership *splitOwnershipPlanner, shardName string, chunkSize int) [][]string {
+func buildOwnedFieldKeyChunksForShard(
+	ownership *splitOwnershipPlanner,
+	shardName string,
+	chunkSize int,
+) [][]string {
 	var owned []string
 	for _, key := range ownership.FieldOwnerKeys {
 		if ownership.FieldOwner[key] == shardName {
@@ -303,10 +308,7 @@ func buildOwnedFieldKeyChunksForShard(ownership *splitOwnershipPlanner, shardNam
 	}
 	var chunks [][]string
 	for i := 0; i < len(owned); i += chunkSize {
-		end := i + chunkSize
-		if end > len(owned) {
-			end = len(owned)
-		}
+		end := min(i+chunkSize, len(owned))
 		chunks = append(chunks, owned[i:end])
 	}
 	return chunks
@@ -360,15 +362,19 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 			Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
 			Filename:    shardPath,
 			Data: splitShardTemplateData{
-				Data:                build,
-				Scope:               scope,
-				ShardName:           shardName,
-				Ownership:           ownership,
-				FieldByLookupKey:    buildFieldLookupMap(build),
-				FieldByArgsFunc:     buildArgsFuncLookupMap(build),
-				InputByName:         buildInputLookupMap(data),
-				CodecByFunc:         buildCodecLookupMap(data),
-				DistinctReturnTypes: buildDistinctReturnTypesForShard(build, shardName, buildFieldLookupMap(build), ownership.FieldOwner),
+				Data:             build,
+				Scope:            scope,
+				ShardName:        shardName,
+				Ownership:        ownership,
+				FieldByLookupKey: buildFieldLookupMap(build),
+				FieldByArgsFunc:  buildArgsFuncLookupMap(build),
+				InputByName:      buildInputLookupMap(data),
+				CodecByFunc:      buildCodecLookupMap(data),
+				DistinctReturnTypes: buildDistinctReturnTypesForShard(
+					shardName,
+					buildFieldLookupMap(build),
+					ownership.FieldOwner,
+				),
 			},
 			RegionTags:      false,
 			GeneratedHeader: true,
@@ -383,15 +389,19 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 			Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
 			Filename:    registerPath,
 			Data: splitShardTemplateData{
-				Data:                build,
-				Scope:               scope,
-				ShardName:           shardName,
-				Ownership:           ownership,
-				FieldByLookupKey:    buildFieldLookupMap(build),
-				FieldByArgsFunc:     buildArgsFuncLookupMap(build),
-				InputByName:         buildInputLookupMap(data),
-				CodecByFunc:         buildCodecLookupMap(data),
-				DistinctReturnTypes: buildDistinctReturnTypesForShard(build, shardName, buildFieldLookupMap(build), ownership.FieldOwner),
+				Data:             build,
+				Scope:            scope,
+				ShardName:        shardName,
+				Ownership:        ownership,
+				FieldByLookupKey: buildFieldLookupMap(build),
+				FieldByArgsFunc:  buildArgsFuncLookupMap(build),
+				InputByName:      buildInputLookupMap(data),
+				CodecByFunc:      buildCodecLookupMap(data),
+				DistinctReturnTypes: buildDistinctReturnTypesForShard(
+					shardName,
+					buildFieldLookupMap(build),
+					ownership.FieldOwner,
+				),
 				OwnedFieldKeyChunks: buildOwnedFieldKeyChunksForShard(ownership, shardName, 50),
 			},
 			RegionTags:      false,
@@ -434,7 +444,11 @@ func buildFieldLookupMap(data *Data) map[string]*Field {
 // ast.Definition values referenced by the return types of all fields
 // owned by the given shard. Used by split_shard_.gotpl to emit one
 // ObjectChildLookup var per distinct return type.
-func buildDistinctReturnTypesForShard(data *Data, shardName string, fieldByKey map[string]*Field, owners map[string]string) []*ast.Definition {
+func buildDistinctReturnTypesForShard(
+	shardName string,
+	fieldByKey map[string]*Field,
+	owners map[string]string,
+) []*ast.Definition {
 	seen := map[string]*ast.Definition{}
 	for key, owner := range owners {
 		if owner != shardName {

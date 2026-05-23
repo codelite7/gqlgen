@@ -764,7 +764,14 @@ func LookupArgs(scope, key string) (ArgsHandler, bool) {
 
 // --- FieldDef registration ---
 
-func resolveFromDef(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField, obj any) graphql.Marshaler {
+func resolveFromDef(
+	ctx context.Context,
+	ec ObjectExecutionContext,
+	def *FieldDef,
+	scope, objectName string,
+	field graphql.CollectedField,
+	obj any,
+) graphql.Marshaler {
 	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
 		func(ctx context.Context, f graphql.CollectedField) (*graphql.FieldContext, error) {
 			return buildFieldContext(ctx, ec, def, scope, objectName, f)
@@ -783,7 +790,13 @@ func resolveFromDef(ctx context.Context, ec ObjectExecutionContext, def *FieldDe
 	)
 }
 
-func buildFieldContext(ctx context.Context, ec ObjectExecutionContext, def *FieldDef, scope, objectName string, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func buildFieldContext(
+	ctx context.Context,
+	ec ObjectExecutionContext,
+	def *FieldDef,
+	scope, objectName string,
+	field graphql.CollectedField,
+) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     objectName,
 		Field:      field,
@@ -862,7 +875,14 @@ func RegisterStreamFieldDef(scope, objectName, fieldName string, def StreamField
 	RegisterFieldContext(scope, objectName, fieldName, fcHandler)
 }
 
-func resolveStreamFromDef(ctx context.Context, ec ObjectExecutionContext, def *StreamFieldDef, scope, objectName string, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
+func resolveStreamFromDef(
+	ctx context.Context,
+	ec ObjectExecutionContext,
+	def *StreamFieldDef,
+	scope, objectName string,
+	field graphql.CollectedField,
+	obj any,
+) func(context.Context) graphql.Marshaler {
 	return graphql.ResolveFieldStream[any](ctx, ec.GetOperationContext(), field,
 		func(ctx context.Context, f graphql.CollectedField) (*graphql.FieldContext, error) {
 			fcDef := FieldDef{
@@ -910,7 +930,10 @@ func RegisterFieldDef(scope, objectName, fieldName string, def FieldDef) {
 
 // --- Child resolution helpers ---
 
-func makeChildResolver(ec ObjectExecutionContext, ret *ObjectChildLookup) func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+func makeChildResolver(
+	ec ObjectExecutionContext,
+	ret *ObjectChildLookup,
+) func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	if ret == nil {
 		return func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("no return type information for field")
