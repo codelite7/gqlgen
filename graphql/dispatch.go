@@ -155,9 +155,12 @@ func DispatchObject(
 		if root {
 			handlerCopy := *handler
 			fieldCopy := field
-			out.Values[i] = opCtx.RootResolverMiddleware(rootInnerCtx, func(ctx context.Context) Marshaler {
-				return handlerCopy.Resolve(ctx, ec, fieldCopy, obj)
-			})
+			out.Values[i] = opCtx.RootResolverMiddleware(
+				rootInnerCtx,
+				func(ctx context.Context) Marshaler {
+					return handlerCopy.Resolve(ctx, ec, fieldCopy, obj)
+				},
+			)
 		} else {
 			out.Values[i] = handler.Resolve(ctx, ec, field, obj)
 		}

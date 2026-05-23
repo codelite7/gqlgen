@@ -18,6 +18,7 @@ formatters:
     paths:
         - codegen/testserver/followschema/resolver.go
         - codegen/testserver/singlefile/resolver.go
+        - codegen/testserver/splitpackages/resolver.go
         - codegen/testserver/usefunctionsyntaxforexecutioncontext/resolver.go
         - generated
   enable:

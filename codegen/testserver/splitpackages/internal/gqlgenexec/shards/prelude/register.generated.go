@@ -170,9 +170,6 @@ func init() {
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalNBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalNBoolean2bool(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalNString2string(ctx, ec, sel, value)
-	})
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, ec, sel, value)
 	})
@@ -230,20 +227,11 @@ func init() {
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
-	})
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
-	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalNBoolean2bool(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalNString2string(ctx, ec, value)
 	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__DirectiveLocation2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalN__DirectiveLocation2string(ctx, ec, value)

@@ -1,0 +1,7 @@
+extend type Query {
+	goodbyeFromExtras(name: String!): String!
+}
+
+extend type Mutation {
+	pingFromExtras: String!
+}

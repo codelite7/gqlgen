@@ -386,21 +386,36 @@ func (ec *executionContext) LookupFieldContextHandler(objectName, fieldName stri
 
 {{- range $object := .Objects }}
 	{{- if $object.Root }}
+	{{- /* Root types (Query, Mutation, Subscription) are NOT registered by any */}}
+	{{- /* shard under split-packages — the partitioner slices their fields by  */}}
+	{{- /* declaring file across many shards (see addObjects). The gateway      */}}
+	{{- /* emits the root dispatcher inline and routes each field through       */}}
+	{{- /* ec.ResolveField, which consults shardruntime for the field handler   */}}
+	{{- /* registered by whichever shard owns it. Both Query and Mutation share */}}
+	{{- /* this shape; Subscription uses ResolveStreamField with the gqlgen     */}}
+	{{- /* single-field-per-subscription constraint enforced here too.          */}}
+
+var {{ $object.Name|lcFirst }}Implementors = {{ $object.Implementors }}
+
 	{{- if $object.Stream }}
 		{{ if $useFunctionSyntaxForExecutionContext -}}
 func _{{$object.Name}}(ctx context.Context, ec *executionContext, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
 		{{- else -}}
 func (ec *executionContext) _{{$object.Name}}(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
 		{{- end }}
-	handler, ok := shardruntime.LookupStreamObject({{ $.Scope | quote }}, {{$object.Name | quote}})
-	if !ok {
-		panic(fmt.Sprintf("missing stream object shard handler for %s", {{$object.Name | quote}}))
+	fields := graphql.CollectFields(ec.OperationContext, sel, {{$object.Name|lcFirst}}Implementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: {{$object.Name|quote}},
+	})
+	if len(fields) != 1 {
+		graphql.AddErrorf(ctx, "must subscribe to exactly one stream")
+		return nil
 	}
-		{{ if $useFunctionSyntaxForExecutionContext -}}
-	return handler(ctx, ec, sel)
-		{{- else -}}
-	return handler(ctx, ec, sel)
-		{{- end }}
+
+	if fields[0].Name == "__typename" {
+		return func(ctx context.Context) graphql.Marshaler { return graphql.MarshalString({{$object.Name|quote}}) }
+	}
+	return ec.ResolveStreamField(ctx, {{$object.Name|quote}}, fields[0].Name, fields[0], nil)
 }
 	{{- else }}
 		{{ if $useFunctionSyntaxForExecutionContext -}}
@@ -408,15 +423,35 @@ func _{{$object.Name}}(ctx context.Context, ec *executionContext, sel ast.Select
 		{{- else -}}
 func (ec *executionContext) _{{$object.Name}}(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
 		{{- end }}
-	handler, ok := shardruntime.LookupObject({{ $.Scope | quote }}, {{$object.Name | quote}})
-	if !ok {
-		panic(fmt.Sprintf("missing object shard handler for %s", {{$object.Name | quote}}))
+	fields := graphql.CollectFields(ec.OperationContext, sel, {{$object.Name|lcFirst}}Implementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: {{$object.Name|quote}},
+	})
+
+	out := graphql.NewFieldSet(fields)
+	for i, field := range fields {
+		if field.Name == "__typename" {
+			out.Values[i] = graphql.MarshalString({{$object.Name|quote}})
+			continue
+		}
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+		fieldName := field.Name
+		collected := field
+		out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+			return ec.ResolveField(ctx, {{$object.Name|quote}}, fieldName, collected, nil)
+		})
+		if out.Values[i] == graphql.Null {
+			out.Invalids++
+		}
 	}
-		{{ if $useFunctionSyntaxForExecutionContext -}}
-	return handler(ctx, ec, sel, nil)
-		{{- else -}}
-	return handler(ctx, ec, sel, nil)
-		{{- end }}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+	return out
 }
 	{{- end }}
 	{{- else }}

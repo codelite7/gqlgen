@@ -31,8 +31,12 @@ func TestObjectDispatcherEmitsTable(t *testing.T) {
 		"expected per-type field handler table declaration for User")
 	require.Contains(t, generated, "userFieldHandlers = []graphql.FieldHandler{",
 		"expected per-type field handler table population for User (in init())")
-	require.Contains(t, generated, "RecoverPanic: true,",
-		"expected generated handler table to enable panic recovery when omit_panic_handler is false")
+	require.Contains(
+		t,
+		generated,
+		"RecoverPanic: true,",
+		"expected generated handler table to enable panic recovery when omit_panic_handler is false",
+	)
 	require.Contains(t, generated, "graphql.DispatchObject(",
 		"expected DispatchObject call in collapsed dispatcher")
 
@@ -73,9 +77,17 @@ func readFixtureGenerated(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join("testdata", "object_generic", "graph", "generated.go")
 	data, err := os.ReadFile(path)
-	require.NoError(t, err, "fixture generated.go must exist; run `go generate` in testdata/object_generic")
+	require.NoError(
+		t,
+		err,
+		"fixture generated.go must exist; run `go generate` in testdata/object_generic",
+	)
 	// Sanity: must be a real generated.go (not an empty placeholder).
 	require.Greater(t, len(data), 100, "generated.go is suspiciously short")
-	require.True(t, strings.Contains(string(data), "package graph"), "generated.go missing package declaration")
+	require.True(
+		t,
+		strings.Contains(string(data), "package graph"),
+		"generated.go missing package declaration",
+	)
 	return string(data)
 }

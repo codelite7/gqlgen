@@ -81,6 +81,13 @@ func (p *splitOwnershipPlanner) planCodecOwnership(
 	filenameToShard map[string]string,
 ) {
 	codecConsumers := map[string]map[string]struct{}{}
+	// inputCodecToName tracks codec funcs whose unmarshaler delegates to a
+	// package-local __splitInput_* implementation; keyed by codec func name,
+	// value is the GraphQL named input type. Captured at consumer-add time so
+	// nullable / slice / pointer variants of an input type — which often lack
+	// their own entry in data.ReferencedTypes — get the same input-owner
+	// alignment as the bare variant.
+	inputCodecToName := map[string]string{}
 
 	for filename, build := range builds {
 		shard := filenameToShard[filename]
@@ -90,9 +97,9 @@ func (p *splitOwnershipPlanner) planCodecOwnership(
 
 		for _, object := range build.Objects {
 			for _, field := range object.Fields {
-				addCodecConsumer(codecConsumers, field.TypeReference, shard)
+				addCodecConsumer(codecConsumers, inputCodecToName, field.TypeReference, shard)
 				for _, arg := range field.Args {
-					addCodecConsumer(codecConsumers, arg.TypeReference, shard)
+					addCodecConsumer(codecConsumers, inputCodecToName, arg.TypeReference, shard)
 				}
 			}
 		}
@@ -105,7 +112,7 @@ func (p *splitOwnershipPlanner) planCodecOwnership(
 		}
 
 		for _, field := range input.Fields {
-			addCodecConsumer(codecConsumers, field.TypeReference, owner)
+			addCodecConsumer(codecConsumers, inputCodecToName, field.TypeReference, owner)
 		}
 	}
 
@@ -137,24 +144,25 @@ func (p *splitOwnershipPlanner) planCodecOwnership(
 	}
 
 	// Input-type codecs call __splitInput_* which is a package-local function,
-	// so they must be co-located with their input's shard.
-	for _, key := range referencedTypeKeys {
-		ref := data.ReferencedTypes[key]
-		if ref == nil || ref.Definition == nil || ref.Definition.Kind != ast.InputObject {
-			continue
-		}
-		inputOwner := p.InputOwner[ref.Definition.Name]
+	// so they must be co-located with their input's shard. inputCodecToName
+	// covers every variant whose codec body dispatches to __splitInput_*
+	// (bare, nullable, slice, pointer) — not just the named entries in
+	// data.ReferencedTypes. The pre-existing override loop on referencedTypeKeys
+	// missed nullable variants whose ownership was set by the fallback loop
+	// above, causing consumer shards to emit codec wrappers calling
+	// __splitInput_* functions defined in another shard's package.
+	for codec, inputName := range inputCodecToName {
+		inputOwner := p.InputOwner[inputName]
 		if inputOwner == "" {
 			continue
 		}
-		if unmarshal := ref.UnmarshalFunc(); unmarshal != "" {
-			p.CodecOwner[unmarshal] = inputOwner
-		}
+		p.CodecOwner[codec] = inputOwner
 	}
 }
 
 func addCodecConsumer(
 	consumers map[string]map[string]struct{},
+	inputCodecToName map[string]string,
 	ref *config.TypeReference,
 	shard string,
 ) {
@@ -162,11 +170,22 @@ func addCodecConsumer(
 		return
 	}
 
+	isInput := ref.Definition.Kind == ast.InputObject
+	inputName := ""
+	if isInput {
+		inputName = ref.Definition.Name
+	}
+
 	if marshal := ref.MarshalFunc(); marshal != "" {
 		if consumers[marshal] == nil {
 			consumers[marshal] = map[string]struct{}{}
 		}
 		consumers[marshal][shard] = struct{}{}
+		// Marshalers for input objects are unused, but record the mapping in
+		// case the template starts emitting one.
+		if isInput {
+			inputCodecToName[marshal] = inputName
+		}
 	}
 
 	if unmarshal := ref.UnmarshalFunc(); unmarshal != "" {
@@ -174,12 +193,15 @@ func addCodecConsumer(
 			consumers[unmarshal] = map[string]struct{}{}
 		}
 		consumers[unmarshal][shard] = struct{}{}
+		if isInput {
+			inputCodecToName[unmarshal] = inputName
+		}
 	}
 
 	// Also track element type codecs for slices and pointers, since the
 	// parent codec dispatches to the element codec via MarshalCodec/UnmarshalCodec.
 	if elem := ref.Elem(); elem != nil {
-		addCodecConsumer(consumers, elem, shard)
+		addCodecConsumer(consumers, inputCodecToName, elem, shard)
 	}
 }
 
@@ -246,6 +268,23 @@ func (p *splitOwnershipPlanner) planInputOwnership(
 	})
 
 	for _, input := range inputs {
+		// Prefer the shard for the .graphql file that DECLARED the input.
+		// Concentrating inputs in the alphabetical-first consumer shard
+		// piled every WhereInput into one shard (e.g. chatter_message
+		// absorbing every ent WhereInput on a large schema). Declaring-file
+		// placement distributes them naturally — ent input modules each
+		// live in their own ent_*_inputs.graphql file, so each lands in
+		// its own shard, matching the per-file approach used for root types.
+		if input != nil && input.Position != nil {
+			fname := filename(input.Position, data.Config)
+			if shard, ok := filenameToShard[fname]; ok && shard != "" {
+				p.InputOwner[input.Name] = shard
+				continue
+			}
+		}
+
+		// Fallback for inputs without a usable declaring position
+		// (synthetic / built-in): alphabetical-first consumer.
 		consumers := inputConsumers[input.Name]
 		if len(consumers) == 0 {
 			p.InputOwner[input.Name] = "common"
