@@ -101,7 +101,7 @@ func TestRootTypeShardDistribution(t *testing.T) {
 			continue
 		}
 		for _, root := range []string{"Query", "Mutation"} {
-			marker := `RegisterField(splitScope, "` + root + `", "`
+			marker := `RegisterFieldDef(splitScope, "` + root + `", "`
 			rest := string(body)
 			for {
 				i := strings.Index(rest, marker)

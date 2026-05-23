@@ -4,7 +4,6 @@ package extras
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -14,207 +13,37 @@ import (
 
 const splitScope = "github.com/99designs/gqlgen/codegen/testserver/splitpackages"
 
+var type___Schema = &shardruntime.ObjectChildLookup{
+	TypeName: "__Schema",
+	Kind:     ast.Object,
+	Children: []string{
+		"description",
+		"types",
+		"queryType",
+		"mutationType",
+		"subscriptionType",
+		"directives",
+	},
+}
+var type___Type = &shardruntime.ObjectChildLookup{
+	TypeName: "__Type",
+	Kind:     ast.Object,
+	Children: []string{
+		"kind",
+		"name",
+		"description",
+		"specifiedByURL",
+		"fields",
+		"interfaces",
+		"possibleTypes",
+		"enumValues",
+		"inputFields",
+		"ofType",
+		"isOneOf",
+	},
+}
+
 func init() {
-}
-
-// split_fields_.gotpl — field
-func __splitField_Query___schema(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Query", "__schema")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Query.__schema")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__schema", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", sel, v)
-		},
-		true, false,
-	)
-}
-
-// split_fields_.gotpl — field
-func __splitField_Query___type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Query", "__type")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Query.__type")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__type", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", sel, v)
-		},
-		true, false,
-	)
-}
-
-// split_fieldcontext_.gotpl — fieldContext for Query.__schema
-func __splitFieldContext_Query___schema(_ context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "description":
-				handler, ok := ec.LookupFieldContextHandler("__Schema", "description")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Schema.description")
-				}
-				return handler(ctx, ec, field)
-			case "types":
-				handler, ok := ec.LookupFieldContextHandler("__Schema", "types")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Schema.types")
-				}
-				return handler(ctx, ec, field)
-			case "queryType":
-				handler, ok := ec.LookupFieldContextHandler("__Schema", "queryType")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Schema.queryType")
-				}
-				return handler(ctx, ec, field)
-			case "mutationType":
-				handler, ok := ec.LookupFieldContextHandler("__Schema", "mutationType")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Schema.mutationType")
-				}
-				return handler(ctx, ec, field)
-			case "subscriptionType":
-				handler, ok := ec.LookupFieldContextHandler("__Schema", "subscriptionType")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Schema.subscriptionType")
-				}
-				return handler(ctx, ec, field)
-			case "directives":
-				handler, ok := ec.LookupFieldContextHandler("__Schema", "directives")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Schema.directives")
-				}
-				return handler(ctx, ec, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-// split_fieldcontext_.gotpl — fieldContext for Query.__type
-func __splitFieldContext_Query___type(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "kind":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "kind")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.kind")
-				}
-				return handler(ctx, ec, field)
-			case "name":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "name")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.name")
-				}
-				return handler(ctx, ec, field)
-			case "description":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "description")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.description")
-				}
-				return handler(ctx, ec, field)
-			case "specifiedByURL":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "specifiedByURL")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.specifiedByURL")
-				}
-				return handler(ctx, ec, field)
-			case "fields":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "fields")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.fields")
-				}
-				return handler(ctx, ec, field)
-			case "interfaces":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "interfaces")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.interfaces")
-				}
-				return handler(ctx, ec, field)
-			case "possibleTypes":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "possibleTypes")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.possibleTypes")
-				}
-				return handler(ctx, ec, field)
-			case "enumValues":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "enumValues")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.enumValues")
-				}
-				return handler(ctx, ec, field)
-			case "inputFields":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "inputFields")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.inputFields")
-				}
-				return handler(ctx, ec, field)
-			case "ofType":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "ofType")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.ofType")
-				}
-				return handler(ctx, ec, field)
-			case "isOneOf":
-				handler, ok := ec.LookupFieldContextHandler("__Type", "isOneOf")
-				if !ok {
-					return nil, fmt.Errorf("no field context handler for __Type.isOneOf")
-				}
-				return handler(ctx, ec, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
-	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field_Query___type_args")
-	if !ok {
-		return nil, fmt.Errorf("no args handler for %q", "field_Query___type_args")
-	}
-	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
 }
 
 // split_args_.gotpl — args for Query.__type

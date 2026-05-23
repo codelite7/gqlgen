@@ -1233,3 +1233,407 @@ func TestArgsRegistry(t *testing.T) {
 
 	RegisterArgs("scope", "Query.name", h)
 }
+
+// fakeEC is a test-only implementation of ObjectExecutionContext.
+type fakeEC struct {
+	fieldContextHandlers map[string]FieldContextHandler
+}
+
+// fakeECWithOpCtx embeds fakeEC and overrides GetOperationContext to return a
+// non-nil OperationContext with empty Variables, satisfying the args path in
+// buildFieldContext which calls ec.GetOperationContext().Variables.
+type fakeECWithOpCtx struct {
+	fakeEC
+}
+
+func (f *fakeECWithOpCtx) GetOperationContext() *graphql.OperationContext {
+	return &graphql.OperationContext{
+		Variables: map[string]any{},
+		ResolverMiddleware: func(ctx context.Context, next graphql.Resolver) (res any, err error) {
+			return next(ctx)
+		},
+	}
+}
+
+func (f *fakeEC) GetOperationContext() *graphql.OperationContext { return nil }
+func (f *fakeEC) MarshalCodec(context.Context, string, ast.SelectionSet, any) graphql.Marshaler {
+	return graphql.Null
+}
+func (f *fakeEC) UnmarshalCodec(context.Context, string, any) (any, error) { return nil, nil }
+func (f *fakeEC) ParseFieldArgs(context.Context, string, map[string]any) (map[string]any, error) {
+	return nil, nil
+}
+
+func (f *fakeEC) ResolveField(
+	context.Context,
+	string,
+	string,
+	graphql.CollectedField,
+	any,
+) graphql.Marshaler {
+	return graphql.Null
+}
+
+func (f *fakeEC) ResolveStreamField(
+	context.Context,
+	string,
+	string,
+	graphql.CollectedField,
+	any,
+) func(context.Context) graphql.Marshaler {
+	return func(context.Context) graphql.Marshaler { return graphql.Null }
+}
+
+func (f *fakeEC) InvokeResolver(context.Context, string, string, any) (any, error) {
+	return nil, nil
+}
+
+func (f *fakeEC) LookupFieldContextHandler(obj, field string) (FieldContextHandler, bool) {
+	h, ok := f.fieldContextHandlers[obj+"."+field]
+	return h, ok
+}
+func (f *fakeEC) ProcessDeferredGroup(graphql.DeferredGroup) {}
+func (f *fakeEC) AddDeferred(int32)                          {}
+func (f *fakeEC) Error(context.Context, error)               {}
+func (f *fakeEC) Recover(_ context.Context, r any) error     { return fmt.Errorf("%v", r) }
+
+func TestMakeChildResolver_Scalar(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "UUID", Kind: ast.Scalar}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{})
+	if err == nil {
+		t.Fatal("expected error for scalar Child resolution")
+	}
+	if got := err.Error(); got != "field of type UUID does not have child fields" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestMakeChildResolver_NonObjectComposite(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "MyInput", Kind: ast.InputObject}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{})
+	if err == nil {
+		t.Fatal("expected error for input-object Child resolution")
+	}
+	if got := err.Error(); got != "FieldContext.Child cannot be called on type INPUT_OBJECT" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestMakeChildResolver_ObjectKnownField(t *testing.T) {
+	ec := &fakeEC{
+		fieldContextHandlers: map[string]FieldContextHandler{
+			"Escrow.id": func(_ context.Context, _ ObjectExecutionContext, _ graphql.CollectedField) (*graphql.FieldContext, error) {
+				return &graphql.FieldContext{
+					Object: "Escrow",
+					Field:  graphql.CollectedField{Field: &ast.Field{Name: "id"}},
+				}, nil
+			},
+		},
+	}
+	lookup := &ObjectChildLookup{
+		TypeName: "Escrow",
+		Kind:     ast.Object,
+		Children: []string{"id", "address"},
+	}
+
+	childFn := makeChildResolver(ec, lookup)
+	fc, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "id"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc == nil || fc.Object != "Escrow" {
+		t.Fatalf("unexpected FieldContext: %+v", fc)
+	}
+}
+
+func TestMakeChildResolver_ObjectUnknownField(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(
+		context.Background(),
+		graphql.CollectedField{Field: &ast.Field{Name: "nonexistent"}},
+	)
+	if err == nil {
+		t.Fatal("expected error for unknown child field")
+	}
+	expected := `no field named "nonexistent" was found under type Escrow`
+	if got := err.Error(); got != expected {
+		t.Fatalf("unexpected error: got %q want %q", got, expected)
+	}
+}
+
+func TestMakeChildResolver_NilRet(t *testing.T) {
+	ec := &fakeEC{}
+
+	childFn := makeChildResolver(ec, nil)
+	_, err := childFn(context.Background(), graphql.CollectedField{})
+	if err == nil {
+		t.Fatal("expected error for nil return-type lookup")
+	}
+	if got := err.Error(); got != "no return type information for field" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestMakeChildResolver_ObjectHandlerMissing(t *testing.T) {
+	ec := &fakeEC{}
+	lookup := &ObjectChildLookup{TypeName: "Escrow", Kind: ast.Object, Children: []string{"id"}}
+
+	childFn := makeChildResolver(ec, lookup)
+	_, err := childFn(context.Background(), graphql.CollectedField{Field: &ast.Field{Name: "id"}})
+	if err == nil {
+		t.Fatal("expected error when no FieldContext handler is registered")
+	}
+	if got := err.Error(); got != "no field context handler for Escrow.id" {
+		t.Fatalf("unexpected error: got %q", got)
+	}
+}
+
+func TestRegisterFieldDef_BasicRegistration(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+
+	def := FieldDef{
+		Resolve: func(ctx context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+			return "value", nil
+		},
+		ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+		MarshalCodec: "marshalNString",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+
+	RegisterFieldDef("scope-x", "MyObj", "myField", def)
+
+	if _, ok := LookupField("scope-x", "MyObj", "myField"); !ok {
+		t.Fatal("expected RegisterFieldDef to register a FieldHandler")
+	}
+	if _, ok := LookupFieldContext("scope-x", "MyObj", "myField"); !ok {
+		t.Fatal("expected RegisterFieldDef to register a FieldContextHandler")
+	}
+}
+
+func TestBuildFieldContext_NoArgs(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	ec := &fakeEC{
+		fieldContextHandlers: map[string]FieldContextHandler{},
+	}
+	def := &FieldDef{
+		IsMethod:   true,
+		IsResolver: false,
+		ReturnType: &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+	}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "id"}}
+
+	fc, err := buildFieldContext(context.Background(), ec, def, "scope", "Escrow", cf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc.Object != "Escrow" {
+		t.Fatalf("unexpected Object: got %q want Escrow", fc.Object)
+	}
+	if fc.IsMethod != true || fc.IsResolver != false {
+		t.Fatalf("unexpected flags: IsMethod=%v IsResolver=%v", fc.IsMethod, fc.IsResolver)
+	}
+	if fc.Child == nil {
+		t.Fatal("expected non-nil Child resolver")
+	}
+}
+
+func TestBuildFieldContext_ArgsPath(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	RegisterArgs(
+		"scope",
+		"EscrowQueryArgs",
+		func(_ context.Context, _ ObjectExecutionContext, raw map[string]any) (map[string]any, error) {
+			return map[string]any{"id": raw["id"]}, nil
+		},
+	)
+
+	ec := &fakeECWithOpCtx{}
+	def := &FieldDef{
+		IsMethod: true,
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Escrow",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		ArgsKey: "EscrowQueryArgs",
+	}
+	// Build a synthetic field with a Definition so ArgumentMap can walk the arg defs.
+	cf := graphql.CollectedField{
+		Field: &ast.Field{
+			Name: "escrow",
+			Arguments: ast.ArgumentList{
+				{Name: "id", Value: &ast.Value{Raw: "abc", Kind: ast.StringValue}},
+			},
+			Definition: &ast.FieldDefinition{
+				Name: "escrow",
+				Arguments: ast.ArgumentDefinitionList{
+					{Name: "id"},
+				},
+			},
+		},
+	}
+
+	fc, err := buildFieldContext(context.Background(), ec, def, "scope", "Query", cf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc.Args["id"] != "abc" {
+		t.Fatalf("unexpected args: %#v", fc.Args)
+	}
+}
+
+func TestBuildFieldContext_ArgsPath_MissingArgsHandler(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	ec := &fakeECWithOpCtx{}
+	def := &FieldDef{
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Escrow",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		ArgsKey: "MissingHandler",
+	}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "escrow"}}
+
+	_, err := buildFieldContext(context.Background(), ec, def, "scope", "Query", cf)
+	if err == nil {
+		t.Fatal("expected error for missing args handler")
+	}
+	if err.Error() != `no args handler for "MissingHandler"` {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveFromDef_CallsResolve(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+	resetCodecMarshalRegistryForTest()
+
+	called := false
+	RegisterCodecMarshal(
+		"scope",
+		"marshalNString",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+			return graphql.MarshalString(v.(string))
+		},
+	)
+
+	def := FieldDef{
+		Resolve: func(_ context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+			called = true
+			return obj.(string) + "_resolved", nil
+		},
+		ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+		MarshalCodec: "marshalNString",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+
+	RegisterFieldDef("scope", "Query", "name", def)
+
+	h, ok := LookupField("scope", "Query", "name")
+	if !ok {
+		t.Fatal("missing handler")
+	}
+	ec := &fakeECWithOpCtx{}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "name"}}
+
+	m := h(context.Background(), ec, cf, "hello")
+	if m == graphql.Null {
+		t.Fatal("expected non-null marshaler from resolveFromDef")
+	}
+	if !called {
+		t.Fatal("Resolve was not invoked")
+	}
+}
+
+func TestBuildFieldContext_ArgsPath_PanicRecovered(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+
+	RegisterArgs(
+		"scope",
+		"PanickingArgs",
+		func(_ context.Context, _ ObjectExecutionContext, _ map[string]any) (map[string]any, error) {
+			panic("boom")
+		},
+	)
+
+	ec := &fakeECWithOpCtx{}
+	def := &FieldDef{
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Escrow",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		ArgsKey: "PanickingArgs",
+	}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "escrow"}}
+
+	_, err := buildFieldContext(context.Background(), ec, def, "scope", "Query", cf)
+	if err == nil {
+		t.Fatal("expected error from recovered panic")
+	}
+	if err.Error() != "boom" {
+		t.Fatalf("expected recovered panic message, got %v", err)
+	}
+}
+
+func TestRegisterStreamFieldDef(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetStreamFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetCodecMarshalRegistryForTest()
+
+	RegisterCodecMarshal(
+		"scope",
+		"marshalNChat",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, _ any) graphql.Marshaler {
+			return graphql.MarshalString("chat")
+		},
+	)
+
+	def := StreamFieldDef{
+		Resolve: func(_ context.Context, _ ObjectExecutionContext, _ any) (any, error) {
+			return make(<-chan string), nil
+		},
+		ReturnType: &ObjectChildLookup{
+			TypeName: "Chat",
+			Kind:     ast.Object,
+			Children: []string{"id"},
+		},
+		MarshalCodec: "marshalNChat",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+	RegisterStreamFieldDef("scope", "Subscription", "chat", def)
+
+	if _, ok := LookupStreamField("scope", "Subscription", "chat"); !ok {
+		t.Fatal("expected stream field handler registered")
+	}
+	if _, ok := LookupFieldContext("scope", "Subscription", "chat"); !ok {
+		t.Fatal("expected field context handler registered (shared with non-streaming)")
+	}
+}

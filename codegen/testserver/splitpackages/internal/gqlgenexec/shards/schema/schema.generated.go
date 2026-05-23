@@ -4,8 +4,6 @@ package schema
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
@@ -14,117 +12,12 @@ import (
 
 const splitScope = "github.com/99designs/gqlgen/codegen/testserver/splitpackages"
 
+var type_String = &shardruntime.ObjectChildLookup{
+	TypeName: "String",
+	Kind:     ast.Scalar,
+}
+
 func init() {
-}
-
-// split_fields_.gotpl — field
-func __splitField_Mutation_greet(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Mutation", "greet")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Mutation.greet")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Mutation", "greet", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
-		},
-		true, true,
-	)
-}
-
-// split_fields_.gotpl — field
-func __splitField_Query_hello(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-	return graphql.ResolveField[any](ctx, ec.GetOperationContext(), field,
-		// fieldContext provider
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			handler, ok := ec.LookupFieldContextHandler("Query", "hello")
-			if !ok {
-				return nil, fmt.Errorf("no field context for Query.hello")
-			}
-			return handler(ctx, ec, field)
-		},
-		// resolver
-		func(ctx context.Context) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "hello", obj)
-		},
-		// directives
-		nil,
-		// marshaler
-		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
-			return ec.MarshalCodec(ctx, "marshalNString2string", sel, v)
-		},
-		true, true,
-	)
-}
-
-// split_fieldcontext_.gotpl — fieldContext for Mutation.greet
-func __splitFieldContext_Mutation_greet(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
-	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field_Mutation_greet_args")
-	if !ok {
-		return nil, fmt.Errorf("no args handler for %q", "field_Mutation_greet_args")
-	}
-	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-// split_fieldcontext_.gotpl — fieldContext for Query.hello
-func __splitFieldContext_Query_hello(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.GetOperationContext().Variables)
-	argsHandler, ok := shardruntime.LookupArgs(splitScope, "field_Query_hello_args")
-	if !ok {
-		return nil, fmt.Errorf("no args handler for %q", "field_Query_hello_args")
-	}
-	if fc.Args, err = argsHandler(ctx, ec, rawArgs); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
 }
 
 // split_args_.gotpl — args for Mutation.greet

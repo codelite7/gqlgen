@@ -744,8 +744,8 @@ func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 	require.NotContains(t, contents, "var splitExecutableFieldResolvers")
 	require.NotContains(t, contents, "var splitExecutableStreamFieldResolvers")
 
-	// Stream fields should be registered via RegisterStreamField in shard code,
-	// while regular fields use RegisterField.
+	// Stream fields should be registered via RegisterStreamFieldDef in shard code,
+	// while regular fields use RegisterFieldDef.
 	var foundRegisterField bool
 	var foundRegisterStreamField bool
 	for relPath, shardContents := range snapshot {
@@ -753,26 +753,26 @@ func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 			continue
 		}
 		text := string(shardContents)
-		if strings.Contains(text, "RegisterField(splitScope,") {
+		if strings.Contains(text, "RegisterFieldDef(splitScope,") {
 			foundRegisterField = true
 			// Regular field registrations should not include subscription fields
-			require.NotContains(t, text, `RegisterField(splitScope, "Subscription"`)
+			require.NotContains(t, text, `RegisterFieldDef(splitScope, "Subscription"`)
 		}
-		if strings.Contains(text, "RegisterStreamField(splitScope,") {
+		if strings.Contains(text, "RegisterStreamFieldDef(splitScope,") {
 			foundRegisterStreamField = true
-			require.Contains(t, text, `RegisterStreamField(splitScope, "Subscription", "tick"`)
+			require.Contains(t, text, `RegisterStreamFieldDef(splitScope, "Subscription", "tick"`)
 		}
 	}
 
 	require.True(
 		t,
 		foundRegisterField,
-		"expected shard to register regular fields via RegisterField",
+		"expected shard to register regular fields via RegisterFieldDef",
 	)
 	require.True(
 		t,
 		foundRegisterStreamField,
-		"expected shard to register stream fields via RegisterStreamField",
+		"expected shard to register stream fields via RegisterStreamFieldDef",
 	)
 }
 
@@ -1039,8 +1039,7 @@ func TestSplitShardFieldArgsEmission(t *testing.T) {
 		}
 
 		text := string(contents)
-		if strings.Contains(text, "split_fields_.gotpl") &&
-			strings.Contains(text, "func __splitField_") {
+		if strings.Contains(text, "RegisterFieldDef(splitScope,") {
 			foundFieldTemplateEmission = true
 		}
 		if strings.Contains(text, "split_args_.gotpl") &&
@@ -1052,7 +1051,7 @@ func TestSplitShardFieldArgsEmission(t *testing.T) {
 	require.True(
 		t,
 		foundFieldTemplateEmission,
-		"expected split shard field emission from split_fields_.gotpl",
+		"expected split shard field registration via RegisterFieldDef",
 	)
 	require.True(
 		t,
@@ -1138,7 +1137,7 @@ func TestSplitComplexityEmissionByOwner(t *testing.T) {
 	require.NotContains(t, zetaText, "ResolveExecutableComplexity")
 }
 
-func TestSplitFieldsUsesResolveFieldInsteadOfBridge(t *testing.T) {
+func TestSplitFieldsUsesRegisterFieldDef(t *testing.T) {
 	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
 	stringGQL := ast.NonNullNamedType("String", nil)
 	stringGO := types.Typ[types.String]
@@ -1198,12 +1197,12 @@ func TestSplitFieldsUsesResolveFieldInsteadOfBridge(t *testing.T) {
 	require.NoError(t, err)
 
 	outDir := t.TempDir()
-	fieldsPath := filepath.Join(outDir, "fields.generated.go")
+	registerPath := filepath.Join(outDir, "register.generated.go")
 
 	err = templates.Render(templates.Options{
 		PackageName: "splitfieldstest",
-		Template:    splitFieldsTemplate + "\n{{ template \"split_fields_.gotpl\" . }}",
-		Filename:    fieldsPath,
+		Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
+		Filename:    registerPath,
 		Data: splitShardTemplateData{
 			Data:             data,
 			Scope:            "scope",
@@ -1216,36 +1215,28 @@ func TestSplitFieldsUsesResolveFieldInsteadOfBridge(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	contents, err := os.ReadFile(fieldsPath)
+	contents, err := os.ReadFile(registerPath)
 	require.NoError(t, err)
 	text := string(contents)
 
-	// Verify field functions are generated
-	require.Contains(t, text, "func __splitField_Article_title")
-	require.Contains(t, text, "func __splitField_Article_computed")
-
-	// Verify new pattern: graphql.ResolveField is used
-	require.Contains(t, text, "graphql.ResolveField[any]")
+	// Verify fields are registered via RegisterFieldDef (not emitted as standalone functions)
+	require.Contains(t, text, `RegisterFieldDef(splitScope, "Article", "title"`)
+	require.Contains(t, text, `RegisterFieldDef(splitScope, "Article", "computed"`)
 
 	// Verify old bridge pattern is NOT used
 	require.NotContains(t, text, "ec.ResolveExecutableField")
 
-	// Verify resolver field uses InvokeResolver (keyed by GraphQL field name,
-	// matching RegisterResolverInvoker in split_root_.gotpl)
+	// Verify resolver field uses InvokeResolver inside the Resolve closure
 	require.Contains(t, text, `ec.InvokeResolver(ctx, "Article", "computed", obj)`)
 
-	// Verify non-resolver field uses direct access with type assertion
+	// Verify non-resolver field uses direct field access in the Resolve closure
 	require.Contains(t, text, ".Title,")
 
-	// Verify LookupFieldContextHandler is used for field context
-	require.Contains(t, text, `ec.LookupFieldContextHandler("Article", "title")`)
-	require.Contains(t, text, `ec.LookupFieldContextHandler("Article", "computed")`)
-
-	// Verify MarshalCodec is used for marshaling
-	require.Contains(t, text, "ec.MarshalCodec(ctx,")
+	// Verify MarshalCodec is referenced as a struct field in the FieldDef
+	require.Contains(t, text, "MarshalCodec:")
 }
 
-func TestSplitFieldsStreamUsesResolveFieldStream(t *testing.T) {
+func TestSplitFieldsStreamUsesRegisterStreamFieldDef(t *testing.T) {
 	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
 	stringGQL := ast.NonNullNamedType("String", nil)
 	stringGO := types.Typ[types.String]
@@ -1294,12 +1285,12 @@ func TestSplitFieldsStreamUsesResolveFieldStream(t *testing.T) {
 	require.NoError(t, err)
 
 	outDir := t.TempDir()
-	fieldsPath := filepath.Join(outDir, "stream_fields.generated.go")
+	registerPath := filepath.Join(outDir, "stream_register.generated.go")
 
 	err = templates.Render(templates.Options{
 		PackageName: "splitstreamtest",
-		Template:    splitFieldsTemplate + "\n{{ template \"split_fields_.gotpl\" . }}",
-		Filename:    fieldsPath,
+		Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
+		Filename:    registerPath,
 		Data: splitShardTemplateData{
 			Data:             data,
 			Scope:            "scope",
@@ -1312,21 +1303,17 @@ func TestSplitFieldsStreamUsesResolveFieldStream(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	contents, err := os.ReadFile(fieldsPath)
+	contents, err := os.ReadFile(registerPath)
 	require.NoError(t, err)
 	text := string(contents)
 
-	// Verify stream field function is generated
-	require.Contains(t, text, "func __splitStreamField_Subscription_onMessage")
-
-	// Verify new pattern: graphql.ResolveFieldStream is used
-	require.Contains(t, text, "graphql.ResolveFieldStream[any]")
+	// Verify stream field is registered via RegisterStreamFieldDef (not emitted as standalone function)
+	require.Contains(t, text, `RegisterStreamFieldDef(splitScope, "Subscription", "onMessage"`)
 
 	// Verify old bridge pattern is NOT used
 	require.NotContains(t, text, "ec.ResolveExecutableStreamField")
 
-	// Verify InvokeResolver is used for stream resolver fields (keyed by
-	// GraphQL field name, matching RegisterResolverInvoker in split_root_.gotpl)
+	// Verify InvokeResolver is used inside the Resolve closure for stream resolver fields
 	require.Contains(t, text, `ec.InvokeResolver(ctx, "Subscription", "onMessage", obj)`)
 }
 
@@ -1512,7 +1499,7 @@ func TestSplitInputRegistrationEmission(t *testing.T) {
 
 	err = templates.Render(templates.Options{
 		PackageName: "splitinputstest",
-		Template:    splitRegisterTemplate,
+		Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
 		Filename:    registerPath,
 		Data:        templateData,
 		Packages:    internalcode.NewPackages(),
@@ -1535,7 +1522,7 @@ func TestSplitInputRegistrationEmission(t *testing.T) {
 }
 
 var splitRegistrationPattern = regexp.MustCompile(
-	`Register(?:Stream)?Field\(splitScope,\s*"([^"]+)",\s*"([^"]+)"`,
+	`Register(?:Stream)?FieldDef\(splitScope,\s*"([^"]+)",\s*"([^"]+)"`,
 )
 
 func splitRegistrationOrder(contents string) []string {

@@ -11,14 +11,32 @@ import (
 )
 
 func init() {
-	shardruntime.RegisterField(splitScope, "Query", "__schema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Query___schema(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "Query", "__schema", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return ec.InvokeResolver(ctx, "Query", "__schema", obj)
+		},
+		MarshalCodec: "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ReturnType:   type___Schema,
 	})
-	shardruntime.RegisterField(splitScope, "Query", "__type", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
-		return __splitField_Query___type(ctx, ec, field, obj)
+	shardruntime.RegisterFieldDef(splitScope, "Query", "__type", shardruntime.FieldDef{
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+			return ec.InvokeResolver(ctx, "Query", "__type", obj)
+		},
+		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+		NonNull:      false,
+		PanicHandled: true,
+		IsMethod:     true,
+		IsResolver:   false,
+		ArgsKey:      "field_Query___type_args",
+		ReturnType:   type___Type,
 	})
-	shardruntime.RegisterFieldContext(splitScope, "Query", "__schema", __splitFieldContext_Query___schema)
-	shardruntime.RegisterFieldContext(splitScope, "Query", "__type", __splitFieldContext_Query___type)
+}
+
+func init() {
 	shardruntime.RegisterArgs(splitScope, "field_Query___type_args", __splitArgs_field_Query___type_args)
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalNString2string(ctx, ec, sel, value)
