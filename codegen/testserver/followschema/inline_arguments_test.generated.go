@@ -4,6 +4,7 @@ package followschema
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
 )
@@ -33,7 +34,11 @@ func (ec *executionContext) unmarshalInputDirectiveInput(ctx context.Context, ob
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputDirectiveInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -71,7 +76,11 @@ func (ec *executionContext) unmarshalInputRequiredFilters(ctx context.Context, o
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputRequiredFilters: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -109,7 +118,11 @@ func (ec *executionContext) unmarshalInputSearchFilters(ctx context.Context, obj
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputSearchFilters: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -154,7 +167,11 @@ func (ec *executionContext) unmarshalInputSearchWithDefaults(ctx context.Context
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputSearchWithDefaults: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -209,7 +226,11 @@ func (ec *executionContext) unmarshalInputUpdateProductInput(ctx context.Context
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputUpdateProductInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 

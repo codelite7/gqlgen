@@ -250,8 +250,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		unmarshalInputCreateUserInput,
-		unmarshalInputUserFilter,
+		func(ctx context.Context, obj any) (CreateUserInput, error) {
+			return unmarshalInputCreateUserInput(ctx, ec, obj)
+		},
+		func(ctx context.Context, obj any) (UserFilter, error) {
+			return unmarshalInputUserFilter(ctx, ec, obj)
+		},
 	)
 	first := true
 
@@ -2447,7 +2451,11 @@ func unmarshalInputCreateUserInput(ctx context.Context, ec *executionContext, ob
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputCreateUserInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -2502,7 +2510,11 @@ func unmarshalInputUserFilter(ctx context.Context, ec *executionContext, obj any
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputUserFilter: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 

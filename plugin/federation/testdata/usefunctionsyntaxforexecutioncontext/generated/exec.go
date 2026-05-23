@@ -589,11 +589,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		unmarshalInputMultiHelloByNamesInput,
-		unmarshalInputMultiHelloMultipleRequiresByNamesInput,
-		unmarshalInputMultiHelloRequiresByNamesInput,
-		unmarshalInputMultiHelloWithErrorByNamesInput,
-		unmarshalInputMultiPlanetRequiresNestedByNamesInput,
+		func(ctx context.Context, obj any) (model.MultiHelloByNamesInput, error) {
+			return unmarshalInputMultiHelloByNamesInput(ctx, ec, obj)
+		},
+		func(ctx context.Context, obj any) (model.MultiHelloMultipleRequiresByNamesInput, error) {
+			return unmarshalInputMultiHelloMultipleRequiresByNamesInput(ctx, ec, obj)
+		},
+		func(ctx context.Context, obj any) (model.MultiHelloRequiresByNamesInput, error) {
+			return unmarshalInputMultiHelloRequiresByNamesInput(ctx, ec, obj)
+		},
+		func(ctx context.Context, obj any) (model.MultiHelloWithErrorByNamesInput, error) {
+			return unmarshalInputMultiHelloWithErrorByNamesInput(ctx, ec, obj)
+		},
+		func(ctx context.Context, obj any) (model.MultiPlanetRequiresNestedByNamesInput, error) {
+			return unmarshalInputMultiPlanetRequiresNestedByNamesInput(ctx, ec, obj)
+		},
 	)
 	first := true
 
@@ -4121,7 +4131,11 @@ func unmarshalInputMultiHelloByNamesInput(ctx context.Context, ec *executionCont
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMultiHelloByNamesInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -4151,7 +4165,11 @@ func unmarshalInputMultiHelloMultipleRequiresByNamesInput(ctx context.Context, e
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMultiHelloMultipleRequiresByNamesInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -4181,7 +4199,11 @@ func unmarshalInputMultiHelloRequiresByNamesInput(ctx context.Context, ec *execu
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMultiHelloRequiresByNamesInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -4211,7 +4233,11 @@ func unmarshalInputMultiHelloWithErrorByNamesInput(ctx context.Context, ec *exec
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMultiHelloWithErrorByNamesInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -4241,7 +4267,11 @@ func unmarshalInputMultiPlanetRequiresNestedByNamesInput(ctx context.Context, ec
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMultiPlanetRequiresNestedByNamesInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 

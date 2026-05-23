@@ -5,6 +5,7 @@ package followschema
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"sync/atomic"
@@ -67,7 +68,11 @@ func (ec *executionContext) unmarshalInputFieldsOrderInput(ctx context.Context, 
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputFieldsOrderInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 

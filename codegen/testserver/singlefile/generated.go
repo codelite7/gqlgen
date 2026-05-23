@@ -14463,7 +14463,11 @@ func (ec *executionContext) unmarshalInputChanges(ctx context.Context, obj any) 
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputChanges: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14501,7 +14505,11 @@ func (ec *executionContext) unmarshalInputDefaultInput(ctx context.Context, obj 
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputDefaultInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14545,7 +14553,11 @@ func (ec *executionContext) unmarshalInputDirectiveInput(ctx context.Context, ob
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputDirectiveInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14583,7 +14595,11 @@ func (ec *executionContext) unmarshalInputFieldsOrderInput(ctx context.Context, 
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputFieldsOrderInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14622,7 +14638,11 @@ func (ec *executionContext) unmarshalInputInnerDirectives(ctx context.Context, o
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInnerDirectives: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14677,7 +14697,11 @@ func (ec *executionContext) unmarshalInputInnerInput(ctx context.Context, obj an
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInnerInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14707,7 +14731,11 @@ func (ec *executionContext) unmarshalInputInputDirectives(ctx context.Context, o
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInputDirectives: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14859,7 +14887,11 @@ func (ec *executionContext) unmarshalInputInputDirectivesWithArgs(ctx context.Co
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInputDirectivesWithArgs: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14911,7 +14943,11 @@ func (ec *executionContext) unmarshalInputInputWithEnumValue(ctx context.Context
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInputWithEnumValue: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14941,7 +14977,11 @@ func (ec *executionContext) unmarshalInputIssue4053Input1(ctx context.Context, o
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputIssue4053Input1: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -14971,7 +15011,11 @@ func (ec *executionContext) unmarshalInputIssue4053Input2(ctx context.Context, o
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputIssue4053Input2: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15012,7 +15056,11 @@ func (ec *executionContext) unmarshalInputMapNestedInput(ctx context.Context, ob
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMapNestedInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15042,7 +15090,11 @@ func (ec *executionContext) unmarshalInputMapNestedMapSliceInput(ctx context.Con
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMapNestedMapSliceInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15080,7 +15132,11 @@ func (ec *executionContext) unmarshalInputMapStringInterfaceInput(ctx context.Co
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputMapStringInterfaceInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15132,7 +15188,11 @@ func (ec *executionContext) unmarshalInputNestedInput(ctx context.Context, obj a
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputNestedInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15162,7 +15222,11 @@ func (ec *executionContext) unmarshalInputNestedMapInput(ctx context.Context, ob
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputNestedMapInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15192,7 +15256,11 @@ func (ec *executionContext) unmarshalInputOmittableInput(ctx context.Context, ob
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputOmittableInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15271,7 +15339,11 @@ func (ec *executionContext) unmarshalInputOuterInput(ctx context.Context, obj an
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputOuterInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15301,7 +15373,11 @@ func (ec *executionContext) unmarshalInputOuterWrapperInput(ctx context.Context,
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputOuterWrapperInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15331,7 +15407,11 @@ func (ec *executionContext) unmarshalInputRecursiveInputSlice(ctx context.Contex
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputRecursiveInputSlice: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15361,7 +15441,11 @@ func (ec *executionContext) unmarshalInputRequiredFilters(ctx context.Context, o
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputRequiredFilters: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15399,7 +15483,11 @@ func (ec *executionContext) unmarshalInputSearchFilters(ctx context.Context, obj
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputSearchFilters: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15444,7 +15532,11 @@ func (ec *executionContext) unmarshalInputSearchWithDefaults(ctx context.Context
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputSearchWithDefaults: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15499,7 +15591,11 @@ func (ec *executionContext) unmarshalInputSpecialInput(ctx context.Context, obj 
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputSpecialInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15529,7 +15625,11 @@ func (ec *executionContext) unmarshalInputUpdateProductInput(ctx context.Context
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputUpdateProductInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15574,7 +15674,11 @@ func (ec *executionContext) unmarshalInputUpdatePtrToPtrInner(ctx context.Contex
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputUpdatePtrToPtrInner: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15611,7 +15715,11 @@ func (ec *executionContext) unmarshalInputUpdatePtrToPtrOuter(ctx context.Contex
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputUpdatePtrToPtrOuter: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -15655,7 +15763,11 @@ func (ec *executionContext) unmarshalInputValidInput(ctx context.Context, obj an
 	}
 
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputValidInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
