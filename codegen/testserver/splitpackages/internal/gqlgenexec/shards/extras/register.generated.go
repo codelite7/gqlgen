@@ -12,9 +12,8 @@ import (
 
 func init() {
 	shardruntime.RegisterFieldDef(splitScope, "Query", "__schema", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__schema", obj)
-		},
+		Resolve:      __resolveField_Query,
+		FieldIdx:     1,
 		MarshalCodec: "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema",
 		NonNull:      false,
 		PanicHandled: true,
@@ -23,9 +22,8 @@ func init() {
 		ReturnType:   type___Schema,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "Query", "__type", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__type", obj)
-		},
+		Resolve:      __resolveField_Query,
+		FieldIdx:     0,
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
 		PanicHandled: true,

@@ -3,16 +3,13 @@
 package extras_ee2d5c
 
 import (
-	"context"
-
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
 )
 
 func init() {
 	shardruntime.RegisterFieldDef(splitScope, "Mutation", "pingFromExtras", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Mutation", "pingFromExtras", obj)
-		},
+		Resolve:      __resolveField_Mutation,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -21,9 +18,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "Query", "goodbyeFromExtras", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "goodbyeFromExtras", obj)
-		},
+		Resolve:      __resolveField_Query,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,

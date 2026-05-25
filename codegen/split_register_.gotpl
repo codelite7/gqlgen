@@ -44,13 +44,8 @@ func init() {
 	})
 {{- else }}
 	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
-			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
-			{{- else }}
-			{{- template "splitFieldAccess" $field }}
-			{{- end }}
-		},
+		Resolve:  __resolveField_{{ $field.Object.Name }},
+		FieldIdx: {{ index $.FieldIndexByLookupKey $key }},
 		{{- if $field.HasDirectives }}
 		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
@@ -104,13 +99,8 @@ func init() {
 	})
 {{- else }}
 	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
-			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
-			{{- else }}
-			{{- template "splitFieldAccess" $field }}
-			{{- end }}
-		},
+		Resolve:  __resolveField_{{ $field.Object.Name }},
+		FieldIdx: {{ index $.FieldIndexByLookupKey $key }},
 		{{- if $field.HasDirectives }}
 		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)

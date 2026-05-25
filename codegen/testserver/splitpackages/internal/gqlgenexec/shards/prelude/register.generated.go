@@ -7,15 +7,13 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
-	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "args", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Directive).Args, nil
-		},
+		Resolve:      __resolveField___Directive,
+		FieldIdx:     4,
 		MarshalCodec: "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -25,9 +23,8 @@ func init() {
 		ReturnType:   type___InputValue,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "description", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Directive).Description(), nil
-		},
+		Resolve:      __resolveField___Directive,
+		FieldIdx:     1,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -36,9 +33,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "isRepeatable", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Directive).IsRepeatable, nil
-		},
+		Resolve:      __resolveField___Directive,
+		FieldIdx:     2,
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -47,9 +43,8 @@ func init() {
 		ReturnType:   type_Boolean,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "locations", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Directive).Locations, nil
-		},
+		Resolve:      __resolveField___Directive,
+		FieldIdx:     3,
 		MarshalCodec: "marshalN__DirectiveLocation2ᚕstringᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -58,9 +53,8 @@ func init() {
 		ReturnType:   type___DirectiveLocation,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "name", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Directive).Name, nil
-		},
+		Resolve:      __resolveField___Directive,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -69,9 +63,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "deprecationReason", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.EnumValue).DeprecationReason(), nil
-		},
+		Resolve:      __resolveField___EnumValue,
+		FieldIdx:     3,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -80,9 +73,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "description", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.EnumValue).Description(), nil
-		},
+		Resolve:      __resolveField___EnumValue,
+		FieldIdx:     1,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -91,9 +83,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "isDeprecated", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.EnumValue).IsDeprecated(), nil
-		},
+		Resolve:      __resolveField___EnumValue,
+		FieldIdx:     2,
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -102,9 +93,8 @@ func init() {
 		ReturnType:   type_Boolean,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "name", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.EnumValue).Name, nil
-		},
+		Resolve:      __resolveField___EnumValue,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -113,9 +103,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "args", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Field).Args, nil
-		},
+		Resolve:      __resolveField___Field,
+		FieldIdx:     2,
 		MarshalCodec: "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -125,9 +114,8 @@ func init() {
 		ReturnType:   type___InputValue,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "deprecationReason", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Field).DeprecationReason(), nil
-		},
+		Resolve:      __resolveField___Field,
+		FieldIdx:     5,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -136,9 +124,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "description", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Field).Description(), nil
-		},
+		Resolve:      __resolveField___Field,
+		FieldIdx:     1,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -147,9 +134,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "isDeprecated", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Field).IsDeprecated(), nil
-		},
+		Resolve:      __resolveField___Field,
+		FieldIdx:     4,
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -158,9 +144,8 @@ func init() {
 		ReturnType:   type_Boolean,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "name", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Field).Name, nil
-		},
+		Resolve:      __resolveField___Field,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -169,9 +154,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "type", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Field).Type, nil
-		},
+		Resolve:      __resolveField___Field,
+		FieldIdx:     3,
 		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      true,
 		PanicHandled: true,
@@ -180,9 +164,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "defaultValue", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.InputValue).DefaultValue, nil
-		},
+		Resolve:      __resolveField___InputValue,
+		FieldIdx:     3,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -191,9 +174,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "deprecationReason", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.InputValue).DeprecationReason(), nil
-		},
+		Resolve:      __resolveField___InputValue,
+		FieldIdx:     5,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -202,9 +184,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "description", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.InputValue).Description(), nil
-		},
+		Resolve:      __resolveField___InputValue,
+		FieldIdx:     1,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -213,9 +194,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "isDeprecated", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.InputValue).IsDeprecated(), nil
-		},
+		Resolve:      __resolveField___InputValue,
+		FieldIdx:     4,
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -224,9 +204,8 @@ func init() {
 		ReturnType:   type_Boolean,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "name", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.InputValue).Name, nil
-		},
+		Resolve:      __resolveField___InputValue,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -235,9 +214,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "type", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.InputValue).Type, nil
-		},
+		Resolve:      __resolveField___InputValue,
+		FieldIdx:     2,
 		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      true,
 		PanicHandled: true,
@@ -246,9 +224,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "description", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Schema).Description(), nil
-		},
+		Resolve:      __resolveField___Schema,
+		FieldIdx:     0,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -257,9 +234,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "directives", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Schema).Directives(), nil
-		},
+		Resolve:      __resolveField___Schema,
+		FieldIdx:     5,
 		MarshalCodec: "marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -268,9 +244,8 @@ func init() {
 		ReturnType:   type___Directive,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "mutationType", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Schema).MutationType(), nil
-		},
+		Resolve:      __resolveField___Schema,
+		FieldIdx:     3,
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
 		PanicHandled: true,
@@ -279,9 +254,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "queryType", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Schema).QueryType(), nil
-		},
+		Resolve:      __resolveField___Schema,
+		FieldIdx:     2,
 		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      true,
 		PanicHandled: true,
@@ -290,9 +264,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "subscriptionType", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Schema).SubscriptionType(), nil
-		},
+		Resolve:      __resolveField___Schema,
+		FieldIdx:     4,
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
 		PanicHandled: true,
@@ -301,9 +274,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "types", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Schema).Types(), nil
-		},
+		Resolve:      __resolveField___Schema,
+		FieldIdx:     1,
 		MarshalCodec: "marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -312,9 +284,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "description", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).Description(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     2,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -323,10 +294,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "enumValues", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return obj.(*introspection.Type).EnumValues(fc.Args["includeDeprecated"].(bool)), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     7,
 		MarshalCodec: "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -336,10 +305,8 @@ func init() {
 		ReturnType:   type___EnumValue,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "fields", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return obj.(*introspection.Type).Fields(fc.Args["includeDeprecated"].(bool)), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     4,
 		MarshalCodec: "marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -349,9 +316,8 @@ func init() {
 		ReturnType:   type___Field,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "inputFields", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).InputFields(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     8,
 		MarshalCodec: "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -360,9 +326,8 @@ func init() {
 		ReturnType:   type___InputValue,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "interfaces", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).Interfaces(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     5,
 		MarshalCodec: "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -371,9 +336,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "isOneOf", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).IsOneOf(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     10,
 		MarshalCodec: "marshalOBoolean2bool",
 		NonNull:      false,
 		PanicHandled: true,
@@ -382,9 +346,8 @@ func init() {
 		ReturnType:   type_Boolean,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "kind", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).Kind(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     0,
 		MarshalCodec: "marshalN__TypeKind2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -393,9 +356,8 @@ func init() {
 		ReturnType:   type___TypeKind,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "name", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).Name(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     1,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -404,9 +366,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "ofType", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).OfType(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     9,
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
 		PanicHandled: true,
@@ -415,9 +376,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "possibleTypes", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).PossibleTypes(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     6,
 		MarshalCodec: "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -426,9 +386,8 @@ func init() {
 		ReturnType:   type___Type,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "specifiedByURL", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return obj.(*introspection.Type).SpecifiedByURL(), nil
-		},
+		Resolve:      __resolveField___Type,
+		FieldIdx:     3,
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,

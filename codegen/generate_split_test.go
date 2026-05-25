@@ -722,6 +722,83 @@ func TestSplitRootUsesLookupStreamField(t *testing.T) {
 	)
 }
 
+// TestSplitRegisterFieldDefReferencesAdapter asserts that the generated
+// register.generated.go points each FieldDef.Resolve at the per-object
+// __resolveField_<T> adapter (with a matching FieldIdx) instead of emitting an
+// inline per-field Resolve closure. StreamFieldDef branches are out of scope
+// (Task 6) so this test only covers the non-stream FieldDef path.
+func TestSplitRegisterFieldDefReferencesAdapter(t *testing.T) {
+	workDir := chdirToLocalSplitFixtureWorkspace(t)
+
+	cleanupSplitGeneratedFiles(workDir)
+	snapshot := generateSplitSnapshot(t)
+
+	registerKey := filepath.Join(
+		"graph", "internal", "gqlgenexec", "shards", "schema", "register.generated.go",
+	)
+	register, ok := snapshot[registerKey]
+	require.True(t, ok, "expected register file %q in snapshot", registerKey)
+
+	// gofmt aligns the `:` per struct-literal field group, so the exact run of
+	// spaces after `Resolve:`/`FieldIdx:` varies by the longest key in scope.
+	// Match whitespace-tolerantly.
+	contents := string(register)
+	resolveAdapterRe := regexp.MustCompile(`Resolve:\s+__resolveField_Query,`)
+	fieldIdxRe := regexp.MustCompile(`FieldIdx:\s+\d+,`)
+
+	// FieldDef now points Resolve at the per-object adapter and carries the
+	// per-shard FieldIdx.
+	require.Regexp(t, resolveAdapterRe, contents)
+	require.Regexp(t, fieldIdxRe, contents)
+
+	// The inline per-field Resolve closure must be gone from the non-stream
+	// FieldDef path.
+	require.NotContains(
+		t,
+		contents,
+		"Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {",
+	)
+
+	// Spot-check: Query.__schema and Query.__type are owned by this shard but
+	// register in alphabetical order (__schema, __type) while the adapter ranges
+	// .Fields order. The per-shard FieldIdx must follow .Fields, so __schema gets
+	// index 1 and __type gets index 0 (matching the adapter cases), proving the
+	// index is sourced from FieldIndexByLookupKey, not the register loop position.
+	schemaIdx := fieldIdxForRegistration(t, contents, "Query", "__schema")
+	typeIdx := fieldIdxForRegistration(t, contents, "Query", "__type")
+	require.Equal(t, 1, schemaIdx, "Query.__schema FieldIdx must follow .Fields order")
+	require.Equal(t, 0, typeIdx, "Query.__type FieldIdx must follow .Fields order")
+
+	// All other FieldDef data must be retained.
+	require.Contains(t, contents, "IsMethod:")
+	require.Contains(t, contents, "IsResolver:")
+	require.Contains(t, contents, "MarshalCodec:")
+	require.Contains(t, contents, "ReturnType:")
+}
+
+// fieldIdxForRegistration extracts the FieldIdx stamped onto the
+// RegisterFieldDef(...) block for the given object/field from generated
+// register.generated.go source.
+func fieldIdxForRegistration(t *testing.T, contents, object, field string) int {
+	t.Helper()
+
+	marker := fmt.Sprintf("RegisterFieldDef(splitScope, %q, %q, shardruntime.FieldDef{", object, field)
+	start := strings.Index(contents, marker)
+	require.NotEqual(t, -1, start, "registration for %s.%s not found", object, field)
+
+	rest := contents[start:]
+	end := strings.Index(rest, "})")
+	require.NotEqual(t, -1, end, "unterminated FieldDef for %s.%s", object, field)
+
+	block := rest[:end]
+	m := regexp.MustCompile(`FieldIdx:\s+(\d+),`).FindStringSubmatch(block)
+	require.Len(t, m, 2, "FieldIdx not found in FieldDef for %s.%s", object, field)
+
+	idx, err := strconv.Atoi(m[1])
+	require.NoError(t, err)
+	return idx
+}
+
 func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 	workDir := chdirToLocalSplitFixtureWorkspace(t)
 
@@ -1204,12 +1281,13 @@ func TestSplitFieldsUsesRegisterFieldDef(t *testing.T) {
 		Template:    splitFieldsTemplate + "\n" + splitRegisterTemplate,
 		Filename:    registerPath,
 		Data: splitShardTemplateData{
-			Data:             data,
-			Scope:            "scope",
-			ShardName:        "article",
-			Ownership:        ownership,
-			FieldByLookupKey: buildFieldLookupMap(data),
-			FieldByArgsFunc:  buildArgsFuncLookupMap(data),
+			Data:                  data,
+			Scope:                 "scope",
+			ShardName:             "article",
+			Ownership:             ownership,
+			FieldByLookupKey:      buildFieldLookupMap(data),
+			FieldByArgsFunc:       buildArgsFuncLookupMap(data),
+			FieldIndexByLookupKey: buildFieldIndexMap(data),
 		},
 		Packages: internalcode.NewPackages(),
 	})
@@ -1226,11 +1304,28 @@ func TestSplitFieldsUsesRegisterFieldDef(t *testing.T) {
 	// Verify old bridge pattern is NOT used
 	require.NotContains(t, text, "ec.ResolveExecutableField")
 
-	// Verify resolver field uses InvokeResolver inside the Resolve closure
-	require.Contains(t, text, `ec.InvokeResolver(ctx, "Article", "computed", obj)`)
+	// FieldDef now points Resolve at the per-object adapter and no longer
+	// carries an inline per-field Resolve closure.
+	require.Regexp(t, `Resolve:\s+__resolveField_Article,`, text)
+	require.NotContains(
+		t,
+		text,
+		"Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {",
+	)
 
-	// Verify non-resolver field uses direct field access in the Resolve closure
-	require.Contains(t, text, ".Title,")
+	// FieldIdx must follow .Fields order (title=0, computed=1), matching the
+	// adapter switch cases — not the alphabetical register-loop order. This is
+	// the proof the index comes from FieldIndexByLookupKey (built from
+	// build.Objects[].Fields) rather than the register loop's iteration order.
+	require.Equal(t, 0, fieldIdxForRegistration(t, text, "Article", "title"))
+	require.Equal(t, 1, fieldIdxForRegistration(t, text, "Article", "computed"))
+
+	// The InvokeResolver / direct field-access bodies no longer live in the
+	// register file — they moved into the per-object __resolveField_Article
+	// adapter (split_fields_.gotpl), emitted into the shard file by the real
+	// shard render. TestSplitFieldsEmitsPerObjectResolveAdapter covers the
+	// adapter body; here we assert the register file no longer carries it.
+	require.NotContains(t, text, `ec.InvokeResolver(ctx, "Article", "computed", obj)`)
 
 	// Verify MarshalCodec is referenced as a struct field in the FieldDef
 	require.Contains(t, text, "MarshalCodec:")

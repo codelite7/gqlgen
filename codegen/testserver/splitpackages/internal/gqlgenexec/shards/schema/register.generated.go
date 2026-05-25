@@ -3,16 +3,13 @@
 package schema
 
 import (
-	"context"
-
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
 )
 
 func init() {
 	shardruntime.RegisterFieldDef(splitScope, "Mutation", "greet", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Mutation", "greet", obj)
-		},
+		Resolve:      __resolveField_Mutation,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -22,9 +19,8 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "Query", "hello", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "hello", obj)
-		},
+		Resolve:      __resolveField_Query,
+		FieldIdx:     0,
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,

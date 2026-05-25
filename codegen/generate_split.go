@@ -67,15 +67,16 @@ type splitRootTemplateData struct {
 
 type splitShardTemplateData struct {
 	*Data
-	Scope               string
-	ShardName           string
-	Ownership           *splitOwnershipPlanner
-	FieldByLookupKey    map[string]*Field
-	FieldByArgsFunc     map[string]*Field
-	InputByName         map[string]*Object
-	CodecByFunc         map[string]*config.TypeReference
-	DistinctReturnTypes []*ast.Definition
-	OwnedFieldKeyChunks [][]string
+	Scope                 string
+	ShardName             string
+	Ownership             *splitOwnershipPlanner
+	FieldByLookupKey      map[string]*Field
+	FieldByArgsFunc       map[string]*Field
+	InputByName           map[string]*Object
+	CodecByFunc           map[string]*config.TypeReference
+	DistinctReturnTypes   []*ast.Definition
+	OwnedFieldKeyChunks   [][]string
+	FieldIndexByLookupKey map[string]int
 }
 
 type splitImportsTemplateData struct {
@@ -402,7 +403,8 @@ func generateSplitShardPackages(data *Data, scope string) ([]string, error) {
 					buildFieldLookupMap(build),
 					ownership.FieldOwner,
 				),
-				OwnedFieldKeyChunks: buildOwnedFieldKeyChunksForShard(ownership, shardName, 50),
+				OwnedFieldKeyChunks:   buildOwnedFieldKeyChunksForShard(ownership, shardName, 50),
+				FieldIndexByLookupKey: buildFieldIndexMap(build),
 			},
 			RegionTags:      false,
 			GeneratedHeader: true,
@@ -438,6 +440,26 @@ func buildFieldLookupMap(data *Data) map[string]*Field {
 	}
 
 	return fieldByLookupKey
+}
+
+// buildFieldIndexMap maps each "Object.Field" lookup key to the field's
+// position within its object's Fields slice. This is the FieldIdx the register
+// template stamps onto each FieldDef. Because it ranges build.Objects[].Fields
+// — the same slice the per-object __resolveField_<T> adapter (split_fields_.gotpl)
+// ranges to number its switch cases — the FieldDef index and the adapter case
+// index agree by construction. Root objects (Query/Mutation/Subscription) are
+// sliced per-shard by declaring file, so each shard's map renumbers from 0 over
+// only that shard's fields; this map must therefore be built from the per-shard
+// build, not the global Data.
+func buildFieldIndexMap(data *Data) map[string]int {
+	fieldIndexByLookupKey := make(map[string]int)
+	for _, object := range data.Objects {
+		for i, field := range object.Fields {
+			fieldIndexByLookupKey[object.Name+"."+field.Name] = i
+		}
+	}
+
+	return fieldIndexByLookupKey
 }
 
 // buildDistinctReturnTypesForShard returns the sorted unique set of
