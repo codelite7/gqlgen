@@ -681,9 +681,10 @@ func TestSplitRootUsesLookupField(t *testing.T) {
 	require.Greater(t, resolveStreamFieldStart, resolveFieldStart)
 
 	resolveFieldBody := contents[resolveFieldStart:resolveStreamFieldStart]
-	require.Contains(t, resolveFieldBody, "shardruntime.LookupField(")
-	require.Contains(t, resolveFieldBody, "objectName, fieldName")
-	require.Contains(t, resolveFieldBody, "return handler(ctx, ec, field, obj)")
+	// Non-stream field dispatch now goes through the aggregated schemaDescriptor
+	// rather than the per-field shardruntime.LookupField registry.
+	require.Contains(t, resolveFieldBody, "schemaDescriptor.ResolveField(ctx, ec, objectName, fieldName, field, obj)")
+	require.NotContains(t, resolveFieldBody, "shardruntime.LookupField(")
 	require.NotContains(t, resolveFieldBody, "switch objectName+\".\"+fieldName")
 	require.NotContains(t, resolveFieldBody, "switch objectName + \".\" + fieldName")
 	require.Contains(
@@ -723,10 +724,12 @@ func TestSplitRootUsesLookupStreamField(t *testing.T) {
 }
 
 // TestSplitRegisterFieldDefReferencesAdapter asserts that the generated
-// register.generated.go points each FieldDef.Resolve at the per-object
-// __resolveField_<T> adapter (with a matching FieldIdx) instead of emitting an
-// inline per-field Resolve closure. StreamFieldDef branches are out of scope
-// (Task 6) so this test only covers the non-stream FieldDef path.
+// register.generated.go carries non-stream fields as pure-data ShardFieldDef
+// entries in `var ShardDesc` (assembled from chunked builder funcs), with each
+// FieldDef.Resolve pointing at the per-object __resolveField_<T> adapter and a
+// matching per-shard FieldIdx — NOT per-field RegisterFieldDef init() calls.
+// StreamFieldDef branches are out of scope (Task 6) so this test only covers
+// the non-stream FieldDef path.
 func TestSplitRegisterFieldDefReferencesAdapter(t *testing.T) {
 	workDir := chdirToLocalSplitFixtureWorkspace(t)
 
@@ -739,10 +742,20 @@ func TestSplitRegisterFieldDefReferencesAdapter(t *testing.T) {
 	register, ok := snapshot[registerKey]
 	require.True(t, ok, "expected register file %q in snapshot", registerKey)
 
+	contents := string(register)
+
+	// Non-stream fields are now pure data: assembled into var ShardDesc from
+	// chunked builder funcs, with NO per-field RegisterFieldDef init() calls.
+	require.Contains(t, contents, "var ShardDesc = shardruntime.ShardDescriptor{")
+	require.Contains(t, contents, "Scope:  splitScope,")
+	require.Contains(t, contents, "Fields: shardDescFields(),")
+	require.Contains(t, contents, "func shardDescFields() []shardruntime.ShardFieldDef {")
+	require.Regexp(t, `func shardDescFieldsChunk0\(\) \[\]shardruntime\.ShardFieldDef \{`, contents)
+	require.NotContains(t, contents, "RegisterFieldDef(")
+
 	// gofmt aligns the `:` per struct-literal field group, so the exact run of
 	// spaces after `Resolve:`/`FieldIdx:` varies by the longest key in scope.
 	// Match whitespace-tolerantly.
-	contents := string(register)
 	resolveAdapterRe := regexp.MustCompile(`Resolve:\s+__resolveField_Query,`)
 	fieldIdxRe := regexp.MustCompile(`FieldIdx:\s+\d+,`)
 
@@ -760,10 +773,10 @@ func TestSplitRegisterFieldDefReferencesAdapter(t *testing.T) {
 	)
 
 	// Spot-check: Query.__schema and Query.__type are owned by this shard but
-	// register in alphabetical order (__schema, __type) while the adapter ranges
+	// appear in alphabetical order (__schema, __type) while the adapter ranges
 	// .Fields order. The per-shard FieldIdx must follow .Fields, so __schema gets
 	// index 1 and __type gets index 0 (matching the adapter cases), proving the
-	// index is sourced from FieldIndexByLookupKey, not the register loop position.
+	// index is sourced from FieldIndexByLookupKey, not the emission loop position.
 	schemaIdx := fieldIdxForRegistration(t, contents, "Query", "__schema")
 	typeIdx := fieldIdxForRegistration(t, contents, "Query", "__type")
 	require.Equal(t, 1, schemaIdx, "Query.__schema FieldIdx must follow .Fields order")
@@ -777,22 +790,25 @@ func TestSplitRegisterFieldDefReferencesAdapter(t *testing.T) {
 }
 
 // fieldIdxForRegistration extracts the FieldIdx stamped onto the
-// RegisterFieldDef(...) block for the given object/field from generated
-// register.generated.go source.
+// ShardFieldDef entry for the given object/field from generated
+// register.generated.go source. Non-stream fields now live in the pure-data
+// `var ShardDesc` (assembled from shardDescFieldsChunkN builder funcs) as
+// `{Object: "X", Name: "Y", Def: shardruntime.FieldDef{...}}` rather than
+// per-field RegisterFieldDef(...) calls.
 func fieldIdxForRegistration(t *testing.T, contents, object, field string) int {
 	t.Helper()
 
-	marker := fmt.Sprintf("RegisterFieldDef(splitScope, %q, %q, shardruntime.FieldDef{", object, field)
+	marker := fmt.Sprintf("{Object: %q, Name: %q, Def: shardruntime.FieldDef{", object, field)
 	start := strings.Index(contents, marker)
-	require.NotEqual(t, -1, start, "registration for %s.%s not found", object, field)
+	require.NotEqual(t, -1, start, "ShardFieldDef for %s.%s not found", object, field)
 
 	rest := contents[start:]
-	end := strings.Index(rest, "})")
-	require.NotEqual(t, -1, end, "unterminated FieldDef for %s.%s", object, field)
+	end := strings.Index(rest, "}},")
+	require.NotEqual(t, -1, end, "unterminated ShardFieldDef for %s.%s", object, field)
 
 	block := rest[:end]
 	m := regexp.MustCompile(`FieldIdx:\s+(\d+),`).FindStringSubmatch(block)
-	require.Len(t, m, 2, "FieldIdx not found in FieldDef for %s.%s", object, field)
+	require.Len(t, m, 2, "FieldIdx not found in ShardFieldDef for %s.%s", object, field)
 
 	idx, err := strconv.Atoi(m[1])
 	require.NoError(t, err)
@@ -821,19 +837,22 @@ func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 	require.NotContains(t, contents, "var splitExecutableFieldResolvers")
 	require.NotContains(t, contents, "var splitExecutableStreamFieldResolvers")
 
-	// Stream fields should be registered via RegisterStreamFieldDef in shard code,
-	// while regular fields use RegisterFieldDef.
-	var foundRegisterField bool
+	// Stream fields still register via RegisterStreamFieldDef in shard code
+	// (Task 6 territory), while regular (non-stream) fields are now pure data in
+	// var ShardDesc as ShardFieldDef entries — no RegisterFieldDef init() calls.
+	var foundShardFieldDef bool
 	var foundRegisterStreamField bool
 	for relPath, shardContents := range snapshot {
 		if !strings.HasPrefix(relPath, filepath.Join("graph", "internal", "gqlgenexec", "shards")) {
 			continue
 		}
 		text := string(shardContents)
-		if strings.Contains(text, "RegisterFieldDef(splitScope,") {
-			foundRegisterField = true
-			// Regular field registrations should not include subscription fields
-			require.NotContains(t, text, `RegisterFieldDef(splitScope, "Subscription"`)
+		// Non-stream fields must never go through RegisterFieldDef anymore.
+		require.NotContains(t, text, "RegisterFieldDef(splitScope,")
+		if strings.Contains(text, "Def: shardruntime.FieldDef{") {
+			foundShardFieldDef = true
+			// Regular ShardFieldDef entries must not include subscription fields.
+			require.NotContains(t, text, `{Object: "Subscription", Name: "tick", Def: shardruntime.FieldDef{`)
 		}
 		if strings.Contains(text, "RegisterStreamFieldDef(splitScope,") {
 			foundRegisterStreamField = true
@@ -843,8 +862,8 @@ func TestSplitRootSeparatesStreamResolversFromRegularResolvers(t *testing.T) {
 
 	require.True(
 		t,
-		foundRegisterField,
-		"expected shard to register regular fields via RegisterFieldDef",
+		foundShardFieldDef,
+		"expected shard to carry regular fields as ShardFieldDef entries in var ShardDesc",
 	)
 	require.True(
 		t,
@@ -1116,7 +1135,7 @@ func TestSplitShardFieldArgsEmission(t *testing.T) {
 		}
 
 		text := string(contents)
-		if strings.Contains(text, "RegisterFieldDef(splitScope,") {
+		if strings.Contains(text, "Def: shardruntime.FieldDef{") {
 			foundFieldTemplateEmission = true
 		}
 		if strings.Contains(text, "split_args_.gotpl") &&
@@ -1128,7 +1147,7 @@ func TestSplitShardFieldArgsEmission(t *testing.T) {
 	require.True(
 		t,
 		foundFieldTemplateEmission,
-		"expected split shard field registration via RegisterFieldDef",
+		"expected split shard field data via ShardFieldDef entries in var ShardDesc",
 	)
 	require.True(
 		t,
@@ -1297,9 +1316,13 @@ func TestSplitFieldsUsesRegisterFieldDef(t *testing.T) {
 	require.NoError(t, err)
 	text := string(contents)
 
-	// Verify fields are registered via RegisterFieldDef (not emitted as standalone functions)
-	require.Contains(t, text, `RegisterFieldDef(splitScope, "Article", "title"`)
-	require.Contains(t, text, `RegisterFieldDef(splitScope, "Article", "computed"`)
+	// Verify fields are pure data in var ShardDesc as ShardFieldDef entries
+	// (legacy non-chunked path emits shardDescFieldsChunk0), NOT RegisterFieldDef.
+	require.Contains(t, text, "var ShardDesc = shardruntime.ShardDescriptor{")
+	require.Contains(t, text, "func shardDescFieldsChunk0() []shardruntime.ShardFieldDef {")
+	require.Contains(t, text, `{Object: "Article", Name: "title", Def: shardruntime.FieldDef{`)
+	require.Contains(t, text, `{Object: "Article", Name: "computed", Def: shardruntime.FieldDef{`)
+	require.NotContains(t, text, "RegisterFieldDef(")
 
 	// Verify old bridge pattern is NOT used
 	require.NotContains(t, text, "ec.ResolveExecutableField")
@@ -1666,18 +1689,25 @@ func TestSplitInputRegistrationEmission(t *testing.T) {
 	require.NotContains(t, registerText, "RegisterInputUnmarshaler(splitScope, \"OrphanInput\"")
 }
 
+// splitRegistrationPattern matches both the stream registration init() form
+// (RegisterStreamFieldDef(splitScope, "Obj", "field"...)) and the new
+// non-stream pure-data form ({Object: "Obj", Name: "field", Def: ...}). Both
+// are emitted in sorted FieldOwnerKeys order, so the determinism test still
+// covers non-stream fields after the ShardDesc migration.
 var splitRegistrationPattern = regexp.MustCompile(
-	`Register(?:Stream)?FieldDef\(splitScope,\s*"([^"]+)",\s*"([^"]+)"`,
+	`(?:RegisterStreamFieldDef\(splitScope,\s*"([^"]+)",\s*"([^"]+)")|(?:\{Object:\s*"([^"]+)",\s*Name:\s*"([^"]+)",\s*Def:\s*shardruntime\.FieldDef\{)`,
 )
 
 func splitRegistrationOrder(contents string) []string {
 	matches := splitRegistrationPattern.FindAllStringSubmatch(contents, -1)
 	order := make([]string, 0, len(matches))
 	for _, match := range matches {
-		if len(match) < 3 {
-			continue
+		switch {
+		case match[1] != "" || match[2] != "":
+			order = append(order, match[1]+"."+match[2])
+		case match[3] != "" || match[4] != "":
+			order = append(order, match[3]+"."+match[4])
 		}
-		order = append(order, match[1]+"."+match[2])
 	}
 
 	return order
@@ -1873,8 +1903,10 @@ func collectSplitGeneratedFiles(t *testing.T, workDir string) []string {
 	files := []string{
 		filepath.Join("graph", "generated.go"),
 		filepath.Join("graph", "split_runtime.generated.go"),
+		filepath.Join("graph", "split_schema.generated.go"),
 	}
 
+	// Stale blank-import files from the pre-aggregation layout, if any linger.
 	imports, err := filepath.Glob(
 		filepath.Join(workDir, "graph", "split_shard_import_*.generated.go"),
 	)
@@ -1918,6 +1950,7 @@ func collectSplitGeneratedFiles(t *testing.T, workDir string) []string {
 func cleanupSplitGeneratedFiles(workDir string) {
 	_ = os.Remove(filepath.Join(workDir, "graph", "generated.go"))
 	_ = os.Remove(filepath.Join(workDir, "graph", "split_runtime.generated.go"))
+	_ = os.Remove(filepath.Join(workDir, "graph", "split_schema.generated.go"))
 	for i := range 64 {
 		_ = os.Remove(
 			filepath.Join(workDir, "graph", fmt.Sprintf("split_shard_import_%d.generated.go", i)),

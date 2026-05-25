@@ -17,6 +17,7 @@ func cleanup(workDir string) {
 	_ = os.Remove(filepath.Join(workDir, "server.go"))
 	_ = os.Remove(filepath.Join(workDir, "graph", "generated.go"))
 	_ = os.Remove(filepath.Join(workDir, "graph", "split_runtime.generated.go"))
+	_ = os.Remove(filepath.Join(workDir, "graph", "split_schema.generated.go"))
 	for i := range 64 {
 		_ = os.Remove(
 			filepath.Join(workDir, "graph", fmt.Sprintf("split_shard_import_%d.generated.go", i)),

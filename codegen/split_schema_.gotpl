@@ -1,0 +1,25 @@
+{{ reserveImport "github.com/99designs/gqlgen/graphql/executor/shardruntime" }}
+
+{{- /*
+  Aggregated, dispatch-ready schema for the split-packages layout.
+
+  Each shard package is named-imported here (deterministic alias via
+  lookupImport) so that:
+    1. its init() funcs run (codec / args / input / resolver-invoker / stream
+       registration), and
+    2. its exported pure-data `var ShardDesc` is reachable for aggregation.
+
+  These named imports REPLACE the former blank-import files
+  (split_shard_import_*.generated.go).
+
+  Init-ordering: schemaDescriptor is a root-package package-level var, so its
+  initialization runs only AFTER every imported shard package is fully
+  initialized — both their package-level vars (incl. ShardDesc) and their
+  init() funcs (incl. RegisterCodecMarshal). BuildSchema's marshalFn caching
+  (LookupCodecMarshal) therefore observes a populated codec registry.
+*/}}
+var schemaDescriptor = shardruntime.BuildSchema(
+{{- range $import := .ShardImports }}
+	{{ lookupImport $import }}.ShardDesc,
+{{- end }}
+)

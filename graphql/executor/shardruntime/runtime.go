@@ -857,12 +857,7 @@ type StreamFieldDef struct {
 // given (scope, objectName, fieldName), backed by the supplied StreamFieldDef data.
 // The FieldContext side is shared with the non-streaming path via buildFieldContext.
 func RegisterStreamFieldDef(scope, objectName, fieldName string, def StreamFieldDef) {
-	if def.MarshalCodec != "" {
-		if fn, ok := LookupCodecMarshal(scope, def.MarshalCodec); ok {
-			def.marshalFn = fn
-		}
-		// else: marshalFn stays nil; runtime falls back to ec.MarshalCodec by string.
-	}
+	cacheMarshalFnInto(scope, def.MarshalCodec, &def.marshalFn)
 	handler := func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField, obj any) func(context.Context) graphql.Marshaler {
 		return resolveStreamFromDef(ctx, ec, &def, scope, objectName, field, obj)
 	}
@@ -918,12 +913,7 @@ func resolveStreamFromDef(
 // Internally it wraps def in a closure and calls RegisterField / RegisterFieldContext;
 // all existing lookup paths continue to work unchanged.
 func RegisterFieldDef(scope, objectName, fieldName string, def FieldDef) {
-	if def.MarshalCodec != "" {
-		if fn, ok := LookupCodecMarshal(scope, def.MarshalCodec); ok {
-			def.marshalFn = fn
-		}
-		// else: marshalFn stays nil; runtime falls back to ec.MarshalCodec by string.
-	}
+	cacheMarshalFn(scope, &def)
 	handler := func(ctx context.Context, ec ObjectExecutionContext, field graphql.CollectedField, obj any) graphql.Marshaler {
 		return resolveFromDef(ctx, ec, &def, scope, objectName, field, obj)
 	}
@@ -936,30 +926,38 @@ func RegisterFieldDef(scope, objectName, fieldName string, def FieldDef) {
 
 // --- ShardDescriptor / SchemaDescriptor aggregation + dispatch ---
 
-// NamedFieldDef pairs a field name with its FieldDef. The per-shard, generated
-// ShardDescriptor carries these as pure data, replacing per-field RegisterFieldDef.
-type NamedFieldDef struct {
-	Name string
-	Def  FieldDef
-}
-
-// ObjectFieldDefs is one object's field defs contributed by a single shard.
-// (An object's fields can be split across shards, so multiple shards may each
-// contribute an ObjectFieldDefs for the same Object; BuildSchema merges them.)
-type ObjectFieldDefs struct {
+// ShardFieldDef is one (object, field) entry contributed by a shard, carried as
+// pure data. The generated per-shard `var ShardDesc` holds a flat slice of these
+// (assembled from chunked builder funcs to preserve compiler parallelism),
+// replacing the per-field RegisterFieldDef init() calls. An object's fields can
+// be split across shards, so multiple shards (and multiple ShardFieldDef entries)
+// may target the same Object; BuildSchema merges them.
+type ShardFieldDef struct {
 	Object string
-	Fields []NamedFieldDef
+	Name   string
+	Def    FieldDef
 }
 
 // ShardDescriptor is a shard's package-level data export (generated as `var ShardDesc`).
+// Fields is a flat slice so the generator can assemble it from chunked builder
+// functions (one per ~50-entry chunk), preserving function-level compile
+// parallelism.
 type ShardDescriptor struct {
-	Scope   string
-	Objects []ObjectFieldDefs
+	Scope  string
+	Fields []ShardFieldDef
 }
 
 // SchemaDescriptor is the aggregated, dispatch-ready schema built from all shards.
 // Internally, per object, a name-sorted slice + parallel *FieldDef slice for
 // binary-search (name->index) dispatch.
+//
+// Immutability invariant: a SchemaDescriptor is built exactly once by
+// BuildSchema and is safe for concurrent reads thereafter. In generated use it
+// becomes a process-global (root-package `var schemaDescriptor`) read by every
+// request, so callers MUST NOT mutate it after construction. The *FieldDef
+// returned by Field (and used internally by ResolveField / FieldContextHandler)
+// must likewise be treated as read-only — it is shared across all concurrent
+// requests.
 type SchemaDescriptor struct {
 	scope   string
 	objects map[string]*objectFieldIndex
@@ -968,6 +966,27 @@ type SchemaDescriptor struct {
 type objectFieldIndex struct {
 	names []string    // sorted ascending
 	defs  []*FieldDef // parallel to names
+}
+
+// cacheMarshalFnInto caches the resolved CodecMarshalHandler into *out when
+// marshalCodec names a codec already registered under scope. If the codec is
+// unregistered, *out stays nil and the runtime falls back to ec.MarshalCodec by
+// string at resolve time. Operating on the (string, *handler) pair lets it serve
+// both FieldDef and StreamFieldDef, deduplicating the three previously identical
+// caching blocks (BuildSchema, RegisterFieldDef, RegisterStreamFieldDef).
+func cacheMarshalFnInto(scope, marshalCodec string, out *CodecMarshalHandler) {
+	if marshalCodec == "" {
+		return
+	}
+	if fn, ok := LookupCodecMarshal(scope, marshalCodec); ok {
+		*out = fn
+	}
+}
+
+// cacheMarshalFn caches the resolved CodecMarshalHandler onto def.marshalFn (see
+// cacheMarshalFnInto). Used by BuildSchema for each stored *FieldDef.
+func cacheMarshalFn(scope string, def *FieldDef) {
+	cacheMarshalFnInto(scope, def.MarshalCodec, &def.marshalFn)
 }
 
 // BuildSchema merges per-shard ShardDescriptors into a single dispatch-ready
@@ -993,10 +1012,14 @@ func BuildSchema(shards ...ShardDescriptor) *SchemaDescriptor {
 		}
 	}
 
-	merged := map[string][]NamedFieldDef{}
+	type namedDef struct {
+		name string
+		def  FieldDef
+	}
+	merged := map[string][]namedDef{}
 	for _, shard := range shards {
-		for _, obj := range shard.Objects {
-			merged[obj.Object] = append(merged[obj.Object], obj.Fields...)
+		for _, f := range shard.Fields {
+			merged[f.Object] = append(merged[f.Object], namedDef{name: f.Name, def: f.Def})
 		}
 	}
 
@@ -1005,7 +1028,7 @@ func BuildSchema(shards ...ShardDescriptor) *SchemaDescriptor {
 		// Deduplicate by name (last wins), preserving the per-field def.
 		byName := make(map[string]FieldDef, len(fields))
 		for _, f := range fields {
-			byName[f.Name] = f.Def
+			byName[f.name] = f.def
 		}
 
 		names := make([]string, 0, len(byName))
@@ -1017,12 +1040,7 @@ func BuildSchema(shards ...ShardDescriptor) *SchemaDescriptor {
 		defs := make([]*FieldDef, len(names))
 		for i, name := range names {
 			def := byName[name] // copy
-			if def.MarshalCodec != "" {
-				if fn, ok := LookupCodecMarshal(scope, def.MarshalCodec); ok {
-					def.marshalFn = fn
-				}
-				// else: marshalFn stays nil; runtime falls back to ec.MarshalCodec by string.
-			}
+			cacheMarshalFn(scope, &def)
 			defs[i] = &def
 		}
 
@@ -1034,7 +1052,8 @@ func BuildSchema(shards ...ShardDescriptor) *SchemaDescriptor {
 
 // Field looks up the FieldDef for (objectName, fieldName) via binary search over
 // the object's sorted field names. Returns (nil, false) when the object or field
-// is absent.
+// is absent. The returned *FieldDef is shared across all concurrent requests and
+// MUST be treated as read-only (see SchemaDescriptor's immutability invariant).
 func (s *SchemaDescriptor) Field(objectName, fieldName string) (*FieldDef, bool) {
 	idx := s.objects[objectName]
 	if idx == nil {

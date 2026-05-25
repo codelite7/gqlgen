@@ -6,28 +6,41 @@ import (
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
 )
 
-func init() {
-	shardruntime.RegisterFieldDef(splitScope, "Mutation", "pingFromExtras", shardruntime.FieldDef{
-		Resolve:      __resolveField_Mutation,
-		FieldIdx:     0,
-		MarshalCodec: "marshalNString2string",
-		NonNull:      true,
-		PanicHandled: true,
-		IsMethod:     true,
-		IsResolver:   true,
-		ReturnType:   type_String,
-	})
-	shardruntime.RegisterFieldDef(splitScope, "Query", "goodbyeFromExtras", shardruntime.FieldDef{
-		Resolve:      __resolveField_Query,
-		FieldIdx:     0,
-		MarshalCodec: "marshalNString2string",
-		NonNull:      true,
-		PanicHandled: true,
-		IsMethod:     true,
-		IsResolver:   true,
-		ArgsKey:      "field_Query_goodbyeFromExtras_args",
-		ReturnType:   type_String,
-	})
+func shardDescFieldsChunk0() []shardruntime.ShardFieldDef {
+	return []shardruntime.ShardFieldDef{
+		{Object: "Mutation", Name: "pingFromExtras", Def: shardruntime.FieldDef{
+			Resolve:      __resolveField_Mutation,
+			FieldIdx:     0,
+			MarshalCodec: "marshalNString2string",
+			NonNull:      true,
+			PanicHandled: true,
+			IsMethod:     true,
+			IsResolver:   true,
+			ReturnType:   type_String,
+		}},
+		{Object: "Query", Name: "goodbyeFromExtras", Def: shardruntime.FieldDef{
+			Resolve:      __resolveField_Query,
+			FieldIdx:     0,
+			MarshalCodec: "marshalNString2string",
+			NonNull:      true,
+			PanicHandled: true,
+			IsMethod:     true,
+			IsResolver:   true,
+			ArgsKey:      "field_Query_goodbyeFromExtras_args",
+			ReturnType:   type_String,
+		}},
+	}
+}
+
+func shardDescFields() []shardruntime.ShardFieldDef {
+	out := make([]shardruntime.ShardFieldDef, 0)
+	out = append(out, shardDescFieldsChunk0()...)
+	return out
+}
+
+var ShardDesc = shardruntime.ShardDescriptor{
+	Scope:  splitScope,
+	Fields: shardDescFields(),
 }
 
 func init() {

@@ -48,8 +48,8 @@ var splitFieldContextTemplate string
 //go:embed split_register_.gotpl
 var splitRegisterTemplate string
 
-//go:embed split_imports_.gotpl
-var splitImportsTemplate string
+//go:embed split_schema_.gotpl
+var splitSchemaTemplate string
 
 //go:embed split_runtime_.gotpl
 var splitRuntimeTemplate string
@@ -79,8 +79,12 @@ type splitShardTemplateData struct {
 	FieldIndexByLookupKey map[string]int
 }
 
-type splitImportsTemplateData struct {
-	Import string
+// splitSchemaTemplateData drives split_schema_.gotpl, the root-package
+// aggregation file that named-imports every shard package and builds
+// `var schemaDescriptor = shardruntime.BuildSchema(...)`.
+type splitSchemaTemplateData struct {
+	Scope        string
+	ShardImports []string
 }
 
 func generateSplitPackages(data *Data) error {
@@ -103,10 +107,13 @@ func generateSplitPackages(data *Data) error {
 		return err
 	}
 
-	return generateSplitShardImports(data, shardImports)
+	return generateSplitSchemaAggregation(data, scope, shardImports)
 }
 
 func cleanupSplitGeneratedOutputs(data *Data) error {
+	// Remove stale blank-import files from the pre-aggregation layout. The
+	// named-import aggregation file (split_schema.generated.go) now replaces
+	// them; it is overwritten in place by templates.Render so needs no glob.
 	if err := removeSplitGeneratedByGlob(
 		filepath.Join(data.Config.Exec.Dir(), "split_shard_import_*.generated.go"),
 		"split import",
@@ -566,30 +573,31 @@ func addCodecLookup(codecByFunc map[string]*config.TypeReference, ref *config.Ty
 	}
 }
 
-func generateSplitShardImports(data *Data, shardImports []string) error {
+// generateSplitSchemaAggregation emits the root-package aggregation file
+// (split_schema.generated.go). It named-imports every shard package — which
+// both runs each shard's init() funcs (codec/args/input/resolver-invoker/stream
+// registration) and reaches each shard's exported `var ShardDesc` — and
+// declares `var schemaDescriptor = shardruntime.BuildSchema(<shard>.ShardDesc,
+// ...)`. These named imports replace the former blank-import files.
+//
+// shardImports is already sorted and deduplicated by generateSplitShardPackages,
+// so the BuildSchema argument order (and hence output) is deterministic.
+func generateSplitSchemaAggregation(data *Data, scope string, shardImports []string) error {
 	if len(shardImports) == 0 {
 		return nil
 	}
 
-	for i, shardImport := range shardImports {
-		path := filepath.Join(
-			data.Config.Exec.Dir(),
-			fmt.Sprintf("split_shard_import_%d.generated.go", i),
-		)
-		if err := templates.Render(templates.Options{
-			PackageName:     data.Config.Exec.Package,
-			Template:        splitImportsTemplate,
-			Filename:        path,
-			Data:            splitImportsTemplateData{Import: shardImport},
-			RegionTags:      false,
-			GeneratedHeader: true,
-			Packages:        data.Config.Packages,
-			TemplateFS:      codegenTemplates,
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
+	path := filepath.Join(data.Config.Exec.Dir(), "split_schema.generated.go")
+	return templates.Render(templates.Options{
+		PackageName:     data.Config.Exec.Package,
+		Template:        splitSchemaTemplate,
+		Filename:        path,
+		Data:            splitSchemaTemplateData{Scope: scope, ShardImports: shardImports},
+		RegionTags:      false,
+		GeneratedHeader: true,
+		Packages:        data.Config.Packages,
+		TemplateFS:      codegenTemplates,
+	})
 }
 
 func splitScope(data *Data) string {

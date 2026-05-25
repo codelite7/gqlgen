@@ -5,20 +5,82 @@
 {{ reserveImport "github.com/99designs/gqlgen/graphql/executor/shardruntime" }}
 
 {{- /*
-  Field registrations:
-  - When OwnedFieldKeyChunks is populated (chunkSize=50), emit one init() per
-    chunk. This splits what would otherwise be one giant init() into multiple
-    smaller functions, exposing function-level parallelism to the Go compiler.
-  - When OwnedFieldKeyChunks is nil (legacy/test paths), fall back to the
-    original single-init approach over FieldOwnerKeys for backward compatibility.
+  Non-stream field defs are no longer registered via per-field init()
+  RegisterFieldDef calls. Instead each shard exports a pure-data
+  `var ShardDesc shardruntime.ShardDescriptor`, which the generated root
+  split_schema.generated.go aggregates into `var schemaDescriptor`.
+
+  To preserve the function-level compile parallelism the chunked init()s used
+  to provide (chunkSize=50), ShardDesc.Fields is assembled from one builder
+  func per OwnedFieldKeyChunks chunk (shardDescFieldsChunkN), concatenated by
+  shardDescFields(). When OwnedFieldKeyChunks is nil (legacy/test paths), a
+  single builder func over FieldOwnerKeys is emitted.
+
+  Stream fields (Task 6) are NOT moved here — they stay on the per-field
+  RegisterStreamFieldDef init() registry below. Args / inputs / codecs
+  registries also stay on init().
 */}}
 {{- if .OwnedFieldKeyChunks }}
+{{- range $idx, $chunk := .OwnedFieldKeyChunks }}
+func shardDescFieldsChunk{{ $idx }}() []shardruntime.ShardFieldDef {
+	return []shardruntime.ShardFieldDef{
+	{{- range $key := $chunk }}
+	{{- with $field := index $.FieldByLookupKey $key }}
+	{{- if and $field.TypeReference (not $field.Object.Stream) }}
+		{Object: {{ $field.Object.Name | quote }}, Name: {{ $field.Name | quote }}, Def: shardruntime.FieldDef{
+			Resolve:  __resolveField_{{ $field.Object.Name }},
+			FieldIdx: {{ index $.FieldIndexByLookupKey $key }},
+			{{- if $field.HasDirectives }}
+			Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+				return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+			},
+			{{- end }}
+			MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
+			NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+			PanicHandled: {{ not $.Config.OmitPanicHandler }},
+			IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
+			IsResolver:   {{ $field.IsResolver }},
+			{{- if gt (len $field.Args) 0 }}
+			ArgsKey:      {{ $field.ArgsFunc | quote }},
+			{{- end }}
+			ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
+		}},
+	{{- end }}
+	{{- end }}
+	{{- end }}
+	}
+}
+{{ end }}
+func shardDescFields() []shardruntime.ShardFieldDef {
+	out := make([]shardruntime.ShardFieldDef, 0)
+	{{- range $idx, $chunk := .OwnedFieldKeyChunks }}
+	out = append(out, shardDescFieldsChunk{{ $idx }}()...)
+	{{- end }}
+	return out
+}
+
+var ShardDesc = shardruntime.ShardDescriptor{
+	Scope:  splitScope,
+	Fields: shardDescFields(),
+}
+
+{{- /* Only emit the stream-registration init() when this shard actually owns a
+       stream field, so stream-less shards don't carry an empty func init(). */}}
+{{- $hasStream := false }}
 {{- range $chunk := .OwnedFieldKeyChunks }}
-func init() {
 {{- range $key := $chunk }}
 {{- with $field := index $.FieldByLookupKey $key }}
-{{- if $field.TypeReference }}
-{{- if $field.Object.Stream }}
+{{- if and $field.TypeReference $field.Object.Stream }}{{ $hasStream = true }}{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $hasStream }}
+
+func init() {
+{{- range $chunk := .OwnedFieldKeyChunks }}
+{{- range $key := $chunk }}
+{{- with $field := index $.FieldByLookupKey $key }}
+{{- if and $field.TypeReference $field.Object.Stream }}
 	shardruntime.RegisterStreamFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.StreamFieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
@@ -27,25 +89,6 @@ func init() {
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}
 		},
-		{{- if $field.HasDirectives }}
-		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
-		},
-		{{- end }}
-		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
-		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
-		PanicHandled: {{ not $.Config.OmitPanicHandler }},
-		IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
-		IsResolver:   {{ $field.IsResolver }},
-		{{- if gt (len $field.Args) 0 }}
-		ArgsKey:      {{ $field.ArgsFunc | quote }},
-		{{- end }}
-		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
-	})
-{{- else }}
-	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
-		Resolve:  __resolveField_{{ $field.Object.Name }},
-		FieldIdx: {{ index $.FieldIndexByLookupKey $key }},
 		{{- if $field.HasDirectives }}
 		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
@@ -66,14 +109,53 @@ func init() {
 {{- end }}
 {{- end }}
 }
-{{ end }}
+{{- end }}
 {{- else }}
+func shardDescFieldsChunk0() []shardruntime.ShardFieldDef {
+	return []shardruntime.ShardFieldDef{
+	{{- range $key := .Ownership.FieldOwnerKeys }}
+	{{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
+	{{- with $field := index $.FieldByLookupKey $key }}
+	{{- if and $field.TypeReference (not $field.Object.Stream) }}
+		{Object: {{ $field.Object.Name | quote }}, Name: {{ $field.Name | quote }}, Def: shardruntime.FieldDef{
+			Resolve:  __resolveField_{{ $field.Object.Name }},
+			FieldIdx: {{ index $.FieldIndexByLookupKey $key }},
+			{{- if $field.HasDirectives }}
+			Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+				return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+			},
+			{{- end }}
+			MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
+			NonNull:      {{ $field.TypeReference.GQL.NonNull }},
+			PanicHandled: {{ not $.Config.OmitPanicHandler }},
+			IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
+			IsResolver:   {{ $field.IsResolver }},
+			{{- if gt (len $field.Args) 0 }}
+			ArgsKey:      {{ $field.ArgsFunc | quote }},
+			{{- end }}
+			ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
+		}},
+	{{- end }}
+	{{- end }}
+	{{- end }}
+	{{- end }}
+	}
+}
+
+func shardDescFields() []shardruntime.ShardFieldDef {
+	return shardDescFieldsChunk0()
+}
+
+var ShardDesc = shardruntime.ShardDescriptor{
+	Scope:  splitScope,
+	Fields: shardDescFields(),
+}
+
 func init() {
 {{- range $key := .Ownership.FieldOwnerKeys }}
 {{- if eq (index $.Ownership.FieldOwner $key) $.ShardName }}
 {{- with $field := index $.FieldByLookupKey $key }}
-{{- if $field.TypeReference }}
-{{- if $field.Object.Stream }}
+{{- if and $field.TypeReference $field.Object.Stream }}
 	shardruntime.RegisterStreamFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.StreamFieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
@@ -97,26 +179,6 @@ func init() {
 		{{- end }}
 		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
 	})
-{{- else }}
-	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
-		Resolve:  __resolveField_{{ $field.Object.Name }},
-		FieldIdx: {{ index $.FieldIndexByLookupKey $key }},
-		{{- if $field.HasDirectives }}
-		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
-		},
-		{{- end }}
-		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
-		NonNull:      {{ $field.TypeReference.GQL.NonNull }},
-		PanicHandled: {{ not $.Config.OmitPanicHandler }},
-		IsMethod:     {{ or $field.IsMethod $field.IsResolver }},
-		IsResolver:   {{ $field.IsResolver }},
-		{{- if gt (len $field.Args) 0 }}
-		ArgsKey:      {{ $field.ArgsFunc | quote }},
-		{{- end }}
-		ReturnType:   type_{{ $field.TypeReference.Definition.Name }},
-	})
-{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

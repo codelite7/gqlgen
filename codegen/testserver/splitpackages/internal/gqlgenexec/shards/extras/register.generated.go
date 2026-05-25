@@ -10,28 +10,41 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-func init() {
-	shardruntime.RegisterFieldDef(splitScope, "Query", "__schema", shardruntime.FieldDef{
-		Resolve:      __resolveField_Query,
-		FieldIdx:     1,
-		MarshalCodec: "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema",
-		NonNull:      false,
-		PanicHandled: true,
-		IsMethod:     true,
-		IsResolver:   false,
-		ReturnType:   type___Schema,
-	})
-	shardruntime.RegisterFieldDef(splitScope, "Query", "__type", shardruntime.FieldDef{
-		Resolve:      __resolveField_Query,
-		FieldIdx:     0,
-		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
-		NonNull:      false,
-		PanicHandled: true,
-		IsMethod:     true,
-		IsResolver:   false,
-		ArgsKey:      "field_Query___type_args",
-		ReturnType:   type___Type,
-	})
+func shardDescFieldsChunk0() []shardruntime.ShardFieldDef {
+	return []shardruntime.ShardFieldDef{
+		{Object: "Query", Name: "__schema", Def: shardruntime.FieldDef{
+			Resolve:      __resolveField_Query,
+			FieldIdx:     1,
+			MarshalCodec: "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema",
+			NonNull:      false,
+			PanicHandled: true,
+			IsMethod:     true,
+			IsResolver:   false,
+			ReturnType:   type___Schema,
+		}},
+		{Object: "Query", Name: "__type", Def: shardruntime.FieldDef{
+			Resolve:      __resolveField_Query,
+			FieldIdx:     0,
+			MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
+			NonNull:      false,
+			PanicHandled: true,
+			IsMethod:     true,
+			IsResolver:   false,
+			ArgsKey:      "field_Query___type_args",
+			ReturnType:   type___Type,
+		}},
+	}
+}
+
+func shardDescFields() []shardruntime.ShardFieldDef {
+	out := make([]shardruntime.ShardFieldDef, 0)
+	out = append(out, shardDescFieldsChunk0()...)
+	return out
+}
+
+var ShardDesc = shardruntime.ShardDescriptor{
+	Scope:  splitScope,
+	Fields: shardDescFields(),
 }
 
 func init() {

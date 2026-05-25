@@ -101,7 +101,9 @@ func TestRootTypeShardDistribution(t *testing.T) {
 			continue
 		}
 		for _, root := range []string{"Query", "Mutation"} {
-			marker := `RegisterFieldDef(splitScope, "` + root + `", "`
+			// Non-stream fields are now pure data in var ShardDesc, emitted as
+			// ShardFieldDef literals: {Object: "Query", Name: "hello", Def: ...}.
+			marker := `{Object: "` + root + `", Name: "`
 			rest := string(body)
 			for {
 				i := strings.Index(rest, marker)

@@ -1690,24 +1690,14 @@ func TestBuildSchema_CrossShardMerge(t *testing.T) {
 
 	shardA := ShardDescriptor{
 		Scope: "scope",
-		Objects: []ObjectFieldDefs{
-			{
-				Object: "Query",
-				Fields: []NamedFieldDef{
-					{Name: "alpha", Def: FieldDef{Resolve: adapterA, FieldIdx: 0}},
-				},
-			},
+		Fields: []ShardFieldDef{
+			{Object: "Query", Name: "alpha", Def: FieldDef{Resolve: adapterA, FieldIdx: 0}},
 		},
 	}
 	shardB := ShardDescriptor{
 		Scope: "scope",
-		Objects: []ObjectFieldDefs{
-			{
-				Object: "Query",
-				Fields: []NamedFieldDef{
-					{Name: "zeta", Def: FieldDef{Resolve: adapterB, FieldIdx: 0}},
-				},
-			},
+		Fields: []ShardFieldDef{
+			{Object: "Query", Name: "zeta", Def: FieldDef{Resolve: adapterB, FieldIdx: 0}},
 		},
 	}
 
@@ -1745,9 +1735,10 @@ func TestBuildSchema_CrossShardMerge(t *testing.T) {
 // the per-object names slice is sorted ascending, present field names resolve
 // to the matching def, and absent names / objects return false.
 func TestSchemaDescriptor_FieldBinarySearch(t *testing.T) {
-	mk := func(name string, idx uint16) NamedFieldDef {
-		return NamedFieldDef{
-			Name: name,
+	mk := func(name string, idx uint16) ShardFieldDef {
+		return ShardFieldDef{
+			Object: "Query",
+			Name:   name,
 			Def: FieldDef{
 				FieldIdx: idx,
 				Resolve: func(_ context.Context, _ ObjectExecutionContext, fieldIdx uint16, _ any) (any, error) {
@@ -1759,17 +1750,12 @@ func TestSchemaDescriptor_FieldBinarySearch(t *testing.T) {
 
 	shard := ShardDescriptor{
 		Scope: "scope",
-		Objects: []ObjectFieldDefs{
-			{
-				Object: "Query",
-				// Intentionally unsorted input to prove BuildSchema sorts.
-				Fields: []NamedFieldDef{
-					mk("delta", 3),
-					mk("alpha", 0),
-					mk("charlie", 2),
-					mk("bravo", 1),
-				},
-			},
+		// Intentionally unsorted input to prove BuildSchema sorts.
+		Fields: []ShardFieldDef{
+			mk("delta", 3),
+			mk("alpha", 0),
+			mk("charlie", 2),
+			mk("bravo", 1),
 		},
 	}
 
@@ -1844,28 +1830,23 @@ func TestSchemaDescriptor_ResolveFieldDispatch(t *testing.T) {
 
 	shard := ShardDescriptor{
 		Scope: "scope",
-		Objects: []ObjectFieldDefs{
-			{
-				Object: "MyObj",
-				Fields: []NamedFieldDef{
-					{Name: "name", Def: FieldDef{
-						Resolve:      adapter,
-						FieldIdx:     0,
-						ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
-						MarshalCodec: "marshalString",
-						NonNull:      true,
-						PanicHandled: true,
-					}},
-					{Name: "age", Def: FieldDef{
-						Resolve:      adapter,
-						FieldIdx:     1,
-						ReturnType:   &ObjectChildLookup{TypeName: "Int", Kind: ast.Scalar},
-						MarshalCodec: "marshalInt",
-						NonNull:      true,
-						PanicHandled: true,
-					}},
-				},
-			},
+		Fields: []ShardFieldDef{
+			{Object: "MyObj", Name: "name", Def: FieldDef{
+				Resolve:      adapter,
+				FieldIdx:     0,
+				ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+				MarshalCodec: "marshalString",
+				NonNull:      true,
+				PanicHandled: true,
+			}},
+			{Object: "MyObj", Name: "age", Def: FieldDef{
+				Resolve:      adapter,
+				FieldIdx:     1,
+				ReturnType:   &ObjectChildLookup{TypeName: "Int", Kind: ast.Scalar},
+				MarshalCodec: "marshalInt",
+				NonNull:      true,
+				PanicHandled: true,
+			}},
 		},
 	}
 
@@ -1934,30 +1915,25 @@ func TestBuildSchema_MarshalFnCaching(t *testing.T) {
 
 	shard := ShardDescriptor{
 		Scope: "scope",
-		Objects: []ObjectFieldDefs{
-			{
-				Object: "MyObj",
-				Fields: []NamedFieldDef{
-					{Name: "cached", Def: FieldDef{
-						Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
-							return "v", nil
-						},
-						ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
-						MarshalCodec: "marshalCached",
-						NonNull:      true,
-						PanicHandled: true,
-					}},
-					{Name: "uncached", Def: FieldDef{
-						Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
-							return "v", nil
-						},
-						ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
-						MarshalCodec: "marshalNotRegistered",
-						NonNull:      true,
-						PanicHandled: true,
-					}},
+		Fields: []ShardFieldDef{
+			{Object: "MyObj", Name: "cached", Def: FieldDef{
+				Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
+					return "v", nil
 				},
-			},
+				ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+				MarshalCodec: "marshalCached",
+				NonNull:      true,
+				PanicHandled: true,
+			}},
+			{Object: "MyObj", Name: "uncached", Def: FieldDef{
+				Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
+					return "v", nil
+				},
+				ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+				MarshalCodec: "marshalNotRegistered",
+				NonNull:      true,
+				PanicHandled: true,
+			}},
 		},
 	}
 
@@ -2003,17 +1979,12 @@ func TestBuildSchema_MarshalFnCaching(t *testing.T) {
 func TestSchemaDescriptor_FieldContextHandler(t *testing.T) {
 	shard := ShardDescriptor{
 		Scope: "scope",
-		Objects: []ObjectFieldDefs{
-			{
-				Object: "Escrow",
-				Fields: []NamedFieldDef{
-					{Name: "id", Def: FieldDef{
-						IsMethod:   true,
-						IsResolver: false,
-						ReturnType: &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
-					}},
-				},
-			},
+		Fields: []ShardFieldDef{
+			{Object: "Escrow", Name: "id", Def: FieldDef{
+				IsMethod:   true,
+				IsResolver: false,
+				ReturnType: &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+			}},
 		},
 	}
 
