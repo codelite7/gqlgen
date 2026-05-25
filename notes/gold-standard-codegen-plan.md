@@ -139,7 +139,7 @@ Each task = one commit. Failing test first; minimal implementation; `go test ./.
 
 - [ ] **Step 1: Failing test** — assert generated registration emits `FieldDef{Resolve: __resolveField_<T>, FieldIdx: <i>, MarshalCodec: …, NonNull: …, Directives: …, IsMethod: …, IsResolver: …, ArgsKey: …, ReturnType: …}` with **no closure literal**, plus a per-object `name→index` lookup; and the existing splitpackages suite resolving `"<T>"."<F>"` returns the same values as before.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** — emit data-only `FieldDef` literals referencing the adapter + index; **`FieldIdx` = the field's position within the same per-shard `$object.Fields` slice the Task-2 adapter ranged (NOT the register template's alphabetical ownership-key iteration position).** Provide it via a `FieldIndexByLookupKey` map on `splitShardTemplateData` (see the index-contract risk note). Emit a sorted `[]string` name table (binary search) per object; directive field = `__splitDirectives_<T>_<F>` pointer or `nil`. Drop the per-field `Resolve` closure emission.
+- [ ] **Step 3: Implement** — emit data-only `FieldDef` literals referencing the adapter + index; **`FieldIdx` = the field's position within the same per-shard `$object.Fields` slice the Task-2 adapter ranged (NOT the register template's alphabetical ownership-key iteration position).** Provide it via a `FieldIndexByLookupKey` map on `splitShardTemplateData` (see the index-contract risk note). Directive field = `__splitDirectives_<T>_<F>` pointer or `nil`. Drop the per-field `Resolve` closure emission. (The per-object `name→index` dispatch table is deferred to Task 4, where the string registry it replaces is actually removed — emitting it here would be dead code.)
 - [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
 - [ ] **Step 5: Commit** — `feat(codegen): pure-data FieldDef + name→index dispatch (drop per-field closures)`.
 
@@ -149,7 +149,7 @@ Each task = one commit. Failing test first; minimal implementation; `go test ./.
 
 - [ ] **Step 1: Failing test** — assert a generated shard exposes `var ShardDesc = ShardDescriptor{…}`, the root exposes `func Schema() *SchemaDescriptor` aggregating shards, and dispatch through `Schema()` returns the same results as the registry path — with **no `init()`** doing per-field `Register…`.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** — add `ShardDescriptor`/`SchemaDescriptor` types + aggregation; emit `var ShardDesc` per shard; emit a generated root that imports shards and builds `SchemaDesc`; executor consumes it. Remove per-field `init()` `RegisterFieldDef` emission.
+- [ ] **Step 3: Implement** — add `ShardDescriptor`/`SchemaDescriptor` types + aggregation; emit `var ShardDesc` per shard; emit a generated root that imports shards and builds `SchemaDesc`; executor consumes it. Emit a per-object sorted `name→index` lookup so dispatch resolves field name→`FieldIdx`→`FieldDef` without the per-`(scope,object,field)` string registry. Remove per-field `init()` `RegisterFieldDef` emission. (Also: add the optional `$key`-always-present invariant comment at the FieldDef site, and keep the `ClearInlineArgsMetadata()` reset discipline in any new codegen test — these split tests share process-global `inlineArgsMetadata`, no `t.Parallel`.)
 - [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
 - [ ] **Step 5: Commit** — `feat(codegen): explicit ShardDesc/SchemaDesc wiring (drop per-field init registry)`.
 
