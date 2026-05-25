@@ -139,7 +139,7 @@ Each task = one commit. Failing test first; minimal implementation; `go test ./.
 
 - [ ] **Step 1: Failing test** — assert generated registration emits `FieldDef{Resolve: __resolveField_<T>, FieldIdx: <i>, MarshalCodec: …, NonNull: …, Directives: …, IsMethod: …, IsResolver: …, ArgsKey: …, ReturnType: …}` with **no closure literal**, plus a per-object `name→index` lookup; and the existing splitpackages suite resolving `"<T>"."<F>"` returns the same values as before.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** — emit data-only `FieldDef` literals referencing the adapter + index; emit a sorted `[]string` name table (binary search) per object; directive field = `__splitDirectives_<T>_<F>` pointer or `nil`. Drop the per-field `Resolve` closure emission.
+- [ ] **Step 3: Implement** — emit data-only `FieldDef` literals referencing the adapter + index; **`FieldIdx` = the field's position within the same per-shard `$object.Fields` slice the Task-2 adapter ranged (NOT the register template's alphabetical ownership-key iteration position).** Provide it via a `FieldIndexByLookupKey` map on `splitShardTemplateData` (see the index-contract risk note). Emit a sorted `[]string` name table (binary search) per object; directive field = `__splitDirectives_<T>_<F>` pointer or `nil`. Drop the per-field `Resolve` closure emission.
 - [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
 - [ ] **Step 5: Commit** — `feat(codegen): pure-data FieldDef + name→index dispatch (drop per-field closures)`.
 
@@ -204,7 +204,7 @@ Compare baseline pin vs `feat/field-adapters` HEAD, on the gemini consumer:
 - **Args plumbing inside the adapter:** method-with-args cases must read `graphql.GetFieldContext(ctx)` correctly when invoked via the adapter; covered by the method/args parity cases in the splitpackages suite.
 - **`ec.InvokeResolver` signature** from inside the adapter must match today's call; verify against `shardruntime`.
 - **`IsMethod`/`IsResolver` parity:** these stay on `FieldDef` as data — `buildFieldContext` reads them to populate `FieldContext`, which tracing/middleware observe. Dropping them would silently regress.
-- **Field order stability:** `FieldIdx` must be assigned deterministically (schema field order) so adapters and data tables agree and codegen stays idempotent (Task 5 idempotency check enforces this).
+- **Field index = per-shard `$object.Fields` slice position (NOT a global index).** ⚠️ Root objects (Query/Mutation/Subscription) are sliced across shards by declaring file (`addRootObjectSlices`), so each shard's `__resolveField_<T>` renumbers from `case 0` over **only that shard's fields**. The adapter (Task 2) ranges `$.Objects[].Fields` (the sliced build objects). **Task 3 MUST derive `FieldDef.FieldIdx` from the same per-shard `$object.Fields` slice** — a global/un-sliced index would silently mis-dispatch sliced root fields. Recommended mechanism: a `FieldIndexByLookupKey map[string]int` (or `uint16`) added to `splitShardTemplateData`, built from `build.Objects[].Fields` positions, so the register template's `FieldIdx` and the adapter's `case` agree by construction. The ordering is deterministic (parser order + sorted shard filenames) so codegen stays idempotent (Task 5 enforces).
 - **Runtime parity is a gate, not a goal:** indirection changes from closure→adapter must not regress latency; the index dispatch should be ≤ the current registry lookup.
 
 ## Non-goals
