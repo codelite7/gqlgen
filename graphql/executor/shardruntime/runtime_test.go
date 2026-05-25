@@ -1672,6 +1672,382 @@ func TestBuildFieldContext_ArgsPath_PanicRecovered(t *testing.T) {
 	}
 }
 
+// --- ShardDescriptor / SchemaDescriptor aggregation + dispatch tests ---
+
+// TestBuildSchema_CrossShardMerge proves BuildSchema merges field defs from
+// multiple shards that each contribute to the SAME object, and that each
+// shard's own FieldIdx + adapter is preserved on the merged def (the per-shard
+// index contract). Shard A contributes Query.alpha (adapterA, FieldIdx 0);
+// shard B contributes Query.zeta (adapterB, FieldIdx 0). Identical FieldIdx
+// values from different shards must remain bound to their own adapter.
+func TestBuildSchema_CrossShardMerge(t *testing.T) {
+	adapterA := func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
+		return "from-A", nil
+	}
+	adapterB := func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
+		return "from-B", nil
+	}
+
+	shardA := ShardDescriptor{
+		Scope: "scope",
+		Objects: []ObjectFieldDefs{
+			{
+				Object: "Query",
+				Fields: []NamedFieldDef{
+					{Name: "alpha", Def: FieldDef{Resolve: adapterA, FieldIdx: 0}},
+				},
+			},
+		},
+	}
+	shardB := ShardDescriptor{
+		Scope: "scope",
+		Objects: []ObjectFieldDefs{
+			{
+				Object: "Query",
+				Fields: []NamedFieldDef{
+					{Name: "zeta", Def: FieldDef{Resolve: adapterB, FieldIdx: 0}},
+				},
+			},
+		},
+	}
+
+	s := BuildSchema(shardA, shardB)
+	if s.scope != "scope" {
+		t.Fatalf("unexpected scope: got %q want %q", s.scope, "scope")
+	}
+
+	defAlpha, ok := s.Field("Query", "alpha")
+	if !ok {
+		t.Fatal("expected Query.alpha after merge")
+	}
+	defZeta, ok := s.Field("Query", "zeta")
+	if !ok {
+		t.Fatal("expected Query.zeta after merge")
+	}
+
+	gotA, err := defAlpha.Resolve(context.Background(), nil, defAlpha.FieldIdx, nil)
+	if err != nil {
+		t.Fatalf("unexpected error from alpha adapter: %v", err)
+	}
+	if gotA != "from-A" {
+		t.Fatalf("alpha routed to wrong adapter: got %v want %q", gotA, "from-A")
+	}
+	gotB, err := defZeta.Resolve(context.Background(), nil, defZeta.FieldIdx, nil)
+	if err != nil {
+		t.Fatalf("unexpected error from zeta adapter: %v", err)
+	}
+	if gotB != "from-B" {
+		t.Fatalf("zeta routed to wrong adapter: got %v want %q", gotB, "from-B")
+	}
+}
+
+// TestSchemaDescriptor_FieldBinarySearch verifies the binary-search lookup:
+// the per-object names slice is sorted ascending, present field names resolve
+// to the matching def, and absent names / objects return false.
+func TestSchemaDescriptor_FieldBinarySearch(t *testing.T) {
+	mk := func(name string, idx uint16) NamedFieldDef {
+		return NamedFieldDef{
+			Name: name,
+			Def: FieldDef{
+				FieldIdx: idx,
+				Resolve: func(_ context.Context, _ ObjectExecutionContext, fieldIdx uint16, _ any) (any, error) {
+					return fieldIdx, nil
+				},
+			},
+		}
+	}
+
+	shard := ShardDescriptor{
+		Scope: "scope",
+		Objects: []ObjectFieldDefs{
+			{
+				Object: "Query",
+				// Intentionally unsorted input to prove BuildSchema sorts.
+				Fields: []NamedFieldDef{
+					mk("delta", 3),
+					mk("alpha", 0),
+					mk("charlie", 2),
+					mk("bravo", 1),
+				},
+			},
+		},
+	}
+
+	s := BuildSchema(shard)
+
+	idx := s.objects["Query"]
+	if idx == nil {
+		t.Fatal("expected objectFieldIndex for Query")
+	}
+	wantNames := []string{"alpha", "bravo", "charlie", "delta"}
+	if len(idx.names) != len(wantNames) {
+		t.Fatalf("unexpected names length: got %d want %d", len(idx.names), len(wantNames))
+	}
+	for i, n := range wantNames {
+		if idx.names[i] != n {
+			t.Fatalf("names not sorted at %d: got %q want %q (%v)", i, idx.names[i], n, idx.names)
+		}
+	}
+
+	for wantIdx, name := range wantNames {
+		def, ok := s.Field("Query", name)
+		if !ok {
+			t.Fatalf("expected to find Query.%s", name)
+		}
+		if int(def.FieldIdx) != wantIdx {
+			t.Fatalf("Query.%s mapped to wrong def: FieldIdx got %d want %d", name, def.FieldIdx, wantIdx)
+		}
+	}
+
+	if def, ok := s.Field("Query", "missing"); ok || def != nil {
+		t.Fatalf("expected miss for absent field: def=%v ok=%v", def, ok)
+	}
+	if def, ok := s.Field("Mutation", "alpha"); ok || def != nil {
+		t.Fatalf("expected miss for absent object: def=%v ok=%v", def, ok)
+	}
+}
+
+// TestSchemaDescriptor_ResolveFieldDispatch exercises the exported ResolveField
+// dispatch over a shared adapter that switches on fieldIdx, mirroring
+// TestResolveFromDef_Adapter. The cached marshalFn (set via the codec registry
+// before BuildSchema) renders the resolved value, so the produced JSON proves
+// the right def (and thus the right FieldIdx) was dispatched. A non-tautology
+// guard confirms a deliberately wrong FieldIdx would produce different output.
+func TestSchemaDescriptor_ResolveFieldDispatch(t *testing.T) {
+	resetCodecMarshalRegistryForTest()
+
+	adapter := func(_ context.Context, _ ObjectExecutionContext, fieldIdx uint16, _ any) (any, error) {
+		switch fieldIdx {
+		case 0:
+			return "name-value", nil
+		case 1:
+			return 42, nil
+		default:
+			return nil, fmt.Errorf("unexpected fieldIdx %d", fieldIdx)
+		}
+	}
+
+	RegisterCodecMarshal(
+		"scope",
+		"marshalString",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+			return graphql.MarshalString(v.(string))
+		},
+	)
+	RegisterCodecMarshal(
+		"scope",
+		"marshalInt",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+			return graphql.MarshalInt(v.(int))
+		},
+	)
+
+	shard := ShardDescriptor{
+		Scope: "scope",
+		Objects: []ObjectFieldDefs{
+			{
+				Object: "MyObj",
+				Fields: []NamedFieldDef{
+					{Name: "name", Def: FieldDef{
+						Resolve:      adapter,
+						FieldIdx:     0,
+						ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+						MarshalCodec: "marshalString",
+						NonNull:      true,
+						PanicHandled: true,
+					}},
+					{Name: "age", Def: FieldDef{
+						Resolve:      adapter,
+						FieldIdx:     1,
+						ReturnType:   &ObjectChildLookup{TypeName: "Int", Kind: ast.Scalar},
+						MarshalCodec: "marshalInt",
+						NonNull:      true,
+						PanicHandled: true,
+					}},
+				},
+			},
+		},
+	}
+
+	s := BuildSchema(shard)
+	ec := &fakeECWithOpCtx{}
+	ctx := context.Background()
+
+	cases := []struct {
+		fieldName string
+		want      string
+	}{
+		{fieldName: "name", want: `"name-value"`},
+		{fieldName: "age", want: `42`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.fieldName, func(t *testing.T) {
+			cf := graphql.CollectedField{Field: &ast.Field{Name: tc.fieldName}}
+			m, ok := s.ResolveField(ctx, ec, "MyObj", tc.fieldName, cf, "ignored-obj")
+			if !ok {
+				t.Fatalf("expected ResolveField hit for MyObj.%s", tc.fieldName)
+			}
+			if m == graphql.Null {
+				t.Fatalf("expected non-null marshaler for MyObj.%s", tc.fieldName)
+			}
+			var buf bytes.Buffer
+			m.MarshalGQL(&buf)
+			if got := buf.String(); got != tc.want {
+				t.Fatalf("MyObj.%s: got %s want %s", tc.fieldName, got, tc.want)
+			}
+		})
+	}
+
+	// Miss path.
+	if m, ok := s.ResolveField(ctx, ec, "MyObj", "missing", graphql.CollectedField{Field: &ast.Field{Name: "missing"}}, nil); ok || m != nil {
+		t.Fatalf("expected ResolveField miss for absent field: m=%v ok=%v", m, ok)
+	}
+
+	// Non-tautology guard: the "name" def routed to FieldIdx 1's marshaller
+	// (int) over a string value would panic/produce different output, so the
+	// fact that "name" rendered a quoted string confirms FieldIdx 0 dispatched.
+	nameDef, _ := s.Field("MyObj", "name")
+	if nameDef.FieldIdx != 0 {
+		t.Fatalf("name def has wrong FieldIdx: got %d want 0", nameDef.FieldIdx)
+	}
+	ageDef, _ := s.Field("MyObj", "age")
+	if ageDef.FieldIdx != 1 {
+		t.Fatalf("age def has wrong FieldIdx: got %d want 1", ageDef.FieldIdx)
+	}
+}
+
+// TestBuildSchema_MarshalFnCaching asserts BuildSchema replicates
+// RegisterFieldDef's marshalFn caching: a codec registered BEFORE BuildSchema
+// is cached on the stored def copy (observable because fakeEC.MarshalCodec
+// returns graphql.Null, so a non-null marshal proves the cached fn ran). An
+// unregistered codec leaves marshalFn nil (falls back to ec.MarshalCodec).
+func TestBuildSchema_MarshalFnCaching(t *testing.T) {
+	resetCodecMarshalRegistryForTest()
+
+	RegisterCodecMarshal(
+		"scope",
+		"marshalCached",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+			return graphql.MarshalString("cached:" + v.(string))
+		},
+	)
+
+	shard := ShardDescriptor{
+		Scope: "scope",
+		Objects: []ObjectFieldDefs{
+			{
+				Object: "MyObj",
+				Fields: []NamedFieldDef{
+					{Name: "cached", Def: FieldDef{
+						Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
+							return "v", nil
+						},
+						ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+						MarshalCodec: "marshalCached",
+						NonNull:      true,
+						PanicHandled: true,
+					}},
+					{Name: "uncached", Def: FieldDef{
+						Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, _ any) (any, error) {
+							return "v", nil
+						},
+						ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+						MarshalCodec: "marshalNotRegistered",
+						NonNull:      true,
+						PanicHandled: true,
+					}},
+				},
+			},
+		},
+	}
+
+	s := BuildSchema(shard)
+
+	cachedDef, ok := s.Field("MyObj", "cached")
+	if !ok {
+		t.Fatal("expected MyObj.cached")
+	}
+	if cachedDef.marshalFn == nil {
+		t.Fatal("expected cached marshalFn for registered codec")
+	}
+
+	uncachedDef, ok := s.Field("MyObj", "uncached")
+	if !ok {
+		t.Fatal("expected MyObj.uncached")
+	}
+	if uncachedDef.marshalFn != nil {
+		t.Fatal("expected nil marshalFn for unregistered codec (falls back to ec.MarshalCodec)")
+	}
+
+	// Observable: cached path renders through the cached fn (non-null), while
+	// uncached path falls back to fakeEC.MarshalCodec which returns graphql.Null.
+	ec := &fakeECWithOpCtx{}
+	ctx := context.Background()
+
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "cached"}}
+	m, ok := s.ResolveField(ctx, ec, "MyObj", "cached", cf, nil)
+	if !ok {
+		t.Fatal("expected ResolveField hit for cached")
+	}
+	var buf bytes.Buffer
+	m.MarshalGQL(&buf)
+	if got := buf.String(); got != `"cached:v"` {
+		t.Fatalf("cached marshal output: got %s want %q", got, `"cached:v"`)
+	}
+}
+
+// TestSchemaDescriptor_FieldContextHandler verifies the exported
+// FieldContextHandler returns a closure that builds a *graphql.FieldContext
+// via buildFieldContext with the correct Object and IsMethod/IsResolver flags
+// from the FieldDef. Mirrors TestBuildFieldContext_NoArgs.
+func TestSchemaDescriptor_FieldContextHandler(t *testing.T) {
+	shard := ShardDescriptor{
+		Scope: "scope",
+		Objects: []ObjectFieldDefs{
+			{
+				Object: "Escrow",
+				Fields: []NamedFieldDef{
+					{Name: "id", Def: FieldDef{
+						IsMethod:   true,
+						IsResolver: false,
+						ReturnType: &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+					}},
+				},
+			},
+		},
+	}
+
+	s := BuildSchema(shard)
+
+	handler, ok := s.FieldContextHandler("Escrow", "id")
+	if !ok {
+		t.Fatal("expected FieldContextHandler for Escrow.id")
+	}
+	if handler == nil {
+		t.Fatal("expected non-nil FieldContextHandler")
+	}
+
+	ec := &fakeEC{fieldContextHandlers: map[string]FieldContextHandler{}}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "id"}}
+	fc, err := handler(context.Background(), ec, cf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if fc.Object != "Escrow" {
+		t.Fatalf("unexpected Object: got %q want Escrow", fc.Object)
+	}
+	if fc.IsMethod != true || fc.IsResolver != false {
+		t.Fatalf("unexpected flags: IsMethod=%v IsResolver=%v", fc.IsMethod, fc.IsResolver)
+	}
+	if fc.Child == nil {
+		t.Fatal("expected non-nil Child resolver")
+	}
+
+	if h, ok := s.FieldContextHandler("Escrow", "missing"); ok || h != nil {
+		t.Fatalf("expected miss for absent field context handler: h=%v ok=%v", h, ok)
+	}
+}
+
 func TestRegisterStreamFieldDef(t *testing.T) {
 	resetFieldRegistryForTest()
 	resetStreamFieldRegistryForTest()

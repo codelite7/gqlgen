@@ -934,6 +934,151 @@ func RegisterFieldDef(scope, objectName, fieldName string, def FieldDef) {
 	RegisterFieldContext(scope, objectName, fieldName, fcHandler)
 }
 
+// --- ShardDescriptor / SchemaDescriptor aggregation + dispatch ---
+
+// NamedFieldDef pairs a field name with its FieldDef. The per-shard, generated
+// ShardDescriptor carries these as pure data, replacing per-field RegisterFieldDef.
+type NamedFieldDef struct {
+	Name string
+	Def  FieldDef
+}
+
+// ObjectFieldDefs is one object's field defs contributed by a single shard.
+// (An object's fields can be split across shards, so multiple shards may each
+// contribute an ObjectFieldDefs for the same Object; BuildSchema merges them.)
+type ObjectFieldDefs struct {
+	Object string
+	Fields []NamedFieldDef
+}
+
+// ShardDescriptor is a shard's package-level data export (generated as `var ShardDesc`).
+type ShardDescriptor struct {
+	Scope   string
+	Objects []ObjectFieldDefs
+}
+
+// SchemaDescriptor is the aggregated, dispatch-ready schema built from all shards.
+// Internally, per object, a name-sorted slice + parallel *FieldDef slice for
+// binary-search (name->index) dispatch.
+type SchemaDescriptor struct {
+	scope   string
+	objects map[string]*objectFieldIndex
+}
+
+type objectFieldIndex struct {
+	names []string    // sorted ascending
+	defs  []*FieldDef // parallel to names
+}
+
+// BuildSchema merges per-shard ShardDescriptors into a single dispatch-ready
+// SchemaDescriptor. All shards share one scope (the root import path); the first
+// non-empty scope wins and empties are ignored. Field defs for the same object
+// contributed by different shards are merged, then sorted by name ascending so
+// Field() can binary-search. Each stored *FieldDef is a pointer to a copy with
+// marshalFn cached exactly as RegisterFieldDef does (registered codec -> cached
+// fn; unregistered -> nil, falling back to ec.MarshalCodec at resolve time).
+//
+// Duplicate (object, field) across shards should not happen (object/field
+// ownership is exclusive); if it does, the last contribution wins.
+//
+// Init-ordering: in generated use, BuildSchema runs from a root package-level
+// var whose init executes after all imported shard packages are fully
+// initialized (their vars and init funcs, including RegisterCodecMarshal), so
+// LookupCodecMarshal observes a populated codec registry here.
+func BuildSchema(shards ...ShardDescriptor) *SchemaDescriptor {
+	scope := ""
+	for _, shard := range shards {
+		if scope == "" && shard.Scope != "" {
+			scope = shard.Scope
+		}
+	}
+
+	merged := map[string][]NamedFieldDef{}
+	for _, shard := range shards {
+		for _, obj := range shard.Objects {
+			merged[obj.Object] = append(merged[obj.Object], obj.Fields...)
+		}
+	}
+
+	objects := make(map[string]*objectFieldIndex, len(merged))
+	for objectName, fields := range merged {
+		// Deduplicate by name (last wins), preserving the per-field def.
+		byName := make(map[string]FieldDef, len(fields))
+		for _, f := range fields {
+			byName[f.Name] = f.Def
+		}
+
+		names := make([]string, 0, len(byName))
+		for name := range byName {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		defs := make([]*FieldDef, len(names))
+		for i, name := range names {
+			def := byName[name] // copy
+			if def.MarshalCodec != "" {
+				if fn, ok := LookupCodecMarshal(scope, def.MarshalCodec); ok {
+					def.marshalFn = fn
+				}
+				// else: marshalFn stays nil; runtime falls back to ec.MarshalCodec by string.
+			}
+			defs[i] = &def
+		}
+
+		objects[objectName] = &objectFieldIndex{names: names, defs: defs}
+	}
+
+	return &SchemaDescriptor{scope: scope, objects: objects}
+}
+
+// Field looks up the FieldDef for (objectName, fieldName) via binary search over
+// the object's sorted field names. Returns (nil, false) when the object or field
+// is absent.
+func (s *SchemaDescriptor) Field(objectName, fieldName string) (*FieldDef, bool) {
+	idx := s.objects[objectName]
+	if idx == nil {
+		return nil, false
+	}
+	i := sort.SearchStrings(idx.names, fieldName)
+	if i >= len(idx.names) || idx.names[i] != fieldName {
+		return nil, false
+	}
+	return idx.defs[i], true
+}
+
+// ResolveField dispatches to the (objectName, fieldName) field's resolver via the
+// existing resolveFromDef path. Returns (nil, false) when the field is unknown.
+// This exported method lets the root package (which cannot call the unexported
+// resolveFromDef) reach the shared resolve behavior.
+func (s *SchemaDescriptor) ResolveField(
+	ctx context.Context,
+	ec ObjectExecutionContext,
+	objectName, fieldName string,
+	field graphql.CollectedField,
+	obj any,
+) (graphql.Marshaler, bool) {
+	def, ok := s.Field(objectName, fieldName)
+	if !ok {
+		return nil, false
+	}
+	return resolveFromDef(ctx, ec, def, s.scope, objectName, field, obj), true
+}
+
+// FieldContextHandler returns a FieldContextHandler closure for (objectName,
+// fieldName) that builds a *graphql.FieldContext via the existing
+// buildFieldContext path. Returns (nil, false) when the field is unknown. The
+// root's LookupFieldContextHandler consults this for non-stream fields.
+func (s *SchemaDescriptor) FieldContextHandler(objectName, fieldName string) (FieldContextHandler, bool) {
+	def, ok := s.Field(objectName, fieldName)
+	if !ok {
+		return nil, false
+	}
+	return func(ctx context.Context, ec ObjectExecutionContext, cf graphql.CollectedField) (*graphql.FieldContext, error) {
+		return buildFieldContext(ctx, ec, def, s.scope, objectName, cf)
+	}, true
+}
+
 // --- Child resolution helpers ---
 
 func makeChildResolver(
