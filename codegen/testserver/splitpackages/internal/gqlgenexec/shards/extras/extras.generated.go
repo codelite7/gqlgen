@@ -4,6 +4,7 @@ package extras
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -44,6 +45,17 @@ var type___Type = &shardruntime.ObjectChildLookup{
 }
 
 func init() {
+}
+
+func __resolveField_Query(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return ec.InvokeResolver(ctx, "Query", "__type", obj)
+	case 1:
+		return ec.InvokeResolver(ctx, "Query", "__schema", obj)
+	default:
+		return nil, fmt.Errorf("unknown field index %d for Query", fieldIdx)
+	}
 }
 
 // split_args_.gotpl — args for Query.__type

@@ -4,12 +4,14 @@ package prelude
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
+	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -444,6 +446,126 @@ func ___Type(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel as
 	}
 
 	return out
+}
+
+func __resolveField___Directive(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return obj.(*introspection.Directive).Name, nil
+	case 1:
+		return obj.(*introspection.Directive).Description(), nil
+	case 2:
+		return obj.(*introspection.Directive).IsRepeatable, nil
+	case 3:
+		return obj.(*introspection.Directive).Locations, nil
+	case 4:
+		return obj.(*introspection.Directive).Args, nil
+	default:
+		return nil, fmt.Errorf("unknown field index %d for __Directive", fieldIdx)
+	}
+}
+
+func __resolveField___EnumValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return obj.(*introspection.EnumValue).Name, nil
+	case 1:
+		return obj.(*introspection.EnumValue).Description(), nil
+	case 2:
+		return obj.(*introspection.EnumValue).IsDeprecated(), nil
+	case 3:
+		return obj.(*introspection.EnumValue).DeprecationReason(), nil
+	default:
+		return nil, fmt.Errorf("unknown field index %d for __EnumValue", fieldIdx)
+	}
+}
+
+func __resolveField___Field(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return obj.(*introspection.Field).Name, nil
+	case 1:
+		return obj.(*introspection.Field).Description(), nil
+	case 2:
+		return obj.(*introspection.Field).Args, nil
+	case 3:
+		return obj.(*introspection.Field).Type, nil
+	case 4:
+		return obj.(*introspection.Field).IsDeprecated(), nil
+	case 5:
+		return obj.(*introspection.Field).DeprecationReason(), nil
+	default:
+		return nil, fmt.Errorf("unknown field index %d for __Field", fieldIdx)
+	}
+}
+
+func __resolveField___InputValue(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return obj.(*introspection.InputValue).Name, nil
+	case 1:
+		return obj.(*introspection.InputValue).Description(), nil
+	case 2:
+		return obj.(*introspection.InputValue).Type, nil
+	case 3:
+		return obj.(*introspection.InputValue).DefaultValue, nil
+	case 4:
+		return obj.(*introspection.InputValue).IsDeprecated(), nil
+	case 5:
+		return obj.(*introspection.InputValue).DeprecationReason(), nil
+	default:
+		return nil, fmt.Errorf("unknown field index %d for __InputValue", fieldIdx)
+	}
+}
+
+func __resolveField___Schema(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return obj.(*introspection.Schema).Description(), nil
+	case 1:
+		return obj.(*introspection.Schema).Types(), nil
+	case 2:
+		return obj.(*introspection.Schema).QueryType(), nil
+	case 3:
+		return obj.(*introspection.Schema).MutationType(), nil
+	case 4:
+		return obj.(*introspection.Schema).SubscriptionType(), nil
+	case 5:
+		return obj.(*introspection.Schema).Directives(), nil
+	default:
+		return nil, fmt.Errorf("unknown field index %d for __Schema", fieldIdx)
+	}
+}
+
+func __resolveField___Type(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return obj.(*introspection.Type).Kind(), nil
+	case 1:
+		return obj.(*introspection.Type).Name(), nil
+	case 2:
+		return obj.(*introspection.Type).Description(), nil
+	case 3:
+		return obj.(*introspection.Type).SpecifiedByURL(), nil
+	case 4:
+		fc := graphql.GetFieldContext(ctx)
+		return obj.(*introspection.Type).Fields(fc.Args["includeDeprecated"].(bool)), nil
+	case 5:
+		return obj.(*introspection.Type).Interfaces(), nil
+	case 6:
+		return obj.(*introspection.Type).PossibleTypes(), nil
+	case 7:
+		fc := graphql.GetFieldContext(ctx)
+		return obj.(*introspection.Type).EnumValues(fc.Args["includeDeprecated"].(bool)), nil
+	case 8:
+		return obj.(*introspection.Type).InputFields(), nil
+	case 9:
+		return obj.(*introspection.Type).OfType(), nil
+	case 10:
+		return obj.(*introspection.Type).IsOneOf(), nil
+	default:
+		return nil, fmt.Errorf("unknown field index %d for __Type", fieldIdx)
+	}
 }
 
 // split_args_.gotpl — args for __Directive.args

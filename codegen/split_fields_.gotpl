@@ -1,7 +1,30 @@
-{{ reserveImport "fmt" }}
 {{ define "split_fields_.gotpl" }}
-{{- /* Per-field function emission removed; data lives on FieldDef registered
-       in split_register_.gotpl, dispatched via shardruntime.resolveFromDef. */}}
+{{ reserveImport "fmt" }}
+{{- /* Per-object resolve adapter: one __resolveField_<T> per (object, shard).
+       A single switch over the field index (position in object.Fields) replaces
+       the per-field Resolve closures. Each case mirrors the body emitted by the
+       FieldDef branch of split_register_.gotpl (InvokeResolver for resolver/
+       non-obj-receiver fields, otherwise splitFieldAccess). Emitted into the
+       shard file in the same package as register.generated.go so Task 3 can
+       point FieldDef.Resolve at it. Stream objects resolve via StreamFieldDef
+       (Task 6) and are skipped here. */}}
+{{- range $object := .Objects }}
+{{- if $object.Stream }}{{ continue }}{{ end }}
+func __resolveField_{{ $object.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	{{- range $i, $field := $object.Fields }}
+	case {{ $i }}:
+		{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
+		return ec.InvokeResolver(ctx, {{ $object.Name | quote }}, {{ $field.Name | quote }}, obj)
+		{{- else }}
+		{{- template "splitFieldAccess" $field }}
+		{{- end }}
+	{{- end }}
+	default:
+		return nil, fmt.Errorf("unknown field index %d for {{ $object.Name }}", fieldIdx)
+	}
+}
+{{ end }}
 {{ end }}
 {{ define "splitFieldAccess" }}
 	{{- if .IsMap }}

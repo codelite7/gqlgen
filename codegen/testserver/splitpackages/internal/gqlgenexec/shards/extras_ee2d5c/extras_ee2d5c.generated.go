@@ -4,6 +4,7 @@ package extras_ee2d5c
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
@@ -18,6 +19,24 @@ var type_String = &shardruntime.ObjectChildLookup{
 }
 
 func init() {
+}
+
+func __resolveField_Mutation(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return ec.InvokeResolver(ctx, "Mutation", "pingFromExtras", obj)
+	default:
+		return nil, fmt.Errorf("unknown field index %d for Mutation", fieldIdx)
+	}
+}
+
+func __resolveField_Query(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+	switch fieldIdx {
+	case 0:
+		return ec.InvokeResolver(ctx, "Query", "goodbyeFromExtras", obj)
+	default:
+		return nil, fmt.Errorf("unknown field index %d for Query", fieldIdx)
+	}
 }
 
 // split_args_.gotpl — args for Query.goodbyeFromExtras

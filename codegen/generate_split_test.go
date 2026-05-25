@@ -1236,6 +1236,56 @@ func TestSplitFieldsUsesRegisterFieldDef(t *testing.T) {
 	require.Contains(t, text, "MarshalCodec:")
 }
 
+func TestSplitFieldsEmitsPerObjectResolveAdapter(t *testing.T) {
+	workDir := chdirToLocalSplitFixtureWorkspace(t)
+
+	cleanupSplitGeneratedFiles(workDir)
+	snapshot := generateSplitSnapshot(t)
+
+	// The adapter is emitted into the shard file (split_fields_.gotpl, invoked
+	// from split_shard_.gotpl) — NOT register.generated.go. Find a shard file
+	// that owns at least one field and assert it carries a per-object adapter
+	// with the new fieldIdx-keyed signature and a case 0:.
+	var foundAdapterSignature bool
+	var foundCaseZero bool
+	for relPath, contents := range snapshot {
+		if !strings.HasPrefix(relPath, filepath.Join("graph", "internal", "gqlgenexec", "shards")) {
+			continue
+		}
+		if filepath.Base(relPath) == "register.generated.go" {
+			// Adapters live in the shard file, never register.generated.go.
+			require.NotContains(t, string(contents), "func __resolveField_",
+				"adapters must not be emitted into %s", relPath)
+			continue
+		}
+
+		text := string(contents)
+		if strings.Contains(
+			text,
+			"func __resolveField_Query(ctx context.Context, ec shardruntime.ObjectExecutionContext, fieldIdx uint16, obj any) (any, error)",
+		) {
+			foundAdapterSignature = true
+			adapterStart := strings.Index(text, "func __resolveField_Query(")
+			adapterBody := text[adapterStart:]
+			if next := strings.Index(adapterBody[len("func __resolveField_Query("):], "func __resolveField_"); next != -1 {
+				adapterBody = adapterBody[:len("func __resolveField_Query(")+next]
+			}
+			require.Contains(t, adapterBody, "switch fieldIdx {")
+			require.Contains(t, adapterBody, "case 0:")
+			if strings.Contains(adapterBody, "case 0:") {
+				foundCaseZero = true
+			}
+		}
+	}
+
+	require.True(
+		t,
+		foundAdapterSignature,
+		"expected a shard file to emit func __resolveField_Query with the fieldIdx uint16 signature",
+	)
+	require.True(t, foundCaseZero, "expected the __resolveField_Query adapter to switch on field index with a case 0:")
+}
+
 func TestSplitFieldsStreamUsesRegisterStreamFieldDef(t *testing.T) {
 	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
 	stringGQL := ast.NonNullNamedType("String", nil)
