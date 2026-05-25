@@ -14,7 +14,9 @@
 
 ---
 
-## Status / Progress (2026-05-24) — milestone reached, paused before consumer measurement
+## Status / Progress (2026-05-24) — BUILT, MEASURED, **SHELVED** (no codegen/compile win)
+
+> **Outcome:** implemented through Task 5 with runtime parity preserved, then benchmarked on the real consumer — it **slightly regressed every target metric** (Task 7 below). **Decision: shelve, do not adopt.** `feat/field-adapters` is kept as a documented negative-result experiment; the consumer pin is unchanged. Do not re-attempt this restructure expecting a codegen/compile win — the per-field closures were **not** the bottleneck; collapsing them preserved code volume (closure bodies → switch cases) while adding adapter wrappers + `ShardDesc` tables + chunk funcs + the aggregation (net *more* symbols).
 
 Gold-standard structure **complete + parity-proven** on branch `feat/field-adapters` (fork-local; maintainer pushes). Each task: failing-test-first → minimal impl → two-stage review (spec + code-quality) → full fork suite green.
 
@@ -27,7 +29,18 @@ Gold-standard structure **complete + parity-proven** on branch `feat/field-adapt
 
 **Task 6 (stream adapter): recommend SKIP** — the consumer has **no GraphQL subscriptions**, so there are no split-packages stream fields to collapse; the `StreamFieldDef` closure path is intact and correct. Revisit only if subscriptions are added.
 
-**Task 7 (consumer measurement): PENDING** — pin the consumer to local fork HEAD (local `replace => ./gqlgen`, no push), run `task generate` + `task validate-go`, measure codegen wall / cold compile / peak RSS / generated LOC + runtime parity vs the baseline pin.
+**Task 7 (consumer measurement): DONE → SHELVED (no win).** Measured on the real consumer (~764k gen LOC) via temporary `go.work use ./gqlgen` (no push), build+compile only (API tests skipped per maintainer). Fork baseline `d6ff2ac0` (branch-point) vs `feat/field-adapters` HEAD:
+
+| Metric | Baseline | Field-adapters | Δ |
+|---|---|---|---|
+| gqlgen codegen wall | 2:40.6 | 3:42.9 | **+39% (slower)** |
+| codegen peak RSS | 3.7 GB | 3.8 GB | flat |
+| cold `go build ./src/...` | 4:05.5 | 4:15.8 | +4% (≈single-run noise) |
+| compile peak RSS | 3.2 GB | 3.2 GB | **flat** |
+| generated LOC (total) | 754,517 | 763,984 | **+1.3% (more)** |
+| largest shard `ent_escrow` | 56,470 | 57,297 | +1.5% (more) |
+
+Runtime parity held (44 `FieldDef` values byte-identical; `splitpackages` green). Adopt criterion = ≥10% improvement on any of {codegen, compile, RSS} → **not met; every metric flat-to-worse → SHELVE.**
 
 ---
 
