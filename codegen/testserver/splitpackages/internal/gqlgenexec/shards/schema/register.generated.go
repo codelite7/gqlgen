@@ -10,7 +10,7 @@ import (
 
 func init() {
 	shardruntime.RegisterFieldDef(splitScope, "Mutation", "greet", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
 			return ec.InvokeResolver(ctx, "Mutation", "greet", obj)
 		},
 		MarshalCodec: "marshalNString2string",
@@ -22,7 +22,7 @@ func init() {
 		ReturnType:   type_String,
 	})
 	shardruntime.RegisterFieldDef(splitScope, "Query", "hello", shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
 			return ec.InvokeResolver(ctx, "Query", "hello", obj)
 		},
 		MarshalCodec: "marshalNString2string",

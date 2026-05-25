@@ -114,7 +114,13 @@ type ObjectChildLookup struct {
 // __splitField_* + __splitFieldContext_* function declarations the templates
 // previously emitted.
 type FieldDef struct {
-	Resolve func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
+	// Resolve resolves the value for the field identified by FieldIdx. In later
+	// tasks this holds a single per-object adapter func value shared across all
+	// fields of an object; fieldIdx selects which field to resolve (a switch over
+	// FieldIdx inside the adapter). resolveFromDef passes def.FieldIdx as fieldIdx.
+	Resolve func(ctx context.Context, ec ObjectExecutionContext, fieldIdx uint16, obj any) (any, error)
+	// FieldIdx selects the field within the per-object adapter held by Resolve.
+	FieldIdx uint16
 	// Directives is the middleware chain passed to graphql.ResolveField; its
 	// signature must match graphql.ResolveField's middlewareChain parameter.
 	Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver
@@ -777,7 +783,7 @@ func resolveFromDef(
 			return buildFieldContext(ctx, ec, def, scope, objectName, f)
 		},
 		func(ctx context.Context) (any, error) {
-			return def.Resolve(ctx, ec, obj)
+			return def.Resolve(ctx, ec, def.FieldIdx, obj)
 		},
 		def.Directives,
 		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {

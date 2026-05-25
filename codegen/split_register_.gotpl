@@ -44,7 +44,7 @@ func init() {
 	})
 {{- else }}
 	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
 			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
 			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
 			{{- else }}
@@ -104,7 +104,7 @@ func init() {
 	})
 {{- else }}
 	shardruntime.RegisterFieldDef(splitScope, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, shardruntime.FieldDef{
-		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, _ uint16, obj any) (any, error) {
 			{{- if or $field.IsResolver (ne $field.GoReceiverName "obj") }}
 			return ec.InvokeResolver(ctx, {{ $field.Object.Name | quote }}, {{ $field.Name | quote }}, obj)
 			{{- else }}

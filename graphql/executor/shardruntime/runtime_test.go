@@ -1,6 +1,7 @@
 package shardruntime
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -1402,7 +1403,7 @@ func TestRegisterFieldDef_BasicRegistration(t *testing.T) {
 	resetFieldContextRegistryForTest()
 
 	def := FieldDef{
-		Resolve: func(ctx context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+		Resolve: func(ctx context.Context, _ ObjectExecutionContext, _ uint16, obj any) (any, error) {
 			return "value", nil
 		},
 		ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
@@ -1540,7 +1541,7 @@ func TestResolveFromDef_CallsResolve(t *testing.T) {
 	)
 
 	def := FieldDef{
-		Resolve: func(_ context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+		Resolve: func(_ context.Context, _ ObjectExecutionContext, _ uint16, obj any) (any, error) {
 			called = true
 			return obj.(string) + "_resolved", nil
 		},
@@ -1565,6 +1566,76 @@ func TestResolveFromDef_CallsResolve(t *testing.T) {
 	}
 	if !called {
 		t.Fatal("Resolve was not invoked")
+	}
+}
+
+// TestResolveFromDef_Adapter exercises the per-object adapter dispatch shape:
+// a single shared Resolve func switches on fieldIdx, and two FieldDef values
+// differing only by FieldIdx (0 and 1) route through it to distinct results.
+// This is the data shape Tasks 2+ emit; here we hand-write the switch to verify
+// resolveFromDef passes def.FieldIdx through to the adapter.
+func TestResolveFromDef_Adapter(t *testing.T) {
+	resetCodecMarshalRegistryForTest()
+
+	// One shared adapter for the (hypothetical) object: idx 0 -> string field,
+	// idx 1 -> int field. Mirrors the per-object adapter Task 2 will emit.
+	adapter := func(_ context.Context, _ ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) {
+		switch fieldIdx {
+		case 0:
+			return "name-value", nil
+		case 1:
+			return 42, nil
+		default:
+			return nil, fmt.Errorf("unexpected fieldIdx %d", fieldIdx)
+		}
+	}
+
+	ec := &fakeECWithOpCtx{}
+	ctx := context.Background()
+
+	marshalString := func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+		return graphql.MarshalString(v.(string))
+	}
+	marshalInt := func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+		return graphql.MarshalInt(v.(int))
+	}
+
+	cases := []struct {
+		name      string
+		fieldIdx  uint16
+		fieldName string
+		marshalFn CodecMarshalHandler
+		want      string
+	}{
+		{name: "idx0 string field", fieldIdx: 0, fieldName: "name", marshalFn: marshalString, want: `"name-value"`},
+		{name: "idx1 int field", fieldIdx: 1, fieldName: "age", marshalFn: marshalInt, want: `42`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			def := &FieldDef{
+				Resolve:      adapter,
+				FieldIdx:     tc.fieldIdx,
+				ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+				MarshalCodec: "irrelevant",
+				NonNull:      true,
+				PanicHandled: true,
+				// fakeEC.MarshalCodec returns graphql.Null, so observe the resolved
+				// value through marshalFn (in-package access to the unexported field).
+				marshalFn: tc.marshalFn,
+			}
+			cf := graphql.CollectedField{Field: &ast.Field{Name: tc.fieldName}}
+
+			m := resolveFromDef(ctx, ec, def, "scope", "MyObj", cf, "ignored-obj")
+			if m == graphql.Null {
+				t.Fatalf("expected non-null marshaler for fieldIdx %d", tc.fieldIdx)
+			}
+			var buf bytes.Buffer
+			m.MarshalGQL(&buf)
+			if got := buf.String(); got != tc.want {
+				t.Fatalf("fieldIdx %d: got %s want %s", tc.fieldIdx, got, tc.want)
+			}
+		})
 	}
 }
 
