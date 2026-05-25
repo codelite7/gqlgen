@@ -83,7 +83,6 @@ type splitShardTemplateData struct {
 // aggregation file that named-imports every shard package and builds
 // `var schemaDescriptor = shardruntime.BuildSchema(...)`.
 type splitSchemaTemplateData struct {
-	Scope        string
 	ShardImports []string
 }
 
@@ -107,7 +106,7 @@ func generateSplitPackages(data *Data) error {
 		return err
 	}
 
-	return generateSplitSchemaAggregation(data, scope, shardImports)
+	return generateSplitSchemaAggregation(data, shardImports)
 }
 
 func cleanupSplitGeneratedOutputs(data *Data) error {
@@ -582,17 +581,18 @@ func addCodecLookup(codecByFunc map[string]*config.TypeReference, ref *config.Ty
 //
 // shardImports is already sorted and deduplicated by generateSplitShardPackages,
 // so the BuildSchema argument order (and hence output) is deterministic.
-func generateSplitSchemaAggregation(data *Data, scope string, shardImports []string) error {
-	if len(shardImports) == 0 {
-		return nil
-	}
-
+//
+// The aggregation file is ALWAYS emitted, even with zero shard imports. The
+// root's ResolveField unconditionally references schemaDescriptor, so a missing
+// aggregation file would fail to compile; with no shards the template renders
+// `shardruntime.BuildSchema()`, which returns a valid empty *SchemaDescriptor.
+func generateSplitSchemaAggregation(data *Data, shardImports []string) error {
 	path := filepath.Join(data.Config.Exec.Dir(), "split_schema.generated.go")
 	return templates.Render(templates.Options{
 		PackageName:     data.Config.Exec.Package,
 		Template:        splitSchemaTemplate,
 		Filename:        path,
-		Data:            splitSchemaTemplateData{Scope: scope, ShardImports: shardImports},
+		Data:            splitSchemaTemplateData{ShardImports: shardImports},
 		RegionTags:      false,
 		GeneratedHeader: true,
 		Packages:        data.Config.Packages,

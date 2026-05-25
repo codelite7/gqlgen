@@ -2024,6 +2024,44 @@ func copySplitFixtureWorkspace(srcDir, dstDir string) error {
 	})
 }
 
+// TestSplitSchemaAggregationZeroShardsCompiles guards the zero-shard path:
+// generateSplitSchemaAggregation must ALWAYS emit split_schema.generated.go so
+// the root's unconditional schemaDescriptor reference compiles. With no shard
+// imports the template renders `shardruntime.BuildSchema()` (a valid call, since
+// BuildSchema is variadic and returns an empty *SchemaDescriptor), and the file
+// must still parse as valid Go. These split tests share process-global state, so
+// no t.Parallel and reset inline-args metadata.
+func TestSplitSchemaAggregationZeroShardsCompiles(t *testing.T) {
+	ClearInlineArgsMetadata()
+
+	outPath := filepath.Join(t.TempDir(), "split_schema.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName:     "graph",
+		Template:        splitSchemaTemplate,
+		Filename:        outPath,
+		Data:            splitSchemaTemplateData{ShardImports: nil},
+		RegionTags:      false,
+		GeneratedHeader: true,
+		Packages:        internalcode.NewPackages(),
+		TemplateFS:      codegenTemplates,
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	// Must parse as valid Go (the whole point: a missing/malformed file would
+	// break the root package's schemaDescriptor reference).
+	_, parseErr := parser.ParseFile(token.NewFileSet(), outPath, contents, 0)
+	require.NoError(t, parseErr, "zero-shard aggregation must be valid Go:\n%s", contents)
+
+	text := string(contents)
+	// Empty variadic call, no stray comma or BuildSchema(,).
+	require.Contains(t, text, "var schemaDescriptor = shardruntime.BuildSchema()")
+	require.NotContains(t, text, "BuildSchema(,")
+	require.NotContains(t, text, ".ShardDesc")
+}
+
 func TestSplitArgsTemplateEmitsUnmarshalCodec(t *testing.T) {
 	newTypeRef := func(defName string, goType types.Type, nilable bool) *config.TypeReference {
 		def := &ast.Definition{Name: defName, Kind: ast.Scalar}
