@@ -4,9 +4,11 @@
 
 **Goal:** Collapse the per-field `FieldDef.Resolve` closures in split-packages output into `O(objects)` per-object adapter functions + pure-data field rows, minimizing generated-Go **AST/function count** to cut codegen time and compile wall-time / peak RSS.
 
-**Architecture:** Keep the pinned split-packages data-driven dispatch. Replace the per-field resolver **closure** (one of ~4 `splitFieldAccess` shapes emitted per field today) with **(a)** one generated per-object adapter `__resolveField_<T>(ctx, ec, fieldIdx, obj, …)` — a single `switch fieldIdx` that does the typed access — and **(b)** a `FieldDef` reduced to **pure data** (no closure): an adapter reference + field index, plus codec id, nullability bit, directive pointer, args key. Field dispatch resolves name→index once per object (sorted array / perfect hash). Explicit generated wiring (`SchemaDesc` aggregation) replaces scattered `init()` registration. The per-object adapter is the **irreducible typed-Go floor**; everything else is data + the existing shared `ResolveField[any]` executor.
+**Architecture:** Keep the pinned split-packages data-driven dispatch. Replace the per-field resolver **closure** (one of ~4 `splitFieldAccess` shapes emitted per field today) with **(a)** one generated per-object adapter `__resolveField_<T>(ctx, ec, fieldIdx, obj)` — a single `switch fieldIdx` that does the typed access — and **(b)** a `FieldDef` reduced to **pure data**: the per-object adapter as a shared func *value* (`Resolve`, re-signed to take `fieldIdx`) + a `FieldIdx`, plus codec id, nullability bit, directive pointer, args key, and the `IsMethod`/`IsResolver` metadata bits. Field dispatch resolves name→index once per object (sorted array / perfect hash). Explicit generated wiring (`SchemaDesc` aggregation) replaces scattered `init()` registration. The per-object adapter is the **irreducible typed-Go floor**; everything else is data + the existing shared `ResolveField[any]` executor.
 
-**Tech Stack:** Go (`codelite7/gqlgen` fork); `text/template` codegen (`codegen/split_*.gotpl`); `graphql/executor/shardruntime` runtime; pinned baseline `d5f762356cd5` (PR #12 merge, `feat/split-packages-data-driven-dispatch`).
+**Rollout: clean break, no flag.** `shardruntime.FieldDef` is a purely internal generator↔runtime contract — the only reader is `runtime.go`, the only constructors are generated `register.generated.go` files; there are **zero hand-written external consumers**. So there is no backward-compat burden and no `use_field_adapters` flag: the split templates emit the adapter shape **unconditionally**, the committed `splitpackages` fixture is regenerated to the new shape, and the consumer (gemini) picks it up by regenerating from schema. "Migration" for any consumer = re-run `gqlgen`. Measurement (Task 7) is done **pin-vs-pin** (old `feat/split-packages-data-driven-dispatch` HEAD vs `feat/field-adapters` HEAD), not by toggling a flag.
+
+**Tech Stack:** Go (`codelite7/gqlgen` fork); `text/template` codegen (`codegen/split_*.gotpl`); `graphql/executor/shardruntime` runtime; baseline `feat/split-packages-data-driven-dispatch` HEAD (consumer currently pins PR #12 merge `d5f762356cd5`, an ancestor-adjacent commit; the branch has follow-on perf commits beyond it).
 
 **Decided end-state (the target this plan terminates at):** *"N closures collapsed to kind+data"* = `O(objects)` typed adapter functions + N pure-data field rows; **zero per-field closures**.
 
@@ -34,7 +36,7 @@ Per field today, `codegen/split_register_.gotpl` emits a `shardruntime.RegisterF
 
 `FieldDef` (`graphql/executor/shardruntime/runtime.go`): `{ Resolve func(ctx, ec, obj any)(any,error); Directives func(ctx, next)Resolver; MarshalCodec string; NonNull, PanicHandled, IsMethod, IsResolver bool; ArgsKey string; ReturnType *ObjectChildLookup }`. The single remaining per-field **closure** is `Resolve`. At ~10k fields that is ~10k distinct closure ASTs the compiler type-checks/SSA-compiles.
 
-Dispatch: `shardruntime.resolveFromDef` looks the `FieldDef` up (per `(object, field)`) and calls `Resolve`.
+Dispatch: `shardruntime.resolveFromDef` looks the `FieldDef` up (per `(object, field)`) and calls `Resolve`. `StreamFieldDef`/`resolveStreamFromDef` mirror this for subscription fields.
 
 ---
 
@@ -56,20 +58,24 @@ Dispatch: `shardruntime.resolveFromDef` looks the `FieldDef` up (per `(object, f
    ```
    `O(objects)` functions (each a switch) replace `O(fields)` closures. The switch *cases* are the existing `splitFieldAccess` bodies — semantics unchanged.
 
-2. **`FieldDef` becomes pure data** (no closure):
+2. **`FieldDef` becomes pure data.** `Resolve` is **re-signed** to take `fieldIdx` and now holds the per-object adapter as a shared func *value* (one per object T, not per field) — there is no second `Adapter` field:
    ```go
    type FieldDef struct {
-       Adapter      func(ctx context.Context, ec ObjectExecutionContext, fieldIdx uint16, obj any) (any, error) // points at __resolveField_<T>
-       FieldIdx     uint16
+       // Resolve is the per-object adapter (__resolveField_<T>), shared by all of
+       // T's fields. A func *value* (one per object), not a per-field closure.
+       Resolve  func(ctx context.Context, ec ObjectExecutionContext, fieldIdx uint16, obj any) (any, error)
+       FieldIdx uint16
        MarshalCodec string
        NonNull      bool
        PanicHandled bool
        Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver // ptr to existing __splitDirectives_<T>_<F>, or nil
+       IsMethod     bool // FieldContext metadata; read by buildFieldContext (parity-required)
+       IsResolver   bool
        ArgsKey      string
        ReturnType   *ObjectChildLookup
    }
    ```
-   `Adapter` is **one func value per object** (shared across that object's fields), not per field. (`IsMethod`/`IsResolver` booleans fold into the adapter's switch case; they need not survive on `FieldDef`.)
+   Flag-on/end-state generated row: `FieldDef{Resolve: __resolveField_<T>, FieldIdx: N, MarshalCodec: …, …}` — a func reference + an int literal + scalars = **data**, no per-field func body to compile. `resolveFromDef` always calls `def.Resolve(ctx, ec, def.FieldIdx, obj)`. (`IsMethod`/`IsResolver` are retained because `buildFieldContext` sets `FieldContext.IsMethod`/`IsResolver` from them — observable via tracing/middleware, so parity requires keeping them as data.)
 
 3. **Field dispatch by index, once per object.** Generate a `name→index` lookup per object (sorted `[]string` + binary search, or a minimal perfect hash for large objects) instead of per-field string-keyed registry hits.
 
@@ -81,113 +87,106 @@ Dispatch: `shardruntime.resolveFromDef` looks the `FieldDef` up (per `(object, f
 
 ## Design decisions (resolved up front)
 
+- **Re-sign `Resolve` vs add a second `Adapter` field?** Re-sign `Resolve` to `func(ctx, ec, fieldIdx uint16, obj)` (single field). Decided 2026-05-24: since there's no flag/coexistence window (clean break), there is no old 3-arg closure shape to keep compiling, so a second field would be vestigial. One field, no dispatch branch — cleanest for the runtime-parity gate.
 - **Per-object adapter vs per-field func-pointer vs reflection vs unsafe-offset?** Per-object adapter. Per-field func-pointers are still `O(fields)` symbols (no win). Reflection/unsafe trade runtime + type safety, which the "runtime parity required" constraint forbids. The adapter is the minimum typed Go.
+- **Flag vs clean break?** Clean break (no `use_field_adapters` flag). `FieldDef` has zero hand-written consumers; the consumer regenerates from schema; the flag would only ever toggle two build-time outputs and gives no hot rollback (both "flip flag" and "repin fork" need regenerate+rebuild+redeploy). Measurement is pin-vs-pin instead.
 - **Keep the `[any]` generic executor or drop to plain `any`?** Keep `ResolveField[any]` as-is (no behavior change; not worth churning). Note for the record: since it's only ever `[any]`, a non-generic `func ResolveField(obj any, …)` is equivalent — but that's a cosmetic follow-up, not this plan.
 - **Codecs:** stay as `MarshalCodec string` (data). No change.
 - **Directives:** pointer to the already-separate `__splitDirectives_<T>_<F>`; `nil` when none. No per-field wrapper closure.
 - **Args:** keep `ArgsKey` (data); the adapter's method case reads args via `graphql.GetFieldContext(ctx)` exactly as the current `splitFieldAccess` does.
-- **Stream fields (`__splitStreamField_*`, subscriptions):** mirror with a `__resolveStreamField_<T>` adapter + `StreamFieldDef`. Gated to the same change; ~one extra adapter shape. (If the consumer schema has no split-packages subscriptions, cover it via the test fixture only.)
+- **Stream fields (`__splitStreamField_*`, subscriptions):** mirror with a `__resolveStreamField_<T>` adapter + re-signed `StreamFieldDef.Resolve`. ~one extra adapter shape (Task 6). The `splitpackages` fixture currently has no subscription; add one to it to cover the stream path.
 
 ---
 
 ## File Structure (fork files)
 
-- Modify: `graphql/executor/shardruntime/runtime.go` — `FieldDef` shape (closure → adapter+idx); `resolveFromDef` to call `Adapter(ctx, ec, def.FieldIdx, obj)`; optional `ShardDesc`/`SchemaDesc` types + explicit aggregation.
+- Modify: `graphql/executor/shardruntime/runtime.go` — `FieldDef` shape (re-signed `Resolve` + `FieldIdx`); `resolveFromDef` to call `def.Resolve(ctx, ec, def.FieldIdx, obj)`; later `StreamFieldDef` mirror; `ShardDesc`/`SchemaDesc` types + explicit aggregation.
 - Modify: `codegen/split_fields_.gotpl` — emit the per-object `__resolveField_<T>` adapter (switch of `splitFieldAccess` cases) instead of inlining `splitFieldAccess` into a per-field closure.
-- Modify: `codegen/split_register_.gotpl` — emit pure-data `FieldDef{Adapter: __resolveField_<T>, FieldIdx: N, …}`; emit `name→index` table; emit `ShardDesc`.
-- Modify (root aggregation): the split-packages root template that wires shards — emit `SchemaDesc` aggregation; drop per-field `init()` `Register…` calls.
-- Create (test fixture): `codegen/testserver/splitpackages_adapters/` — copy of `splitpackages` with the new path, plus `//go:generate` and a parity test harness (mirror of the existing `splitpackages_desctables` pattern from WS3).
-- Modify: `codegen/config/exec.go` + `gqlgen.schema.json` — if gated behind a flag during rollout (see Task 2); otherwise this replaces the default split emission.
+- Modify: `codegen/split_register_.gotpl` — emit pure-data `FieldDef{Resolve: __resolveField_<T>, FieldIdx: N, …}`; emit `name→index` table; emit `ShardDesc`; drop per-field `init()` `RegisterFieldDef` calls.
+- Modify (root aggregation): the split-packages root template that wires shards — emit `SchemaDesc` aggregation.
+- Regenerate (fixture): `codegen/testserver/splitpackages/` — committed generated code is regenerated to the adapter shape at each template-changing task; its existing `generated_test.go` suite is the parity gate.
+- Docs: `codegen/AGENTS.md` — document the new `FieldDef`/adapter contract and that consumers regenerate.
 
 ---
 
 ## TDD Task Breakdown
 
-Each task = one commit. Failing test first; minimal implementation; `go test ./... -count=1` (fork) green before commit. Run fork tests from the fork root.
+Each task = one commit. Failing test first; minimal implementation; `go test ./... -count=1` (fork root) green before commit. Templates emit the adapter shape **unconditionally** (no flag); regenerate `splitpackages` whenever a template changes so the committed fixture + its test suite stay green.
 
-### Task 1 — `FieldDef` data shape + adapter-based `resolveFromDef`
+### Task 1 — `FieldDef` data shape (re-signed `Resolve`) + adapter dispatch in `resolveFromDef`
 
-**Files:** Modify `graphql/executor/shardruntime/runtime.go`; Test `graphql/executor/shardruntime/runtime_test.go`.
+**Files:** Modify `graphql/executor/shardruntime/runtime.go`, `codegen/split_register_.gotpl` (FieldDef closure signature only); regenerate `codegen/testserver/splitpackages/`; Test `graphql/executor/shardruntime/runtime_test.go`.
 
-- [ ] **Step 1: Failing test** — construct a `FieldDef` whose `Adapter` is a hand-written switch over two `FieldIdx` values returning known typed values, with a known `MarshalCodec`; wire a minimal `ObjectExecutionContext` fake; call `resolveFromDef`; assert the returned `Marshaler` produces the expected JSON for each field index.
-- [ ] **Step 2: Run** `go test ./graphql/executor/shardruntime/ -run TestResolveFromDef_Adapter -v` → FAIL (`FieldDef` has no `Adapter`/`FieldIdx`).
-- [ ] **Step 3: Implement** — change `FieldDef.Resolve` → `Adapter func(ctx, ec ObjectExecutionContext, fieldIdx uint16, obj any)(any,error)` + `FieldIdx uint16`; update `resolveFromDef` to call `def.Adapter(ctx, ec, def.FieldIdx, obj)` inside the existing `ResolveField[any]` wiring.
-- [ ] **Step 4: Run** the test → PASS.
-- [ ] **Step 5: Commit** — `refactor(shardruntime): FieldDef stores per-object Adapter + FieldIdx (no per-field closure)`.
+- [ ] **Step 1: Failing test** — construct a `FieldDef` whose `Resolve` is a hand-written switch over two `FieldIdx` values returning known typed values, with a known `MarshalCodec`; wire a minimal `ObjectExecutionContext` fake; call `resolveFromDef`; assert the returned `Marshaler` produces the expected JSON for each field index.
+- [ ] **Step 2: Run** `go test ./graphql/executor/shardruntime/ -run TestResolveFromDef_Adapter -v` → FAIL (`Resolve` has old 3-arg signature, no `FieldIdx`).
+- [ ] **Step 3: Implement** — re-sign `FieldDef.Resolve` → `func(ctx context.Context, ec ObjectExecutionContext, fieldIdx uint16, obj any)(any,error)` + add `FieldIdx uint16`; update `resolveFromDef` to call `def.Resolve(ctx, ec, def.FieldIdx, obj)`. Re-sign the two **`FieldDef`** `Resolve` closure literals in `split_register_.gotpl` to add `_ uint16` before `obj any` (leave the two `StreamFieldDef` closures 3-arg — Task 6). Regenerate `splitpackages` (`go generate ./codegen/testserver/splitpackages/...`).
+- [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
+- [ ] **Step 5: Commit** — `refactor(shardruntime): FieldDef.Resolve takes fieldIdx (per-object adapter signature)`.
 
-### Task 2 — Rollout flag `use_field_adapters` (default off)
+### Task 2 — Emit per-object `__resolveField_<T>` adapter
 
-**Files:** Modify `codegen/config/exec.go`, `gqlgen.schema.json`; Test `codegen/config/exec_test.go`.
+**Files:** Modify `codegen/split_fields_.gotpl`; regenerate `splitpackages`.
 
-- [ ] **Step 1: Failing test** — load a fixture `gqlgen.yml` with `exec.use_field_adapters: true`; assert `cfg.Exec.UseFieldAdapters == true`.
-- [ ] **Step 2: Run** `go test ./codegen/config/ -run TestExec_UseFieldAdapters -v` → FAIL.
-- [ ] **Step 3: Implement** — add `UseFieldAdapters bool \`yaml:"use_field_adapters,omitempty"\`` to `ExecConfig`; document; add to schema json. Default false so the old path stays until parity is proven.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** — `feat(codegen/config): add use_field_adapters flag (default off)`.
+- [ ] **Step 1: Failing test** — regenerate `splitpackages` and assert (via the build + a grep-style fixture check or the existing suite) that one `func __resolveField_<T>(ctx, ec, fieldIdx uint16, obj any)(any,error)` is emitted per object, containing a `switch fieldIdx` whose cases are the existing `splitFieldAccess` bodies in stable field order.
+- [ ] **Step 2: Run** the regen/build → FAIL (adapter not yet emitted).
+- [ ] **Step 3: Implement** — range objects → emit the adapter with `{{- range $i, $field := .Fields }}case {{$i}}: {{ template "splitFieldAccess" $field }}{{- end }}`. Reuse the existing `splitFieldAccess` define unchanged. Per-field closures still emitted by `split_register_.gotpl` for now (the adapter is unused/package-level — legal Go), so the fixture still compiles.
+- [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
+- [ ] **Step 5: Commit** — `feat(codegen): emit per-object __resolveField_<T> adapter`.
 
-### Task 3 — Emit per-object `__resolveField_<T>` adapter
+### Task 3 — Pure-data `FieldDef` referencing the adapter + `name→index` table
 
-**Files:** Modify `codegen/split_fields_.gotpl`; Test via fixture in Task 6 (golden) — here, a focused template-render unit test if the fork has one, else defer assertion to Task 6.
+**Files:** Modify `codegen/split_register_.gotpl`; regenerate `splitpackages`.
 
-- [ ] **Step 1: Failing test** — golden test (or Task 6 fixture build) asserting that with the flag on, `split_fields_.gotpl` emits exactly one `func __resolveField_<T>(ctx, ec, fieldIdx uint16, obj any)(any,error)` per object containing a `switch fieldIdx` whose cases are the existing `splitFieldAccess` bodies (in stable field order), and emits **no** per-field `Resolve` closure.
-- [ ] **Step 2: Run** the fixture build → FAIL (still emits closures).
-- [ ] **Step 3: Implement** — under `{{ if $.Config.Exec.UseFieldAdapters }}`, range objects → emit the adapter with `{{- range $i, $field := .Fields }}case {{$i}}: {{ template "splitFieldAccess" $field }}{{- end }}`. Reuse the existing `splitFieldAccess` define unchanged.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** — `feat(codegen): emit per-object __resolveField_<T> adapter under use_field_adapters`.
-
-### Task 4 — Emit pure-data `FieldDef` + `name→index` table
-
-**Files:** Modify `codegen/split_register_.gotpl`; Test via Task 6 fixture + a runtime dispatch test.
-
-- [ ] **Step 1: Failing test** — assert generated registration emits `FieldDef{Adapter: __resolveField_<T>, FieldIdx: <i>, MarshalCodec: …, NonNull: …, Directives: …, ArgsKey: …}` with **no closure literal**, plus a per-object `name→index` lookup; and a runtime test that resolving `"<T>"."<F>"` returns the same value as the baseline path.
+- [ ] **Step 1: Failing test** — assert generated registration emits `FieldDef{Resolve: __resolveField_<T>, FieldIdx: <i>, MarshalCodec: …, NonNull: …, Directives: …, IsMethod: …, IsResolver: …, ArgsKey: …, ReturnType: …}` with **no closure literal**, plus a per-object `name→index` lookup; and the existing splitpackages suite resolving `"<T>"."<F>"` returns the same values as before.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** — under the flag, emit data-only `FieldDef` literals referencing the adapter + index; emit a sorted `[]string` name table (binary search) per object; directive field = `__splitDirectives_<T>_<F>` pointer or `nil`.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** — `feat(codegen): emit pure-data FieldDef + name→index dispatch under use_field_adapters`.
+- [ ] **Step 3: Implement** — emit data-only `FieldDef` literals referencing the adapter + index; emit a sorted `[]string` name table (binary search) per object; directive field = `__splitDirectives_<T>_<F>` pointer or `nil`. Drop the per-field `Resolve` closure emission.
+- [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
+- [ ] **Step 5: Commit** — `feat(codegen): pure-data FieldDef + name→index dispatch (drop per-field closures)`.
 
-### Task 5 — Explicit `ShardDesc`/`SchemaDesc` wiring (replace per-field init registry)
+### Task 4 — Explicit `ShardDesc`/`SchemaDesc` wiring (drop per-field init registry)
 
-**Files:** Modify `codegen/split_register_.gotpl` + split-packages root template; Modify `graphql/executor/shardruntime/runtime.go` (aggregation types); Test `graphql/executor/shardruntime/*_test.go`.
+**Files:** Modify `codegen/split_register_.gotpl` + split-packages root template; Modify `graphql/executor/shardruntime/runtime.go` (aggregation types); Test `graphql/executor/shardruntime/*_test.go`; regenerate `splitpackages`.
 
 - [ ] **Step 1: Failing test** — assert a generated shard exposes `var ShardDesc = ShardDescriptor{…}`, the root exposes `func Schema() *SchemaDescriptor` aggregating shards, and dispatch through `Schema()` returns the same results as the registry path — with **no `init()`** doing per-field `Register…`.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** — add `ShardDescriptor`/`SchemaDescriptor` types + aggregation; emit `var ShardDesc` per shard; emit a generated root that imports shards and builds `SchemaDesc`; executor consumes it. Remove per-field `init()` `RegisterFieldDef` emission under the flag.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** — `feat(codegen): explicit ShardDesc/SchemaDesc wiring (drop per-field init registry) under use_field_adapters`.
+- [ ] **Step 3: Implement** — add `ShardDescriptor`/`SchemaDescriptor` types + aggregation; emit `var ShardDesc` per shard; emit a generated root that imports shards and builds `SchemaDesc`; executor consumes it. Remove per-field `init()` `RegisterFieldDef` emission.
+- [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
+- [ ] **Step 5: Commit** — `feat(codegen): explicit ShardDesc/SchemaDesc wiring (drop per-field init registry)`.
 
-### Task 6 — `splitpackages_adapters` fixture + parity tests
+### Task 5 — Full parity + idempotency gate on `splitpackages`
 
-**Files:** Create `codegen/testserver/splitpackages_adapters/` (copy of `splitpackages`, `use_field_adapters: true`, `//go:generate`); wire existing splitpackages test suite to run against it.
+**Files:** `codegen/testserver/splitpackages/` (regenerate + verify); no template change expected.
 
-- [ ] **Step 1: Failing test** — `go test ./codegen/testserver/splitpackages_adapters/...` (fixture added, generator not yet run) → FAIL/no-compile.
-- [ ] **Step 2: Run** `go generate ./codegen/testserver/splitpackages_adapters/...` → generates adapters + data tables.
-- [ ] **Step 3: Implement** — ensure it compiles; parametrize the shared splitpackages execution suite to run identically against the adapters fixture (introspection, directives, nullability, lists, maps, methods, resolvers, errors).
-- [ ] **Step 4: Run** `go test ./codegen/testserver/splitpackages_adapters/... -count=1` → PASS (behavioral parity with `splitpackages`).
-- [ ] **Step 5: Commit** — `test(codegen/testserver): add splitpackages_adapters fixture + parity suite`.
+- [ ] **Step 1:** Regenerate `splitpackages` and run the **entire** existing suite `go test ./codegen/testserver/splitpackages/... -count=1` — introspection, directives, nullability, lists, maps, methods, resolvers, errors. This is the behavioral-parity gate (the milestone: *"N closures collapsed to kind+data"* with parity proven).
+- [ ] **Step 2:** Idempotency check — run `go generate ./codegen/testserver/splitpackages/...` twice; `git diff` must be empty (deterministic, stable field-index order).
+- [ ] **Step 3:** If anything diverges, fix the template (not the generated file) and re-verify.
+- [ ] **Step 4: Commit** — `test(codegen/testserver): regenerate splitpackages to adapter shape (parity + idempotency)`.
 
-### Task 7 — Stream-field adapter (subscriptions)
+> **PAUSE HERE** for maintainer review before consumer measurement (per session instruction). The decided gold-standard structure is reached and parity is proven at this point.
 
-**Files:** Modify `codegen/split_fields_.gotpl` (+ stream register template); add a subscription to the `splitpackages_adapters` fixture if none exists.
+### Task 6 — Stream-field adapter (subscriptions)
 
-- [ ] **Step 1: Failing test** — fixture with a split-packages subscription field, assert generated code uses `__resolveStreamField_<T>` + `StreamFieldDef`, not a per-field stream closure; runtime parity test for the subscription.
+**Files:** Modify `codegen/split_fields_.gotpl` (+ stream register template) + `runtime.go` (`StreamFieldDef` re-sign); add a subscription to the `splitpackages` fixture (none exists today); regenerate.
+
+- [ ] **Step 1: Failing test** — fixture with a split-packages subscription field, assert generated code uses `__resolveStreamField_<T>` + pure-data `StreamFieldDef` (re-signed `Resolve` taking `fieldIdx`), not a per-field stream closure; runtime parity test for the subscription.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** — mirror Tasks 3–4 for `ResolveFieldStream[any]`: `__resolveStreamField_<T>` adapter + `StreamFieldDef` data.
-- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 3: Implement** — mirror Tasks 2–3 for `ResolveFieldStream[any]`: re-sign `StreamFieldDef.Resolve` to take `fieldIdx`, emit `__resolveStreamField_<T>` adapter + pure-data `StreamFieldDef`; update `resolveStreamFromDef`.
+- [ ] **Step 4: Run** `go test ./... -count=1` → PASS.
 - [ ] **Step 5: Commit** — `feat(codegen): per-object stream adapter for split-packages subscriptions`.
 
-### Task 8 — Docs + consumer measurement
+### Task 7 — Docs + consumer measurement
 
-**Files:** `codegen/AGENTS.md` (document `use_field_adapters`); this plan's "Measurement" section is the gate.
+**Files:** `codegen/AGENTS.md` (document the new contract); this plan's "Measurement" section is the gate.
 
-- [ ] **Step 1:** Document the flag (what it does, default off, relationship to data-driven dispatch).
-- [ ] **Step 2:** On the **gemini consumer**: pin the fork to the branch HEAD, set `exec.use_field_adapters: true` in `service-api-go/api-graphql/gqlgen.yml`, run `task generate` then `task validate-go`. Capture: codegen wall time, cold `go build ./src/...` wall + peak RSS, and total generated LOC, vs the current pin.
-- [ ] **Step 3: Commit (fork)** — `docs(codegen): document use_field_adapters flag`.
+- [ ] **Step 1:** Document the new `FieldDef`/`__resolveField_<T>` adapter contract (what it is, that there's no flag, and that consumers migrate by regenerating).
+- [ ] **Step 2:** On the **gemini consumer**, measure **pin-vs-pin**: (a) baseline = current pin (`feat/split-packages-data-driven-dispatch` HEAD); (b) new = `feat/field-adapters` HEAD. For each, `task generate` then `task validate-go`. Capture: codegen wall time, cold `go build ./src/...` wall + peak RSS, total generated LOC, and GraphQL runtime parity, vs baseline.
+- [ ] **Step 3: Commit (fork)** — `docs(codegen): document per-object field adapters`.
 
 ---
 
 ## Measurement & success criteria
 
-Compare current pin vs `use_field_adapters: true`, on the gemini consumer:
+Compare baseline pin vs `feat/field-adapters` HEAD, on the gemini consumer:
 
 | Metric | Baseline (pin) | Target |
 |---|---|---|
@@ -197,14 +196,15 @@ Compare current pin vs `use_field_adapters: true`, on the gemini consumer:
 | Generated Go LOC (largest entity) | `ent_escrow` ~56k (post data-driven) | ↓↓ (closures → switch cases) |
 | GraphQL runtime throughput / latency | baseline | **parity required (±noise)** |
 
-**Adopt** if ≥10% improvement on any of {codegen wall, cold compile wall, peak RSS} **and** runtime parity. **Retract the flag** (keep code, remove from consumer config) if <10% everywhere or any runtime regression. This is the end of the plan — the decided gold-standard structure ("N closures collapsed to kind+data") is reached at Task 6; Tasks 7–8 finish stream parity + prove the win.
+**Adopt** (keep `feat/field-adapters` as the new pin) if ≥10% improvement on any of {codegen wall, cold compile wall, peak RSS} **and** runtime parity. If <10% everywhere or any runtime regression, the maintainer decides whether to keep the cleaner structure anyway or repin to baseline — there's no flag to retract. The decided gold-standard structure (*"N closures collapsed to kind+data"*) is reached and parity-proven at Task 5; Tasks 6–7 finish stream parity + prove the win.
 
 ## Risks / watch-items
 
 - **Per-object adapter switch size:** very wide objects (hundreds of fields) produce a large switch; still one function (one AST), far cheaper than N closures, but confirm `cmd/compile` handles the largest object's switch well.
-- **Args plumbing inside the adapter:** method-with-args cases must read `graphql.GetFieldContext(ctx)` correctly when invoked via the adapter; covered by the method/args parity cases in Task 6.
+- **Args plumbing inside the adapter:** method-with-args cases must read `graphql.GetFieldContext(ctx)` correctly when invoked via the adapter; covered by the method/args parity cases in the splitpackages suite.
 - **`ec.InvokeResolver` signature** from inside the adapter must match today's call; verify against `shardruntime`.
-- **Field order stability:** `FieldIdx` must be assigned deterministically (schema field order) so adapters and data tables agree and codegen stays idempotent (keep the repo's idempotent-codegen invariant).
+- **`IsMethod`/`IsResolver` parity:** these stay on `FieldDef` as data — `buildFieldContext` reads them to populate `FieldContext`, which tracing/middleware observe. Dropping them would silently regress.
+- **Field order stability:** `FieldIdx` must be assigned deterministically (schema field order) so adapters and data tables agree and codegen stays idempotent (Task 5 idempotency check enforces this).
 - **Runtime parity is a gate, not a goal:** indirection changes from closure→adapter must not regress latency; the index dispatch should be ≤ the current registry lookup.
 
 ## Non-goals
@@ -212,4 +212,5 @@ Compare current pin vs `use_field_adapters: true`, on the gemini consumer:
 - No execution-layout change — split-packages is retained (shard-count tuning is a separate, later effort).
 - No runtime performance *improvement* targeted (parity only).
 - No reflection / `unsafe` field access.
+- No `use_field_adapters` flag / coexistence window (clean break; see Rollout).
 - No move off Go codegen to an embedded-binary-plan interpreter (a further-floor option the panel raised; deliberately out of scope to preserve static type safety + debuggability).
