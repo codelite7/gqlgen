@@ -119,7 +119,8 @@ func (o *Object) HasUnmarshal() bool {
 		return false
 	}
 	for method := range o.Type.(*types.Named).Methods() {
-		if method.Name() == "UnmarshalGQL" {
+		switch method.Name() {
+		case "UnmarshalGQL", "UnmarshalGQLContext":
 			return true
 		}
 	}
