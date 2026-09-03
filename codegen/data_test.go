@@ -1,9 +1,12 @@
 package codegen
 
 import (
+	"go/token"
+	"go/types"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/vektah/gqlparser/v2/ast"
 
 	"github.com/99designs/gqlgen/codegen/config"
@@ -176,4 +179,33 @@ func TestImplDirectivesContext_ErrReturn(t *testing.T) {
 		`return it, graphql.ErrorOnPath(ctx, errors.New("directive foo is not implemented"))`,
 		wrapped.ErrReturn(`errors.New("directive foo is not implemented")`),
 	)
+}
+
+func TestCheckCustomUnmarshalInputs(t *testing.T) {
+	pkg := types.NewPackage("example.com/x", "x")
+	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "In", nil), types.NewStruct(nil, nil), nil)
+	sig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)), nil, nil, nil, nil, false)
+	named.AddMethod(types.NewFunc(token.NoPos, pkg, "UnmarshalGQLContext", sig))
+	in := &Object{Definition: &ast.Definition{Name: "In", Kind: ast.InputObject}, Type: named}
+
+	plain := &Field{FieldDefinition: &ast.FieldDefinition{Name: "text"}, Object: in}
+	in.Fields = []*Field{plain}
+	require.NoError(t, checkCustomUnmarshalInputs(Objects{in}))
+
+	withDefault := &Field{FieldDefinition: &ast.FieldDefinition{Name: "n"}, Object: in, Default: 1}
+	in.Fields = []*Field{plain, withDefault}
+	require.EqualError(t, checkCustomUnmarshalInputs(Objects{in}),
+		`input In has a custom unmarshaler (UnmarshalGQL/UnmarshalGQLContext) but field "n" declares a default value; custom unmarshalers cannot apply defaults`)
+
+	withDirective := &Field{FieldDefinition: &ast.FieldDefinition{Name: "d"}, Object: in,
+		Directives: []*Directive{{
+			Name: "constraint",
+			DirectiveDefinition: &ast.DirectiveDefinition{
+				Name:      "constraint",
+				Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
+			},
+		}}}
+	in.Fields = []*Field{plain, withDirective}
+	require.EqualError(t, checkCustomUnmarshalInputs(Objects{in}),
+		`input In has a custom unmarshaler (UnmarshalGQL/UnmarshalGQLContext) but field "d" has directives; custom unmarshalers cannot run field directives`)
 }

@@ -359,6 +359,10 @@ func BuildData(cfg *config.Config, plugins ...any) (*Data, error) {
 		return s.Inputs[i].Name < s.Inputs[j].Name
 	})
 
+	if err := checkCustomUnmarshalInputs(s.Inputs); err != nil {
+		return nil, err
+	}
+
 	if b.Binder.SawInvalid {
 		// if we have a syntax error, show it
 		err := cfg.Packages.Errors()
@@ -409,6 +413,27 @@ func BuildData(cfg *config.Config, plugins ...any) (*Data, error) {
 	s.AugmentedSources = aSources
 
 	return &s, nil
+}
+
+// checkCustomUnmarshalInputs rejects input objects whose bound Go type decodes
+// itself (UnmarshalGQL / UnmarshalGQLContext) but whose schema declares field
+// defaults or directives: gqlgen emits no unmarshaler for such inputs, so the
+// default or directive would be silently dropped.
+func checkCustomUnmarshalInputs(inputs Objects) error {
+	for _, in := range inputs {
+		if in.Type == nil || !in.HasUnmarshal() {
+			continue
+		}
+		for _, f := range in.Fields {
+			if f.Default != nil {
+				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL/UnmarshalGQLContext) but field %q declares a default value; custom unmarshalers cannot apply defaults", in.Name, f.Name)
+			}
+			if len(f.ImplDirectives()) > 0 {
+				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL/UnmarshalGQLContext) but field %q has directives; custom unmarshalers cannot run field directives", in.Name, f.Name)
+			}
+		}
+	}
+	return nil
 }
 
 func (b *builder) injectIntrospectionRoots(s *Data) error {
