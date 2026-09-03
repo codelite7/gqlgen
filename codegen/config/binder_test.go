@@ -538,3 +538,21 @@ func TestTypeReference_UsesPublicAliasOverInternalBindTargetWrapped(t *testing.T
 	require.NoError(t, err)
 	require.Equal(t, "*"+publicPkg+".Operation", ref.GO.String())
 }
+
+func TestInputObjectContextUnmarshalerBinding(t *testing.T) {
+	cfg := Config{Models: TypeMap{
+		"CtxInput": TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/codegen/config/testdata/binding.ContextInput"}},
+		"String":   TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/graphql.String"}},
+	}}
+	cfg.Packages = code.NewPackages()
+	cfg.Schema = gqlparser.MustLoadSchema(&ast.Source{Name: "ctxinput.schema", Input: `
+		input CtxInput { text: String }
+		type Query { q(in: CtxInput): String }
+	`})
+	b := cfg.NewBinder()
+	ref, err := b.TypeReference(cfg.Schema.Query.Fields.ForName("q").Arguments.ForName("in").Type, nil)
+	require.NoError(t, err)
+	require.True(t, ref.IsMarshaler)
+	require.True(t, ref.IsContext)
+	require.Nil(t, ref.Unmarshaler)
+}
