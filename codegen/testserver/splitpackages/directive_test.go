@@ -570,3 +570,109 @@ func TestDirectives(t *testing.T) {
 		})
 	})
 }
+
+// TestOperationDirectives covers the QUERY / MUTATION / SUBSCRIPTION location
+// directives, which split-packages emits as operation middleware in the root
+// package (codegen/split_root_.gotpl). Kept out of the ported TestDirectives
+// body so those assertions stay byte-identical to singlefile's.
+func TestOperationDirectives(t *testing.T) {
+	newClient := func(directives DirectiveRoot) *client.Client {
+		resolvers := &Stub{}
+		resolvers.QueryResolver.Hello = func(ctx context.Context, name string) (string, error) {
+			return "Hello " + name, nil
+		}
+		resolvers.MutationResolver.Greet = func(ctx context.Context, name string) (string, error) {
+			return "Greetings " + name, nil
+		}
+		ok := "Ok"
+		resolvers.SubscriptionResolver.DirectiveDouble = func(ctx context.Context) (<-chan *string, error) {
+			res := make(chan *string, 1)
+			res <- &ok
+			close(res)
+			return res, nil
+		}
+		directives.Directive1 = func(ctx context.Context, obj any, next graphql.Resolver) (any, error) {
+			return next(ctx)
+		}
+		directives.Directive2 = func(ctx context.Context, obj any, next graphql.Resolver) (any, error) {
+			return next(ctx)
+		}
+		srv := handler.New(NewExecutableSchema(Config{
+			Resolvers:  resolvers,
+			Directives: directives,
+		}))
+		srv.AddTransport(transport.POST{})
+		srv.AddTransport(transport.Websocket{KeepAlivePingInterval: time.Second})
+		return client.New(srv)
+	}
+
+	t.Run("QUERY directive runs with its coerced argument", func(t *testing.T) {
+		var got string
+		c := newClient(DirectiveRoot{
+			QueryOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				got = reason
+				return next(ctx)
+			},
+		})
+
+		var resp struct{ Hello string }
+		c.MustPost(`query @queryOnly(reason: "audit") { hello(name:"Ada") }`, &resp)
+
+		require.Equal(t, "Hello Ada", resp.Hello)
+		require.Equal(t, "audit", got)
+	})
+
+	t.Run("MUTATION directive runs with its coerced argument", func(t *testing.T) {
+		var got string
+		c := newClient(DirectiveRoot{
+			MutationOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				got = reason
+				return next(ctx)
+			},
+		})
+
+		var resp struct{ Greet string }
+		c.MustPost(`mutation @mutationOnly(reason: "because") { greet(name:"Ada") }`, &resp)
+
+		require.Equal(t, "Greetings Ada", resp.Greet)
+		require.Equal(t, "because", got)
+	})
+
+	t.Run("SUBSCRIPTION directive runs with its coerced argument", func(t *testing.T) {
+		var got string
+		c := newClient(DirectiveRoot{
+			SubscriptionOnly: func(ctx context.Context, obj any, next graphql.Resolver, reason string) (any, error) {
+				got = reason
+				return next(ctx)
+			},
+		})
+
+		var resp struct{ DirectiveDouble *string }
+		err := c.WebsocketOnce(
+			`subscription @subscriptionOnly(reason: "watching") { directiveDouble }`,
+			&resp,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, "Ok", *resp.DirectiveDouble)
+		require.Equal(t, "watching", got)
+	})
+
+	t.Run("unimplemented QUERY directive errors", func(t *testing.T) {
+		c := newClient(DirectiveRoot{})
+
+		var resp struct{ Hello string }
+		err := c.Post(`query @queryOnly(reason: "audit") { hello(name:"Ada") }`, &resp)
+
+		require.EqualError(t, err, `[{"message":"directive queryOnly is not implemented"}]`)
+	})
+
+	t.Run("unimplemented MUTATION directive errors", func(t *testing.T) {
+		c := newClient(DirectiveRoot{})
+
+		var resp struct{ Greet string }
+		err := c.Post(`mutation @mutationOnly(reason: "because") { greet(name:"Ada") }`, &resp)
+
+		require.EqualError(t, err, `[{"message":"directive mutationOnly is not implemented"}]`)
+	})
+}

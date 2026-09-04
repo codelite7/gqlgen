@@ -970,12 +970,20 @@ func adaptStreamChannel(ctx context.Context, res any, err error) (any, error) {
 		return res, nil
 	}
 	out := make(chan any)
+	done := reflect.ValueOf(ctx.Done())
 	go func() {
 		defer close(out)
+		// Both the receive and the send must be cancellable: a source channel
+		// that neither sends nor closes would otherwise pin this goroutine
+		// forever after the subscriber disconnects.
+		cases := []reflect.SelectCase{
+			{Dir: reflect.SelectRecv, Chan: v},
+			{Dir: reflect.SelectRecv, Chan: done},
+		}
 		for {
-			val, ok := v.Recv()
-			if !ok {
-				return
+			i, val, ok := reflect.Select(cases)
+			if i != 0 || !ok {
+				return // ctx done, or source closed
 			}
 			select {
 			case out <- val.Interface():

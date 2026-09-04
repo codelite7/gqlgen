@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/vektah/gqlparser/v2/ast"
 
@@ -1771,3 +1773,38 @@ func TestAdaptStreamChannel_TypedChannel(t *testing.T) {
 }
 
 var errFake = errors.New("boom")
+
+// TestAdaptStreamChannel_CancelledContext pins that the adapter goroutine is
+// cancellable even when the source channel neither sends nor closes — the case
+// a disconnected subscriber leaves behind.
+func TestAdaptStreamChannel_CancelledContext(t *testing.T) {
+	before := runtime.NumGoroutine()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	src := make(chan *string) // never sends, never closes
+
+	out, err := adaptStreamChannel(ctx, (<-chan *string)(src), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	ch := out.(<-chan any)
+
+	cancel()
+
+	select {
+	case _, open := <-ch:
+		if open {
+			t.Fatal("expected the adapted channel to close, not to yield a value")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("adapted channel did not close after context cancellation")
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	for runtime.NumGoroutine() > before && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if got := runtime.NumGoroutine(); got > before {
+		t.Fatalf("adapter goroutine leaked: %d goroutines before, %d after", before, got)
+	}
+}
