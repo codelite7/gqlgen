@@ -1,5 +1,6 @@
 {{ define "split_args_.gotpl" }}
 {{ reserveImport "context" }}
+{{ reserveImport "fmt" }}
 
 {{ reserveImport "github.com/99designs/gqlgen/graphql" }}
 {{ reserveImport "github.com/99designs/gqlgen/graphql/executor/shardruntime" }}
@@ -12,6 +13,12 @@
 func __splitArgs_{{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
 	args := map[string]any{}
 	{{- range $i, $arg := $field.Args }}
+	{{- if $arg.ImplDirectives }}
+	arg{{ $i }}, err := __splitArgs_{{ $key }}_{{ $arg.Name | go }}(ctx, ec, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	{{- else }}
 	var arg{{ $i }} {{ $arg.TypeReference.GO | ref }}
 	if tmp, ok := rawArgs[{{ $arg.Name | quote }}]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField({{ $arg.Name | quote }}))
@@ -27,10 +34,58 @@ func __splitArgs_{{ $key }}(ctx context.Context, ec shardruntime.ObjectExecution
 		arg{{ $i }} = data.({{ $arg.TypeReference.GO | ref }})
 		{{- end }}
 	}
+	{{- end }}
 	args[{{ $arg.Name | quote }}] = arg{{ $i }}
 	{{- end }}
 	return args, nil
 }
+{{- /* ARGUMENT_DEFINITION directives: one helper per argument that carries
+       directives, mirroring codegen/args.gotpl. */}}
+{{- range $i, $arg := $field.Args }}
+{{- if $arg.ImplDirectives }}
+
+func __splitArgs_{{ $key }}_{{ $arg.Name | go }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) ({{ $arg.TypeReference.GO | ref }}, error) {
+	{{- if not $arg.CallArgumentDirectivesWithNull }}
+	{{- /* Don't call directives when the argument is absent; set
+	       call_argument_directives_with_null to change this. */}}
+	if _, ok := rawArgs[{{ $arg.Name | quote }}]; !ok {
+		{{ $arg.ZeroVal }}
+		return zeroVal, nil
+	}
+	{{- end }}
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField({{ $arg.Name | quote }}))
+	directive0 := func(ctx context.Context) (any, error) {
+		tmp, ok := rawArgs[{{ $arg.Name | quote }}]
+		if !ok {
+			{{ $arg.ZeroVal }}
+			return zeroVal, nil
+		}
+		return ec.UnmarshalCodec(ctx, {{ $arg.TypeReference.UnmarshalFunc | quote }}, tmp)
+	}
+	{{- range $j, $directive := $arg.ImplDirectives }}
+	directive{{ add $j 1 }} := func(ctx context.Context) (any, error) {
+		return ec.InvokeDirective(ctx, {{ $directive.Name | quote }}, rawArgs, directive{{ $j }}, {{ template "splitDirectiveArgs" $directive }})
+	}
+	{{- end }}
+	tmp, err := directive{{ len $arg.ImplDirectives }}(ctx)
+	if err != nil {
+		{{ $arg.ZeroVal }}
+		return zeroVal, graphql.ErrorOnPath(ctx, err)
+	}
+	if data, ok := tmp.({{ $arg.TypeReference.GO | ref }}); ok {
+		return data, nil
+	{{- if $arg.TypeReference.IsNilable }}
+	} else if tmp == nil {
+		{{ $arg.ZeroVal }}
+		return zeroVal, nil
+	{{- end }}
+	} else {
+		{{ $arg.ZeroVal }}
+		return zeroVal, graphql.ErrorOnPath(ctx, fmt.Errorf(`unexpected type %T from directive, should be {{ $arg.TypeReference.GO }}`, tmp))
+	}
+}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

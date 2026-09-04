@@ -620,6 +620,11 @@ func TestSplitInputGeneratesFullUnmarshalBody(t *testing.T) {
 			},
 		},
 	}
+	// Field.ImplDirectives (used by the input template to emit
+	// INPUT_FIELD_DEFINITION directive chains) reads f.Object.
+	for _, f := range input.Fields {
+		f.Object = input
+	}
 	ownership := &splitOwnershipPlanner{
 		InputOwner: map[string]string{
 			input.Name: "alpha",
@@ -1361,11 +1366,19 @@ extend type Query {
 		"expected split shard directive emission from split_directives_.gotpl",
 	)
 	require.Contains(t, directiveShard, "directive0 := next")
-	require.Contains(t, directiveShard, "return directive0(ctx)")
-	require.Contains(t, directiveShard, "return directive1(ctx)")
+	require.Contains(
+		t,
+		directiveShard,
+		`return ec.InvokeDirective(ctx, "first", obj, directive0, nil)`,
+	)
+	require.Contains(
+		t,
+		directiveShard,
+		`return ec.InvokeDirective(ctx, "second", obj, directive1, nil)`,
+	)
 
-	firstPos := strings.Index(directiveShard, "// directive first")
-	secondPos := strings.Index(directiveShard, "// directive second")
+	firstPos := strings.Index(directiveShard, `ec.InvokeDirective(ctx, "first"`)
+	secondPos := strings.Index(directiveShard, `ec.InvokeDirective(ctx, "second"`)
 	require.NotEqual(t, -1, firstPos)
 	require.NotEqual(t, -1, secondPos)
 	require.Less(t, firstPos, secondPos)
@@ -1609,6 +1622,10 @@ func splitInputOwnerTestData() *Data {
 				TypeReference:   &config.TypeReference{Definition: nestedInputDef},
 			},
 		},
+	}
+	// Field.ImplDirectives, called by the input template, reads f.Object.
+	for _, f := range sharedInput.Fields {
+		f.Object = sharedInput
 	}
 	nestedInput := &Object{Definition: nestedInputDef}
 	orphanInput := &Object{Definition: orphanInputDef}
@@ -1943,4 +1960,67 @@ func TestSplitArgsTemplateEmitsUnmarshalCodec(t *testing.T) {
 	// Verify path context is set for error reporting
 	require.Contains(t, text, "graphql.WithPathContext")
 	require.Contains(t, text, "graphql.NewPathWithField")
+}
+
+// TestSplitDirectivesAreExecuted pins the split-packages layout to actually
+// invoking schema directives. Before this, __splitDirectives_* wrappers were
+// emitted as no-op chains (`return directive0(ctx)`) and inputs/args ignored
+// directives entirely, silently disabling authorization directives.
+func TestSplitDirectivesAreExecuted(t *testing.T) {
+	workDir := chdirToLocalSplitFixtureWorkspace(t)
+
+	schemaPath := filepath.Join(workDir, "graph", "directives.graphqls")
+	require.NoError(t, os.WriteFile(schemaPath, []byte(`directive @goModel(model: String) on INPUT_OBJECT
+directive @fieldDirective on FIELD_DEFINITION
+directive @argDirective(max: Int!) on ARGUMENT_DEFINITION
+directive @inputFieldDirective on INPUT_FIELD_DEFINITION
+directive @inputObjectDirective on INPUT_OBJECT
+
+input Thing @goModel(model: "map[string]interface{}") @inputObjectDirective {
+  name: String! @inputFieldDirective
+}
+
+extend type Query {
+  guarded(size: Int! @argDirective(max: 10), thing: Thing!): String! @fieldDirective
+}
+`), 0o644))
+	t.Cleanup(func() {
+		_ = os.Remove(schemaPath)
+	})
+
+	cleanupSplitGeneratedFiles(workDir)
+	snapshot := generateSplitSnapshot(t)
+
+	generated, ok := snapshot[filepath.Join("graph", "generated.go")]
+	require.True(t, ok)
+	require.Contains(t, string(generated),
+		"func (ec *executionContext) InvokeDirective(ctx context.Context, name string, obj any, next graphql.Resolver, args map[string]any) (any, error)",
+		"root package must expose the directive dispatcher shards call into")
+
+	shardPrefix := filepath.Join("graph", "internal", "gqlgenexec", "shards")
+	var shardText strings.Builder
+	for relPath, contents := range snapshot {
+		if !strings.HasPrefix(relPath, shardPrefix) {
+			continue
+		}
+		require.NotContains(t, string(contents), "return directive0(ctx)",
+			"%s still emits a no-op directive chain", relPath)
+		shardText.Write(contents)
+	}
+	shards := shardText.String()
+	require.NotEmpty(t, shards)
+
+	for _, want := range []string{
+		`ec.InvokeDirective(ctx, "fieldDirective"`,
+		`ec.InvokeDirective(ctx, "argDirective"`,
+		`ec.InvokeDirective(ctx, "inputFieldDirective"`,
+		`ec.InvokeDirective(ctx, "inputObjectDirective"`,
+	} {
+		require.Contains(t, shards, want)
+	}
+
+	// Directive arguments are passed through as the schema-declared values.
+	require.Contains(t, shards, `"max": 10`)
+	// FIELD_DEFINITION directives are wired into the field registration.
+	require.Contains(t, shards, "__splitDirectives_Query_guarded(ctx, ec, obj, next)")
 }

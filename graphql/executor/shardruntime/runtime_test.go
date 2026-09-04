@@ -1,7 +1,9 @@
 package shardruntime
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -1237,6 +1239,7 @@ func TestArgsRegistry(t *testing.T) {
 // fakeEC is a test-only implementation of ObjectExecutionContext.
 type fakeEC struct {
 	fieldContextHandlers map[string]FieldContextHandler
+	invokeDirective      func(ctx context.Context, name string, obj any, next graphql.Resolver, args map[string]any) (any, error)
 }
 
 // fakeECWithOpCtx embeds fakeEC and overrides GetOperationContext to return a
@@ -1286,6 +1289,27 @@ func (f *fakeEC) ResolveStreamField(
 
 func (f *fakeEC) InvokeResolver(context.Context, string, string, any) (any, error) {
 	return nil, nil
+}
+
+func (f *fakeEC) InvokeDirective(
+	ctx context.Context,
+	name string,
+	obj any,
+	next graphql.Resolver,
+	args map[string]any,
+) (any, error) {
+	if f.invokeDirective != nil {
+		return f.invokeDirective(ctx, name, obj, next, args)
+	}
+	return next(ctx)
+}
+
+func (f *fakeEC) FieldMiddleware(
+	_ context.Context,
+	_ any,
+	next graphql.Resolver,
+) graphql.Resolver {
+	return next
 }
 
 func (f *fakeEC) LookupFieldContextHandler(obj, field string) (FieldContextHandler, bool) {
@@ -1637,3 +1661,113 @@ func TestRegisterStreamFieldDef(t *testing.T) {
 		t.Fatal("expected field context handler registered (shared with non-streaming)")
 	}
 }
+
+// TestResolveFromDef_DirectivesReceiveECAndObj pins the middleware signature:
+// the shard-emitted Directives builder must receive the ObjectExecutionContext
+// (its only route to the root package's directive implementations) and the
+// parent object, and its chain must wrap the resolver.
+func TestResolveFromDef_DirectivesReceiveECAndObj(t *testing.T) {
+	resetFieldRegistryForTest()
+	resetFieldContextRegistryForTest()
+	resetArgsRegistryForTest()
+	resetCodecMarshalRegistryForTest()
+
+	RegisterCodecMarshal(
+		"scope",
+		"marshalNString",
+		func(_ context.Context, _ ObjectExecutionContext, _ ast.SelectionSet, v any) graphql.Marshaler {
+			return graphql.MarshalString(v.(string))
+		},
+	)
+
+	var gotEC ObjectExecutionContext
+	var gotObj any
+	def := FieldDef{
+		Resolve: func(_ context.Context, _ ObjectExecutionContext, obj any) (any, error) {
+			return obj.(string) + "_resolved", nil
+		},
+		Directives: func(_ context.Context, ec ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			gotEC, gotObj = ec, obj
+			return func(ctx context.Context) (any, error) {
+				res, err := next(ctx)
+				if err != nil {
+					return nil, err
+				}
+				return "wrapped_" + res.(string), nil
+			}
+		},
+		ReturnType:   &ObjectChildLookup{TypeName: "String", Kind: ast.Scalar},
+		MarshalCodec: "marshalNString",
+		NonNull:      true,
+		PanicHandled: true,
+	}
+
+	RegisterFieldDef("scope", "Query", "name", def)
+
+	h, ok := LookupField("scope", "Query", "name")
+	if !ok {
+		t.Fatal("missing handler")
+	}
+	ec := &fakeECWithOpCtx{}
+	cf := graphql.CollectedField{Field: &ast.Field{Name: "name"}}
+
+	var buf bytes.Buffer
+	h(context.Background(), ec, cf, "hello").MarshalGQL(&buf)
+
+	if buf.String() != `"wrapped_hello_resolved"` {
+		t.Fatalf("directive chain not applied: got %s", buf.String())
+	}
+	if gotEC != ObjectExecutionContext(ec) {
+		t.Fatal("Directives did not receive the execution context")
+	}
+	if gotObj != "hello" {
+		t.Fatalf("Directives did not receive the parent object: got %v", gotObj)
+	}
+}
+
+// TestDirectiveChain_NilStaysNil keeps graphql.ResolveField's no-middleware
+// fast path: a FieldDef without directives must pass a nil middlewareChain.
+func TestDirectiveChain_NilStaysNil(t *testing.T) {
+	if directiveChain(&fakeEC{}, nil, nil) != nil {
+		t.Fatal("expected nil middleware chain for a FieldDef with no directives")
+	}
+	if directiveChain(&fakeEC{}, nil, func(_ context.Context, _ ObjectExecutionContext, _ any, next graphql.Resolver) graphql.Resolver {
+		return next
+	}) == nil {
+		t.Fatal("expected non-nil middleware chain when Directives is set")
+	}
+}
+
+// TestAdaptStreamChannel_TypedChannel covers the type-erased stream path: the
+// split runtime instantiates graphql.ResolveFieldStream with T = any, so a
+// resolver's typed channel must be adapted to <-chan any.
+func TestAdaptStreamChannel_TypedChannel(t *testing.T) {
+	src := make(chan *string, 1)
+	v := "ok"
+	src <- &v
+	close(src)
+
+	out, err := adaptStreamChannel(context.Background(), (<-chan *string)(src), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	ch, ok := out.(<-chan any)
+	if !ok {
+		t.Fatalf("expected <-chan any, got %T", out)
+	}
+	got := <-ch
+	if p, ok := got.(*string); !ok || *p != "ok" {
+		t.Fatalf("unexpected value from adapted channel: %#v", got)
+	}
+	if _, open := <-ch; open {
+		t.Fatal("expected adapted channel to close with the source")
+	}
+
+	// Errors and nil results pass straight through.
+	if res, err := adaptStreamChannel(context.Background(), nil, errFake); res != nil ||
+		err != errFake {
+		t.Fatalf("expected error passthrough, got %v %v", res, err)
+	}
+}
+
+var errFake = errors.New("boom")

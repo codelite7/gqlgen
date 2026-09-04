@@ -7,11 +7,13 @@ exec:
   package: splitpackages
 
 model:
-  filename: models-gen.go
-  package: splitpackages
+  filename: model/models_gen.go
+  package: model
 
 resolver:
   filename: resolver.go
   package: splitpackages
   type: Resolver
 
+autobind:
+  - "github.com/99designs/gqlgen/codegen/testserver/splitpackages/model"

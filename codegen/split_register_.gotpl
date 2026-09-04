@@ -27,9 +27,16 @@ func init() {
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}
 		},
-		{{- if $field.HasDirectives }}
-		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		{{- if or $field.HasDirectives ($.AllDirectives.LocationDirectives "FIELD") }}
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			{{- if $field.HasDirectives }}
+			next = __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, obj, next)
+			{{- end }}
+			{{- if $.AllDirectives.LocationDirectives "FIELD" }}
+			return ec.FieldMiddleware(ctx, obj, next)
+			{{- else }}
+			return next
+			{{- end }}
 		},
 		{{- end }}
 		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
@@ -51,9 +58,16 @@ func init() {
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}
 		},
-		{{- if $field.HasDirectives }}
-		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		{{- if or $field.HasDirectives ($.AllDirectives.LocationDirectives "FIELD") }}
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			{{- if $field.HasDirectives }}
+			next = __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, obj, next)
+			{{- end }}
+			{{- if $.AllDirectives.LocationDirectives "FIELD" }}
+			return ec.FieldMiddleware(ctx, obj, next)
+			{{- else }}
+			return next
+			{{- end }}
 		},
 		{{- end }}
 		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
@@ -87,9 +101,16 @@ func init() {
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}
 		},
-		{{- if $field.HasDirectives }}
-		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		{{- if or $field.HasDirectives ($.AllDirectives.LocationDirectives "FIELD") }}
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			{{- if $field.HasDirectives }}
+			next = __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, obj, next)
+			{{- end }}
+			{{- if $.AllDirectives.LocationDirectives "FIELD" }}
+			return ec.FieldMiddleware(ctx, obj, next)
+			{{- else }}
+			return next
+			{{- end }}
 		},
 		{{- end }}
 		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
@@ -111,9 +132,16 @@ func init() {
 			{{- template "splitFieldAccess" $field }}
 			{{- end }}
 		},
-		{{- if $field.HasDirectives }}
-		Directives: func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			return __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(next)
+		{{- if or $field.HasDirectives ($.AllDirectives.LocationDirectives "FIELD") }}
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			{{- if $field.HasDirectives }}
+			next = __splitDirectives_{{ $field.Object.Name }}_{{ $field.Name }}(ctx, ec, obj, next)
+			{{- end }}
+			{{- if $.AllDirectives.LocationDirectives "FIELD" }}
+			return ec.FieldMiddleware(ctx, obj, next)
+			{{- else }}
+			return next
+			{{- end }}
 		},
 		{{- end }}
 		MarshalCodec: {{ $field.TypeReference.MarshalFunc | quote }},
