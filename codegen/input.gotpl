@@ -5,9 +5,12 @@
 	  {{- $it = "&it" }}
 	{{- end }}
 	{{- /* Hybrid inputs (Go type has UnmarshalGQLContext): the method decodes
-	       every plain field, and only fields the method cannot handle — those
-	       with INPUT_FIELD_DEFINITION directives or a field resolver — keep a
-	       generated case arm. */}}
+	       every plain field, and only fields the method cannot handle keep a
+	       generated case arm — those with INPUT_FIELD_DEFINITION directives, a
+	       field resolver, or a type that is an input object needing generated
+	       handling itself (transitively: a nested input with a directive, a
+	       resolver, a field default or an INPUT_OBJECT directive anywhere below
+	       it). See Object.HybridSpecialFields. */}}
 	{{- $hybrid := .HasContextUnmarshal }}
 	{{- $switchFields := .Fields }}
 	{{- if $hybrid }}

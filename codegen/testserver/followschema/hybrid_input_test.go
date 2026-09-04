@@ -2,6 +2,7 @@ package followschema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -148,6 +149,11 @@ func TestHybridInputNestedKeepsDirectivesAndResolvers(t *testing.T) {
 				if err != nil {
 					return nil, err
 				}
+				// The consumer's directive is a scope check that REJECTS, so the
+				// bypass this guards is a query that must fail and does not.
+				if res.(string) == "deny" {
+					return nil, errors.New("denied by directive")
+				}
 				return strings.ToUpper(res.(string)), nil
 			},
 		},
@@ -182,6 +188,14 @@ func TestHybridInputNestedKeepsDirectivesAndResolvers(t *testing.T) {
 			`directed="D" resolved="resolver(r)" saw=plain,withDefault`+
 				` nested={gated="G" resolved="nestedResolver(n)" deeper={gated="DD" resolved="nestedResolver(nn)"}}`,
 			resp.HybridInput)
+	})
+
+	t.Run("a nested directive that rejects fails the query", func(t *testing.T) {
+		var resp struct{ HybridInput string }
+		err := c.Post(`{ hybridInput(arg: {plain: "p", directed: "d", resolved: "r",
+			nested: {gated: "deny", resolved: "n"}}) }`, &resp)
+		require.ErrorContains(t, err, "denied by directive")
+		require.ErrorContains(t, err, `"nested","gated"`)
 	})
 
 	t.Run("self-referential list keeps directives and resolvers at every level", func(t *testing.T) {

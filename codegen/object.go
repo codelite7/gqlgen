@@ -37,9 +37,12 @@ type Object struct {
 	PointersInUnmarshalInput bool
 
 	// needsGeneratedInput is the input-graph classification shared by all inputs,
-	// computed once by Objects.resolveHybridSpecialFields. Nil outside BuildData,
-	// which just means no field is special by nesting.
+	// computed once by Objects.resolveHybridSpecialFields, which also sets
+	// hybridClassified. Unclassified is not a safe default for a hybrid input —
+	// it is the pre-fix, bypass-prone field set — so HybridSpecialFields panics
+	// on it rather than failing open.
 	needsGeneratedInput map[string]bool
+	hybridClassified    bool
 }
 
 func (b *builder) buildObject(typ *ast.Definition) (*Object, error) {
@@ -142,6 +145,12 @@ func (o *Object) HasContextUnmarshal() bool {
 // The nested case needs Objects.resolveHybridSpecialFields to have run over the
 // whole input graph; BuildData does that.
 func (o *Object) HybridSpecialFields() []*Field {
+	if !o.hybridClassified && o.HasContextUnmarshal() {
+		panic(fmt.Errorf(
+			"input %s: HybridSpecialFields called before Objects.resolveHybridSpecialFields; "+
+				"the nested-input classification would fail open and skip nested directives and resolvers",
+			o.Name))
+	}
 	var special []*Field
 	for _, f := range o.Fields {
 		if hybridSpecialField(f, o.needsGeneratedInput) {
@@ -191,6 +200,7 @@ func (os Objects) resolveHybridSpecialFields() {
 	}
 	for _, in := range os {
 		in.needsGeneratedInput = needsGenerated
+		in.hybridClassified = true
 	}
 }
 

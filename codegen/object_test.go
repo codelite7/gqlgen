@@ -201,3 +201,22 @@ func TestHybridSpecialFieldsCoversDefaultsAndInputObjectDirectives(t *testing.T)
 	// defaults into the map it hands to the method.
 	assert.Nil(t, specialNames(hasDefault))
 }
+
+// Unclassified is not a safe default for a hybrid input: it is the pre-fix field
+// set, which skips nested directives and resolvers. Fail loudly instead.
+func TestHybridSpecialFieldsPanicsWhenUnclassified(t *testing.T) {
+	hybrid := mkInputObject(t, "UnmarshalGQLContext")
+	hybrid.Fields = []*Field{mkField("plain")}
+	hybrid.Fields[0].Object = hybrid
+	assert.PanicsWithError(t,
+		"input In: HybridSpecialFields called before Objects.resolveHybridSpecialFields; "+
+			"the nested-input classification would fail open and skip nested directives and resolvers",
+		func() { hybrid.HybridSpecialFields() })
+
+	// Classified: no panic.
+	Objects{hybrid}.resolveHybridSpecialFields()
+	assert.Nil(t, specialNames(hybrid))
+
+	// A non-hybrid input never consults the classification, so it is unaffected.
+	assert.NotPanics(t, func() { mkInput("Plain", mkField("a")).HybridSpecialFields() })
+}

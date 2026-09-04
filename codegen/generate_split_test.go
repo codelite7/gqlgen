@@ -850,6 +850,9 @@ func TestSplitInputGeneratesHybridUnmarshalBody(t *testing.T) {
 	for _, f := range input.Fields {
 		f.Object = input
 	}
+	// Hybrid inputs must be classified before the template asks for their special
+	// fields; HybridSpecialFields panics otherwise.
+	Objects{input}.resolveHybridSpecialFields()
 	ownership := &splitOwnershipPlanner{
 		InputOwner:     map[string]string{input.Name: "alpha"},
 		InputOwnerKeys: []string{input.Name},
