@@ -47,18 +47,29 @@ func TestObjectInvalidsIncrement_DisableConcurrency(t *testing.T) {
 	assert.Equal(t, "out.Invalids++", obj.InvalidsIncrement("out"))
 }
 
-func TestObjectHasUnmarshal(t *testing.T) {
-	mk := func(method string) *Object {
-		pkg := types.NewPackage("example.com/x", "x")
-		named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "In", nil), types.NewStruct(nil, nil), nil)
-		if method != "" {
-			sig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)), nil, nil, nil, nil, false)
-			named.AddMethod(types.NewFunc(token.NoPos, pkg, method, sig))
-		}
-		return &Object{Definition: &ast.Definition{Name: "In", Kind: ast.InputObject}, Type: named}
+func mkInputObject(t *testing.T, methods ...string) *Object {
+	t.Helper()
+	pkg := types.NewPackage("example.com/x", "x")
+	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "In", nil), types.NewStruct(nil, nil), nil)
+	for _, method := range methods {
+		sig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)), nil, nil, nil, nil, false)
+		named.AddMethod(types.NewFunc(token.NoPos, pkg, method, sig))
 	}
-	assert.False(t, mk("").HasUnmarshal())
-	assert.True(t, mk("UnmarshalGQL").HasUnmarshal())
-	assert.True(t, mk("UnmarshalGQLContext").HasUnmarshal())
-	assert.False(t, mk("MarshalGQL").HasUnmarshal())
+	return &Object{Definition: &ast.Definition{Name: "In", Kind: ast.InputObject}, Type: named}
+}
+
+func TestObjectHasUnmarshal(t *testing.T) {
+	assert.False(t, mkInputObject(t).HasUnmarshal())
+	assert.True(t, mkInputObject(t, "UnmarshalGQL").HasUnmarshal())
+	// UnmarshalGQLContext alone does not suppress generation; it gets a hybrid body.
+	assert.False(t, mkInputObject(t, "UnmarshalGQLContext").HasUnmarshal())
+	assert.False(t, mkInputObject(t, "MarshalGQL").HasUnmarshal())
+}
+
+func TestObjectHasContextUnmarshal(t *testing.T) {
+	assert.False(t, mkInputObject(t).HasContextUnmarshal())
+	assert.True(t, mkInputObject(t, "UnmarshalGQLContext").HasContextUnmarshal())
+	assert.False(t, mkInputObject(t, "UnmarshalGQL").HasContextUnmarshal())
+	// UnmarshalGQL wins: upstream semantics, no generated function at all.
+	assert.False(t, mkInputObject(t, "UnmarshalGQL", "UnmarshalGQLContext").HasContextUnmarshal())
 }

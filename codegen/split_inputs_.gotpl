@@ -8,6 +8,15 @@
 {{- if $input.PointersInUnmarshalInput }}
   {{- $it = "&it" }}
 {{- end }}
+{{- /* Hybrid inputs (Go type has UnmarshalGQLContext): the method decodes every
+       plain field, and only fields the method cannot handle — those with
+       INPUT_FIELD_DEFINITION directives or a field resolver — keep a generated
+       case arm. Mirrors codegen/input.gotpl. */}}
+{{- $hybrid := $input.HasContextUnmarshal }}
+{{- $switchFields := $input.Fields }}
+{{- if $hybrid }}
+{{- $switchFields = $input.HybridSpecialFields }}
+{{- end }}
 
 // split_inputs_.gotpl
 func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) ({{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}, error) {
@@ -29,12 +38,19 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 	}
 	{{- end }}
 	{{- if $input.IsMap }}
-		it := make(map[string]any, len(obj.(map[string]any)))
+	it := map[string]any{}
 	{{- else }}
-		var it {{ $input.Type | ref }}
+	var it {{ $input.Type | ref }}
 	{{- end }}
+	if obj == nil {
+		return {{ $it }}, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return {{ $it }}, fmt.Errorf("unmarshalInput{{ $input.Name }}: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 	{{ range $field := $input.Fields }}
@@ -45,14 +61,37 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 		{{- end }}
 	{{- end }}
 
-	fieldsInOrder := [...]string{ {{ range $input.Fields }}{{ quote .Name }},{{ end }} }
+	{{- if $hybrid }}
+	{{- if $switchFields }}
+
+	plain := make(map[string]any, len(asMap))
+	for k, v := range asMap {
+		switch k {
+		case {{ range $i, $field := $switchFields }}{{ if $i }}, {{ end }}{{ $field.Name | quote }}{{ end }}:
+		default:
+			plain[k] = v
+		}
+	}
+	if err := it.UnmarshalGQLContext(ctx, plain); err != nil {
+		return {{ $it }}, err
+	}
+	{{- else }}
+
+	if err := it.UnmarshalGQLContext(ctx, asMap); err != nil {
+		return {{ $it }}, err
+	}
+	{{- end }}
+	{{- end }}
+	{{- if or (not $hybrid) $switchFields }}
+
+	fieldsInOrder := [...]string{ {{ range $switchFields }}{{ quote .Name }},{{ end }} }
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		{{- range $field := $input.Fields }}
+		{{- range $field := $switchFields }}
 		case {{ $field.Name | quote }}:
 			{{- $lhs := (printf "it.%s" $field.GoFieldName) }}
 			{{- if $input.IsMap }}
@@ -129,6 +168,7 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 		{{- end }}
 		}
 	}
+	{{- end }}
 
 	{{- if $input.InputObjectDirectives }}
 	{{- /* INPUT_OBJECT level directives (e.g. @oneOf), run after all fields

@@ -502,7 +502,7 @@ func (b *Binder) TypeReference(
 				"github.com/99designs/gqlgen/graphql.ContextMarshaler"
 			ref.Marshaler = fun
 			ref.Unmarshaler = types.NewFunc(0, fun.Pkg(), "Unmarshal"+typeName, nil)
-		} else if hasMethod(t, "UnmarshalGQLContext") && (hasMethod(t, "MarshalGQLContext") || def.Kind == ast.InputObject) {
+		} else if hasMethod(t, "MarshalGQLContext") && hasMethod(t, "UnmarshalGQLContext") {
 			ref.GO = tForRef
 			ref.IsContext = true
 			ref.IsMarshaler = true
@@ -535,8 +535,8 @@ func (b *Binder) TypeReference(
 				// if the bind type implements the
 				// graphql.ContextMarshaler/graphql.ContextUnmarshaler/graphql.Marshaler/graphql.Unmarshaler
 				// interface, we can use it
-				if hasMethod(bindTarget, "UnmarshalGQLContext") &&
-					(hasMethod(bindTarget, "MarshalGQLContext") || def.Kind == ast.InputObject) {
+				if hasMethod(bindTarget, "MarshalGQLContext") &&
+					hasMethod(bindTarget, "UnmarshalGQLContext") {
 					ref.IsContext = true
 					ref.IsMarshaler = true
 					ref.Marshaler = nil

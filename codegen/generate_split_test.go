@@ -665,6 +665,87 @@ func TestSplitInputGeneratesFullUnmarshalBody(t *testing.T) {
 	require.Contains(t, text, "it.Name = data.(string)")
 }
 
+// A hybrid input (Go type has UnmarshalGQLContext) delegates its plain fields to
+// the method and keeps generated case arms only for fields the method cannot
+// handle: those with directives or a field resolver.
+func TestSplitInputGeneratesHybridUnmarshalBody(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	sig := types.NewSignatureType(
+		types.NewVar(0, modelInputType.Obj().Pkg(), "i", types.NewPointer(modelInputType)),
+		nil, nil, nil, nil, false,
+	)
+	modelInputType.AddMethod(
+		types.NewFunc(0, modelInputType.Obj().Pkg(), "UnmarshalGQLContext", sig),
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	stringRef := func() *config.TypeReference {
+		return &config.TypeReference{
+			Definition: stringDef,
+			GQL:        ast.NonNullNamedType("String", nil),
+			GO:         types.Typ[types.String],
+		}
+	}
+	input := &Object{
+		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference:   stringRef(),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "computed"},
+				GoFieldName:     "Computed",
+				TypeReference:   stringRef(),
+				IsResolver:      true,
+			},
+		},
+	}
+	for _, f := range input.Fields {
+		f.Object = input
+	}
+	ownership := &splitOwnershipPlanner{
+		InputOwner:     map[string]string{input.Name: "alpha"},
+		InputOwnerKeys: []string{input.Name},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:        &Data{Config: &config.Config{}},
+			ShardName:   "alpha",
+			Ownership:   ownership,
+			InputByName: map[string]*Object{input.Name: input},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	text := string(contents)
+
+	require.Contains(t, text, `fmt.Errorf("unmarshalInputUserInput: expected map[string]any, got %T", obj)`)
+	require.Contains(t, text, "it.UnmarshalGQLContext(ctx, plain)")
+	require.Contains(t, text, `case "computed":`)
+	require.Contains(t, text, `ec.InvokeResolver(ctx, "UserInput", "computed"`)
+	// The plain field is the method's job: no generated case arm, and it is not
+	// stripped from the map handed to the method.
+	require.NotContains(t, text, `case "name":`)
+	require.NotContains(t, text, "it.Name =")
+	require.Contains(t, text, `fieldsInOrder := [...]string{"computed"}`)
+}
+
 func TestSplitRootUsesLookupField(t *testing.T) {
 	workDir := chdirToLocalSplitFixtureWorkspace(t)
 

@@ -539,6 +539,9 @@ func TestTypeReference_UsesPublicAliasOverInternalBindTargetWrapped(t *testing.T
 	require.Equal(t, "*"+publicPkg+".Operation", ref.GO.String())
 }
 
+// An input object whose Go type only has UnmarshalGQLContext must NOT bind as a
+// context unmarshaler: the codec has to route through the generated (hybrid)
+// unmarshalInput function so field defaults, directives and resolvers still run.
 func TestInputObjectContextUnmarshalerBinding(t *testing.T) {
 	cfg := Config{Models: TypeMap{
 		"CtxInput": TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/codegen/config/testdata/binding.ContextInput"}},
@@ -552,7 +555,6 @@ func TestInputObjectContextUnmarshalerBinding(t *testing.T) {
 	b := cfg.NewBinder()
 	ref, err := b.TypeReference(cfg.Schema.Query.Fields.ForName("q").Arguments.ForName("in").Type, nil)
 	require.NoError(t, err)
-	require.True(t, ref.IsMarshaler)
-	require.True(t, ref.IsContext)
-	require.Nil(t, ref.Unmarshaler)
+	require.False(t, ref.IsMarshaler)
+	require.False(t, ref.IsContext)
 }

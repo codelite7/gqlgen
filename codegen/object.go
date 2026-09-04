@@ -115,12 +115,42 @@ func (o *Object) HasResolvers() bool {
 }
 
 func (o *Object) HasUnmarshal() bool {
+	return o.hasMethod("UnmarshalGQL")
+}
+
+// HasContextUnmarshal reports whether the bound Go type decodes itself via
+// UnmarshalGQLContext but not UnmarshalGQL. Such inputs still get a generated
+// unmarshaler, with a hybrid body: the Go method decodes the plain fields while
+// generated code keeps applying defaults and running field directives and field
+// resolvers. A type with UnmarshalGQL keeps upstream semantics instead (no
+// generated function at all).
+func (o *Object) HasContextUnmarshal() bool {
+	return !o.HasUnmarshal() && o.hasMethod("UnmarshalGQLContext")
+}
+
+// HybridSpecialFields returns the fields a hybrid unmarshaler must still handle
+// itself, because UnmarshalGQLContext cannot: those with INPUT_FIELD_DEFINITION
+// directives, and those backed by a field resolver.
+func (o *Object) HybridSpecialFields() []*Field {
+	var special []*Field
+	for _, f := range o.Fields {
+		if len(f.ImplDirectives()) > 0 || f.IsResolver {
+			special = append(special, f)
+		}
+	}
+	return special
+}
+
+func (o *Object) hasMethod(name string) bool {
 	if o.IsMap() {
 		return false
 	}
-	for method := range o.Type.(*types.Named).Methods() {
-		switch method.Name() {
-		case "UnmarshalGQL", "UnmarshalGQLContext":
+	named, ok := o.Type.(*types.Named)
+	if !ok {
+		return false
+	}
+	for method := range named.Methods() {
+		if method.Name() == name {
 			return true
 		}
 	}
