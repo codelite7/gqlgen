@@ -2499,3 +2499,34 @@ func TestSplitCodecSliceMarshalNilMatchesUpstream(t *testing.T) {
 		})
 	}
 }
+
+// Data.Directives() is Data.AllDirectives filtered to the directives declared in
+// Config.Sources, so a directive can be in AllDirectives and not in Directives().
+// Gating on the filtered set fails open: FieldMiddleware compiles to a bare
+// `return next` and the directive is silently skipped, where the monolithic
+// layout would run it. The split root must gate on the same set the monolithic
+// templates do.
+//
+// InvokeDirective's own `range .Directives` is deliberately excluded: DirectiveRoot
+// (.UserDirectives) and the builtInDirectiveX vars (.BuiltInDirectives) both
+// partition .Directives, so ranging the wider set emits cases naming identifiers
+// that were never generated. An unlisted name there fails closed.
+func TestSplitRootDirectiveSelectorMatchesMonolithic(t *testing.T) {
+	directivesTemplate, err := codegenTemplates.ReadFile("directives.gotpl")
+	require.NoError(t, err)
+	fieldTemplate, err := codegenTemplates.ReadFile("field.gotpl")
+	require.NoError(t, err)
+
+	for name, text := range map[string]string{
+		"split_root_.gotpl": splitRootTemplate,
+		"root_.gotpl":       rootTemplate,
+		"directives.gotpl":  string(directivesTemplate),
+		"field.gotpl":       string(fieldTemplate),
+	} {
+		// Compared as booleans so a failure names the template instead of dumping it.
+		require.False(t, strings.Contains(text, ".Directives.LocationDirectives"),
+			"%s must gate on .AllDirectives, not the source-filtered .Directives", name)
+		require.True(t, strings.Contains(text, ".AllDirectives"),
+			"%s should reference .AllDirectives", name)
+	}
+}

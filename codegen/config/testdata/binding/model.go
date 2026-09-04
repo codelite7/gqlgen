@@ -54,3 +54,25 @@ func (i *ContextInput) UnmarshalGQLContext(ctx context.Context, v any) error {
 	i.Text, _ = m["text"].(string)
 	return nil
 }
+
+// ContextInputPair is an input object whose Go type carries the *full* context
+// marshaler pair. TypeReference binds it as a graphql.ContextMarshaler, so its
+// codec calls UnmarshalGQLContext directly and no generated unmarshaler is ever
+// reached — which is why codegen's Object.HasUnmarshal must agree.
+type ContextInputPair struct {
+	Text string
+}
+
+func (i *ContextInputPair) UnmarshalGQLContext(ctx context.Context, v any) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("expected map, got %T", v)
+	}
+	i.Text, _ = m["text"].(string)
+	return nil
+}
+
+func (i ContextInputPair) MarshalGQLContext(_ context.Context, w io.Writer) error {
+	fmt.Fprintf(w, "%q", i.Text)
+	return nil
+}

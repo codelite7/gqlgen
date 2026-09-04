@@ -421,9 +421,10 @@ func BuildData(cfg *config.Config, plugins ...any) (*Data, error) {
 }
 
 // checkCustomUnmarshalInputs rejects input objects whose bound Go type decodes
-// itself with UnmarshalGQL but whose schema declares field defaults, field
-// directives or field resolvers: gqlgen emits no unmarshaler for such inputs,
-// so the default, directive or resolver would be silently dropped.
+// itself (Object.HasUnmarshal: UnmarshalGQL, or the full
+// MarshalGQLContext/UnmarshalGQLContext pair) but whose schema declares field
+// defaults, field directives or field resolvers: gqlgen emits no unmarshaler for
+// such inputs, so the default, directive or resolver would be silently dropped.
 //
 // Types with only UnmarshalGQLContext are exempt: they get a hybrid unmarshaler
 // (see Object.HasContextUnmarshal) that still does all three.
@@ -435,11 +436,11 @@ func checkCustomUnmarshalInputs(inputs Objects) error {
 		for _, f := range in.Fields {
 			switch {
 			case f.Default != nil:
-				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL) but field %q declares a default value; custom unmarshalers cannot apply defaults", in.Name, f.Name)
+				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q declares a default value; custom unmarshalers cannot apply defaults", in.Name, f.Name)
 			case len(f.ImplDirectives()) > 0:
-				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL) but field %q has directives; custom unmarshalers cannot run field directives", in.Name, f.Name)
+				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has directives; custom unmarshalers cannot run field directives", in.Name, f.Name)
 			case f.IsResolver:
-				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL) but field %q has a resolver; custom unmarshalers cannot run field resolvers", in.Name, f.Name)
+				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has a resolver; custom unmarshalers cannot run field resolvers", in.Name, f.Name)
 			}
 		}
 	}

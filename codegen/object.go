@@ -122,7 +122,17 @@ func (o *Object) HasResolvers() bool {
 	return false
 }
 
+// HasUnmarshal reports whether the bound Go type decodes itself, so gqlgen must
+// emit no unmarshaler for it at all.
 func (o *Object) HasUnmarshal() bool {
+	// A type carrying the full MarshalGQLContext/UnmarshalGQLContext pair binds as
+	// a graphql.ContextMarshaler (config.Binder.TypeReference), so its codec calls
+	// UnmarshalGQLContext directly and never reaches a generated unmarshaler. Say
+	// so here too, or a hybrid body would be generated and silently never called,
+	// dropping every field directive, resolver, default and nested enforcement.
+	if o.hasMethod("MarshalGQLContext") && o.hasMethod("UnmarshalGQLContext") {
+		return true
+	}
 	return o.hasMethod("UnmarshalGQL")
 }
 
@@ -130,8 +140,9 @@ func (o *Object) HasUnmarshal() bool {
 // UnmarshalGQLContext but not UnmarshalGQL. Such inputs still get a generated
 // unmarshaler, with a hybrid body: the Go method decodes the plain fields while
 // generated code keeps applying defaults and running field directives and field
-// resolvers. A type with UnmarshalGQL keeps upstream semantics instead (no
-// generated function at all).
+// resolvers. A type with UnmarshalGQL, or with the full
+// MarshalGQLContext/UnmarshalGQLContext pair, keeps upstream semantics instead
+// (no generated function at all — see HasUnmarshal).
 func (o *Object) HasContextUnmarshal() bool {
 	return !o.HasUnmarshal() && o.hasMethod("UnmarshalGQLContext")
 }

@@ -67,6 +67,11 @@ func TestObjectHasUnmarshal(t *testing.T) {
 	// UnmarshalGQLContext alone does not suppress generation; it gets a hybrid body.
 	assert.False(t, mkInputObject(t, "UnmarshalGQLContext").HasUnmarshal())
 	assert.False(t, mkInputObject(t, "MarshalGQL").HasUnmarshal())
+	// The full context-marshaler pair binds as a graphql.ContextMarshaler, so the
+	// codec calls UnmarshalGQLContext directly: no generated unmarshaler at all,
+	// hybrid or otherwise. Generating one would make it dead code and silently drop
+	// every field directive, resolver, default and nested enforcement.
+	assert.True(t, mkInputObject(t, "MarshalGQLContext", "UnmarshalGQLContext").HasUnmarshal())
 }
 
 func TestObjectHasContextUnmarshal(t *testing.T) {
@@ -75,6 +80,11 @@ func TestObjectHasContextUnmarshal(t *testing.T) {
 	assert.False(t, mkInputObject(t, "UnmarshalGQL").HasContextUnmarshal())
 	// UnmarshalGQL wins: upstream semantics, no generated function at all.
 	assert.False(t, mkInputObject(t, "UnmarshalGQL", "UnmarshalGQLContext").HasContextUnmarshal())
+	// So does the full context-marshaler pair, for the same reason.
+	assert.False(t, mkInputObject(t, "MarshalGQLContext", "UnmarshalGQLContext").HasContextUnmarshal())
+	// Only the *context* pair binds as a ContextMarshaler, so a non-context
+	// MarshalGQL alongside it still gets the hybrid body.
+	assert.True(t, mkInputObject(t, "MarshalGQL", "UnmarshalGQLContext").HasContextUnmarshal())
 }
 
 // mkInput builds an input Object with the given fields, wiring Field.Object.
