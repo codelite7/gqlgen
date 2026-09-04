@@ -30,12 +30,18 @@ type Stub struct {
 		DirectiveDouble                  func(ctx context.Context) (*string, error)
 		DirectiveUnimplemented           func(ctx context.Context) (*string, error)
 		GoodbyeFromExtras                func(ctx context.Context, name string) (string, error)
+		HybridInput                      func(ctx context.Context, arg model.HybridInput) (string, error)
+		HybridInputNullable              func(ctx context.Context, arg *model.HybridInput) (string, error)
 	}
 	SubscriptionResolver struct {
 		DirectiveArg           func(ctx context.Context, arg string) (<-chan *string, error)
 		DirectiveNullableArg   func(ctx context.Context, arg *int, arg2 *int, arg3 *string) (<-chan *string, error)
 		DirectiveDouble        func(ctx context.Context) (<-chan *string, error)
 		DirectiveUnimplemented func(ctx context.Context) (<-chan *string, error)
+	}
+
+	HybridInputResolver struct {
+		Resolved func(ctx context.Context, obj *model.HybridInput, data string) error
 	}
 }
 
@@ -47,6 +53,10 @@ func (r *Stub) Query() QueryResolver {
 }
 func (r *Stub) Subscription() SubscriptionResolver {
 	return &stubSubscription{r}
+}
+
+func (r *Stub) HybridInput() HybridInputResolver {
+	return &stubHybridInput{r}
 }
 
 type stubMutation struct{ *Stub }
@@ -108,6 +118,12 @@ func (r *stubQuery) DirectiveUnimplemented(ctx context.Context) (*string, error)
 func (r *stubQuery) GoodbyeFromExtras(ctx context.Context, name string) (string, error) {
 	return r.QueryResolver.GoodbyeFromExtras(ctx, name)
 }
+func (r *stubQuery) HybridInput(ctx context.Context, arg model.HybridInput) (string, error) {
+	return r.QueryResolver.HybridInput(ctx, arg)
+}
+func (r *stubQuery) HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error) {
+	return r.QueryResolver.HybridInputNullable(ctx, arg)
+}
 
 type stubSubscription struct{ *Stub }
 
@@ -122,4 +138,10 @@ func (r *stubSubscription) DirectiveDouble(ctx context.Context) (<-chan *string,
 }
 func (r *stubSubscription) DirectiveUnimplemented(ctx context.Context) (<-chan *string, error) {
 	return r.SubscriptionResolver.DirectiveUnimplemented(ctx)
+}
+
+type stubHybridInput struct{ *Stub }
+
+func (r *stubHybridInput) Resolved(ctx context.Context, obj *model.HybridInput, data string) error {
+	return r.HybridInputResolver.Resolved(ctx, obj, data)
 }

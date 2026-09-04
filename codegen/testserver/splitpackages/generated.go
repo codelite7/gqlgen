@@ -39,6 +39,7 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
+	HybridInput() HybridInputResolver
 }
 
 type DirectiveRoot struct {
@@ -59,6 +60,7 @@ type DirectiveRoot struct {
 	Range             func(ctx context.Context, obj any, next graphql.Resolver, min *int, max *int) (res any, err error)
 	SubscriptionOnly  func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
 	ToNull            func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	ToUpper           func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 	Unimplemented     func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
@@ -95,6 +97,8 @@ type ComplexityRoot struct {
 		DirectiveUnimplemented           func(childComplexity int) int
 		GoodbyeFromExtras                func(childComplexity int, name string) int
 		Hello                            func(childComplexity int, name string) int
+		HybridInput                      func(childComplexity int, arg model.HybridInput) int
+		HybridInputNullable              func(childComplexity int, arg *model.HybridInput) int
 	}
 
 	Subscription struct {
@@ -126,12 +130,18 @@ type QueryResolver interface {
 	DirectiveDouble(ctx context.Context) (*string, error)
 	DirectiveUnimplemented(ctx context.Context) (*string, error)
 	GoodbyeFromExtras(ctx context.Context, name string) (string, error)
+	HybridInput(ctx context.Context, arg model.HybridInput) (string, error)
+	HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error)
 }
 type SubscriptionResolver interface {
 	DirectiveArg(ctx context.Context, arg string) (<-chan *string, error)
 	DirectiveNullableArg(ctx context.Context, arg *int, arg2 *int, arg3 *string) (<-chan *string, error)
 	DirectiveDouble(ctx context.Context) (<-chan *string, error)
 	DirectiveUnimplemented(ctx context.Context) (<-chan *string, error)
+}
+
+type HybridInputResolver interface {
+	Resolved(ctx context.Context, obj *model.HybridInput, data string) error
 }
 
 type executableSchema struct {
@@ -414,6 +424,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Hello(childComplexity, args["name"].(string)), true
+
+	case "Query.hybridInput":
+		if e.complexity.Query.HybridInput == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_hybridInput_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.HybridInput(childComplexity, args["arg"].(model.HybridInput)), true
+
+	case "Query.hybridInputNullable":
+		if e.complexity.Query.HybridInputNullable == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_hybridInputNullable_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.HybridInputNullable(childComplexity, args["arg"].(*model.HybridInput)), true
 
 	case "Subscription.directiveArg":
 		if e.complexity.Subscription.DirectiveArg == nil {
@@ -860,6 +902,11 @@ func (ec *executionContext) InvokeDirective(ctx context.Context, name string, ob
 			return nil, errors.New("directive toNull is not implemented")
 		}
 		return ec.Directives.ToNull(ctx, obj, next)
+	case "toUpper":
+		if ec.Directives.ToUpper == nil {
+			return nil, errors.New("directive toUpper is not implemented")
+		}
+		return ec.Directives.ToUpper(ctx, obj, next)
 	case "unimplemented":
 		if ec.Directives.Unimplemented == nil {
 			return nil, errors.New("directive unimplemented is not implemented")
@@ -1220,6 +1267,18 @@ func init() {
 		_ = fc
 		return ec.resolvers.Query().GoodbyeFromExtras(ctx, fc.Args["name"].(string))
 	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "hybridInput", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().HybridInput(ctx, fc.Args["arg"].(model.HybridInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "hybridInputNullable", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().HybridInputNullable(ctx, fc.Args["arg"].(*model.HybridInput))
+	})
 	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
 		fc := graphql.GetFieldContext(ctx)
@@ -1254,9 +1313,14 @@ func init() {
 		ec := oec.(*executionContext)
 		return ec.IntrospectSchema()
 	})
+	shardruntime.RegisterResolverInvoker(scope, "HybridInput", "resolved", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		args := obj.([]any)
+		return nil, ec.resolvers.HybridInput().Resolved(ctx, args[0].(*model.HybridInput), args[1].(string))
+	})
 }
 
-//go:embed "directive.graphql" "extras.graphql" "schema.graphql"
+//go:embed "directive.graphql" "extras.graphql" "hybrid_input.graphql" "schema.graphql"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -1270,6 +1334,7 @@ func sourceData(filename string) string {
 var sources = []*ast.Source{
 	{Name: "directive.graphql", Input: sourceData("directive.graphql"), BuiltIn: false},
 	{Name: "extras.graphql", Input: sourceData("extras.graphql"), BuiltIn: false},
+	{Name: "hybrid_input.graphql", Input: sourceData("hybrid_input.graphql"), BuiltIn: false},
 	{Name: "schema.graphql", Input: sourceData("schema.graphql"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

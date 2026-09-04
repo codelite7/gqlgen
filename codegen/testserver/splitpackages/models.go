@@ -7,6 +7,7 @@ import "github.com/99designs/gqlgen/codegen/testserver/splitpackages/model"
 // models to live outside the exec root package: shards import the model
 // package, and the root imports the shards.
 type (
+	HybridInput                       = model.HybridInput
 	InnerInput                        = model.InnerInput
 	InputDirectives                   = model.InputDirectives
 	ObjectDirectives                  = model.ObjectDirectives

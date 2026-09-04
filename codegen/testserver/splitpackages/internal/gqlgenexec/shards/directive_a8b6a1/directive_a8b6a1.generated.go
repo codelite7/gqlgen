@@ -763,8 +763,15 @@ func __splitInput_InnerDirectives(ctx context.Context, ec shardruntime.ObjectExe
 		return *typed, nil
 	}
 	var it model.InnerDirectives
+	if obj == nil {
+		return it, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInnerDirectives: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -816,8 +823,15 @@ func __splitInput_InnerInput(ctx context.Context, ec shardruntime.ObjectExecutio
 		return *typed, nil
 	}
 	var it model.InnerInput
+	if obj == nil {
+		return it, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInnerInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -855,8 +869,15 @@ func __splitInput_InputDirectives(ctx context.Context, ec shardruntime.ObjectExe
 		return *typed, nil
 	}
 	var it model.InputDirectives
+	if obj == nil {
+		return it, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInputDirectives: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -980,8 +1001,15 @@ func __splitInput_InputDirectivesWithArgs(ctx context.Context, ec shardruntime.O
 		return *typed, nil
 	}
 	var it model.InputDirectivesWithArgs
+	if obj == nil {
+		return it, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputInputDirectivesWithArgs: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 
@@ -1031,8 +1059,15 @@ func __splitInput_OuterWrapperInput(ctx context.Context, ec shardruntime.ObjectE
 		return *typed, nil
 	}
 	var it model.OuterWrapperInput
+	if obj == nil {
+		return it, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputOuterWrapperInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 

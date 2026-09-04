@@ -1,0 +1,19 @@
+directive @toUpper on INPUT_FIELD_DEFINITION
+
+"""
+HybridInput is bound to a Go type that decodes itself with UnmarshalGQLContext.
+gqlgen still generates an unmarshaler for it, with a hybrid body: the Go method
+decodes plain and defaulted fields, generated code runs the field directive and
+the field resolver.
+"""
+input HybridInput {
+	plain: String!
+	withDefault: String! = "fromDefault"
+	directed: String! @toUpper
+	resolved: String!
+}
+
+extend type Query {
+	hybridInput(arg: HybridInput!): String!
+	hybridInputNullable(arg: HybridInput): String!
+}

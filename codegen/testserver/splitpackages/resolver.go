@@ -100,6 +100,16 @@ func (r *queryResolver) GoodbyeFromExtras(ctx context.Context, name string) (str
 	panic("not implemented")
 }
 
+// HybridInput is the resolver for the hybridInput field.
+func (r *queryResolver) HybridInput(ctx context.Context, arg model.HybridInput) (string, error) {
+	panic("not implemented")
+}
+
+// HybridInputNullable is the resolver for the hybridInputNullable field.
+func (r *queryResolver) HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error) {
+	panic("not implemented")
+}
+
 // DirectiveArg is the resolver for the directiveArg field.
 func (r *subscriptionResolver) DirectiveArg(ctx context.Context, arg string) (<-chan *string, error) {
 	panic("not implemented")

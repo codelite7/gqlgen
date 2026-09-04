@@ -17,3 +17,9 @@ resolver:
 
 autobind:
   - "github.com/99designs/gqlgen/codegen/testserver/splitpackages/model"
+
+models:
+  HybridInput:
+    fields:
+      resolved:
+        resolver: true

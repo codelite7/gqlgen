@@ -312,6 +312,16 @@ func (r *queryResolver) EnumInInput(ctx context.Context, input *InputWithEnumVal
 	panic("not implemented")
 }
 
+// HybridInput is the resolver for the hybridInput field.
+func (r *queryResolver) HybridInput(ctx context.Context, arg HybridInput) (string, error) {
+	panic("not implemented")
+}
+
+// HybridInputNullable is the resolver for the hybridInputNullable field.
+func (r *queryResolver) HybridInputNullable(ctx context.Context, arg *HybridInput) (string, error) {
+	panic("not implemented")
+}
+
 // SearchProducts is the resolver for the searchProducts field.
 func (r *queryResolver) SearchProducts(ctx context.Context, filters map[string]interface{}) ([]string, error) {
 	panic("not implemented")
