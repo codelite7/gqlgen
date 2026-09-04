@@ -105,6 +105,7 @@ type ComplexityRoot struct {
 		HybridInputNullable              func(childComplexity int, arg *model.HybridInput) int
 		InputListField                   func(childComplexity int, arg model.ListFieldInput) int
 		InputNullableSlice               func(childComplexity int, arg []string) int
+		InputOmittable                   func(childComplexity int, arg model.OmittableInput) int
 		InputSlice                       func(childComplexity int, arg []string) int
 		PtrToSliceContainer              func(childComplexity int) int
 		ScalarSlice                      func(childComplexity int) int
@@ -155,6 +156,7 @@ type QueryResolver interface {
 	InputSlice(ctx context.Context, arg []string) (bool, error)
 	InputNullableSlice(ctx context.Context, arg []string) (bool, error)
 	InputListField(ctx context.Context, arg model.ListFieldInput) (string, error)
+	InputOmittable(ctx context.Context, arg model.OmittableInput) (string, error)
 }
 type SubscriptionResolver interface {
 	DirectiveArg(ctx context.Context, arg string) (<-chan *string, error)
@@ -518,6 +520,22 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.InputNullableSlice(childComplexity, args["arg"].([]string)), true
+
+	case "Query.inputOmittable":
+		if e.complexity.Query.InputOmittable == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputOmittable_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputOmittable(childComplexity, args["arg"].(model.OmittableInput)), true
 
 	case "Query.inputSlice":
 		if e.complexity.Query.InputSlice == nil {
@@ -1456,6 +1474,12 @@ func init() {
 		_ = fc
 		return ec.resolvers.Query().InputListField(ctx, fc.Args["arg"].(model.ListFieldInput))
 	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputOmittable", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputOmittable(ctx, fc.Args["arg"].(model.OmittableInput))
+	})
 	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
 		fc := graphql.GetFieldContext(ctx)
@@ -1497,7 +1521,7 @@ func init() {
 	})
 }
 
-//go:embed "directive.graphql" "extras.graphql" "hybrid_input.graphql" "lists.graphql" "schema.graphql"
+//go:embed "directive.graphql" "extras.graphql" "hybrid_input.graphql" "lists.graphql" "omittable_input.graphql" "schema.graphql"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -1513,6 +1537,7 @@ var sources = []*ast.Source{
 	{Name: "extras.graphql", Input: sourceData("extras.graphql"), BuiltIn: false},
 	{Name: "hybrid_input.graphql", Input: sourceData("hybrid_input.graphql"), BuiltIn: false},
 	{Name: "lists.graphql", Input: sourceData("lists.graphql"), BuiltIn: false},
+	{Name: "omittable_input.graphql", Input: sourceData("omittable_input.graphql"), BuiltIn: false},
 	{Name: "schema.graphql", Input: sourceData("schema.graphql"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

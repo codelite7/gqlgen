@@ -1328,6 +1328,15 @@ func unmarshalNInnerInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserv
 }
 
 // split_codecs_.gotpl — unmarshal
+func unmarshalNInnerInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInnerInput(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := __splitInput_InnerInput(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
 func unmarshalNInputDirectives2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInputDirectives(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	res, err := __splitInput_InputDirectives(ctx, ec, value)
 	if err != nil {

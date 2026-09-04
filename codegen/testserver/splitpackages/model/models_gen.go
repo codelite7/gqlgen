@@ -2,6 +2,16 @@
 
 package model
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+	"time"
+
+	"github.com/99designs/gqlgen/graphql"
+)
+
 type InnerDirectives struct {
 	Message string `json:"message"`
 }
@@ -35,6 +45,21 @@ type ObjectDirectives struct {
 	Order        []string `json:"order"`
 }
 
+type OmittableInput struct {
+	ID     graphql.Omittable[*string]     `json:"id,omitempty"`
+	Bool   graphql.Omittable[*bool]       `json:"bool,omitempty"`
+	Str    graphql.Omittable[*string]     `json:"str,omitempty"`
+	Int    graphql.Omittable[*int]        `json:"int,omitempty"`
+	Time   graphql.Omittable[*time.Time]  `json:"time,omitempty"`
+	Enum   graphql.Omittable[*Status]     `json:"enum,omitempty"`
+	Scalar graphql.Omittable[*ThirdParty] `json:"scalar,omitempty"`
+	Object graphql.Omittable[*OuterInput] `json:"object,omitempty"`
+}
+
+type OuterInput struct {
+	Inner *InnerInput `json:"inner"`
+}
+
 type OuterWrapperInput struct {
 	Inner *InputDirectives `json:"inner"`
 }
@@ -50,4 +75,59 @@ type Slices struct {
 }
 
 type Subscription struct {
+}
+
+type Status string
+
+const (
+	StatusOk    Status = "OK"
+	StatusError Status = "ERROR"
+)
+
+var AllStatus = []Status{
+	StatusOk,
+	StatusError,
+}
+
+func (e Status) IsValid() bool {
+	switch e {
+	case StatusOk, StatusError:
+		return true
+	}
+	return false
+}
+
+func (e Status) String() string {
+	return string(e)
+}
+
+func (e *Status) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Status(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Status", str)
+	}
+	return nil
+}
+
+func (e Status) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *Status) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e Status) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

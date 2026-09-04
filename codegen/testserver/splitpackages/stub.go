@@ -38,6 +38,7 @@ type Stub struct {
 		InputSlice                       func(ctx context.Context, arg []string) (bool, error)
 		InputNullableSlice               func(ctx context.Context, arg []string) (bool, error)
 		InputListField                   func(ctx context.Context, arg model.ListFieldInput) (string, error)
+		InputOmittable                   func(ctx context.Context, arg model.OmittableInput) (string, error)
 	}
 	SubscriptionResolver struct {
 		DirectiveArg           func(ctx context.Context, arg string) (<-chan *string, error)
@@ -147,6 +148,9 @@ func (r *stubQuery) InputNullableSlice(ctx context.Context, arg []string) (bool,
 }
 func (r *stubQuery) InputListField(ctx context.Context, arg model.ListFieldInput) (string, error) {
 	return r.QueryResolver.InputListField(ctx, arg)
+}
+func (r *stubQuery) InputOmittable(ctx context.Context, arg model.OmittableInput) (string, error) {
+	return r.QueryResolver.InputOmittable(ctx, arg)
 }
 
 type stubSubscription struct{ *Stub }

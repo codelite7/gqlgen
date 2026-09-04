@@ -593,12 +593,6 @@ func init() {
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__TypeKind2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalN__TypeKind2string(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalOBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalOBoolean2bool(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalOBoolean2ᚖbool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalOBoolean2ᚖbool(ctx, ec, sel, value)
-	})
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx, ec, sel, value)
 	})
@@ -619,11 +613,5 @@ func init() {
 	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__TypeKind2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalN__TypeKind2string(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalOBoolean2bool(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOBoolean2ᚖbool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalOBoolean2ᚖbool(ctx, ec, value)
 	})
 }

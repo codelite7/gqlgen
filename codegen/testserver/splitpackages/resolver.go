@@ -140,6 +140,11 @@ func (r *queryResolver) InputListField(ctx context.Context, arg model.ListFieldI
 	panic("not implemented")
 }
 
+// InputOmittable is the resolver for the inputOmittable field.
+func (r *queryResolver) InputOmittable(ctx context.Context, arg model.OmittableInput) (string, error) {
+	panic("not implemented")
+}
+
 // DirectiveArg is the resolver for the directiveArg field.
 func (r *subscriptionResolver) DirectiveArg(ctx context.Context, arg string) (<-chan *string, error) {
 	panic("not implemented")

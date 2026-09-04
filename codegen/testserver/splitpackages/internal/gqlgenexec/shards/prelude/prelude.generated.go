@@ -821,36 +821,6 @@ func marshalN__TypeKind2string(ctx context.Context, ec shardruntime.ObjectExecut
 }
 
 // split_codecs_.gotpl — marshal
-func marshalOBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	_ = sel
-	_ = ctx
-	v := value.(bool)
-	res := graphql.MarshalBoolean(v)
-	return res
-}
-
-// split_codecs_.gotpl — marshal
-func marshalOBoolean2ᚖbool(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	if value == nil {
-		return graphql.Null
-	}
-	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
-		return graphql.Null
-	}
-	if rv.Kind() == reflect.Struct {
-		ptr := reflect.New(rv.Type())
-		ptr.Elem().Set(rv)
-		value = ptr.Interface()
-	}
-	_ = sel
-	_ = ctx
-	v := value.(*bool)
-	res := graphql.MarshalBoolean(*v)
-	return res
-}
-
-// split_codecs_.gotpl — marshal
 func marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 	if value == nil {
 		return graphql.Null
@@ -1069,22 +1039,4 @@ func unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, ec shardrun
 func unmarshalN__TypeKind2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	res, err := graphql.UnmarshalString(value)
 	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-// split_codecs_.gotpl — unmarshal
-func unmarshalOBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	res, err := graphql.UnmarshalBoolean(value)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-// split_codecs_.gotpl — unmarshal
-func unmarshalOBoolean2ᚖbool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	if value == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalBoolean(value)
-	if err != nil {
-		return nil, graphql.ErrorOnPath(ctx, err)
-	}
-	return &res, nil
 }

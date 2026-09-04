@@ -155,7 +155,13 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 				{{- else }}
 				{{ $lhs }} = data.({{ $field.TypeReference.GO | ref }})
 				{{- end }}
+			{{- if $field.TypeReference.IsOmittable }}
+			} else {
+				{{ $lhs }} = graphql.OmittableOf[{{ $field.TypeReference.GO | ref }}](nil)
 			}
+			{{- else }}
+			}
+			{{- end }}
 			{{- else }}
 				{{- if $field.TypeReference.IsOmittable }}
 			{{ $lhs }} = graphql.OmittableOf(data.({{ $field.TypeReference.GO | ref }}))

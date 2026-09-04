@@ -15,4 +15,5 @@ type (
 	Slices                            = model.Slices
 	PtrToSliceContainer               = model.PtrToSliceContainer
 	ListFieldInput                    = model.ListFieldInput
+	OmittableInput                    = model.OmittableInput
 )

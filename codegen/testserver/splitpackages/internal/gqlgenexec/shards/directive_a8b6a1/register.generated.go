@@ -407,6 +407,9 @@ func init() {
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNInnerInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInnerInput", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalNInnerInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInnerInput(ctx, ec, value)
 	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNInnerInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInnerInput", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalNInnerInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInnerInput(ctx, ec, value)
+	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNInputDirectives2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInputDirectives", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalNInputDirectives2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐInputDirectives(ctx, ec, value)
 	})

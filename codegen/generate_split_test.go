@@ -665,6 +665,145 @@ func TestSplitInputGeneratesFullUnmarshalBody(t *testing.T) {
 	require.Contains(t, text, "it.Name = data.(string)")
 }
 
+// The plain (non-directive, non-resolver) arm must treat an explicit GraphQL
+// null on a nilable graphql.Omittable[T] field as "set, nil" — mirroring the
+// directive arm of the same template and upstream codegen/input.gotpl. Before
+// the fix, `data` (the `any` ec.UnmarshalCodec returns) is untyped nil for an
+// explicit null, the `data != nil` guard skips the assignment, and the field
+// is left unset.
+func TestSplitInputOmittableNilableExplicitNull(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	input := &Object{
+		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference: &config.TypeReference{
+					Definition:  stringDef,
+					GQL:         ast.NamedType("String", nil),
+					GO:          types.NewPointer(types.Typ[types.String]),
+					IsOmittable: true,
+				},
+			},
+		},
+	}
+	for _, f := range input.Fields {
+		f.Object = input
+	}
+	ownership := &splitOwnershipPlanner{
+		InputOwner: map[string]string{
+			input.Name: "alpha",
+		},
+		InputOwnerKeys: []string{input.Name},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:      &Data{Config: &config.Config{}},
+			ShardName: "alpha",
+			Ownership: ownership,
+			InputByName: map[string]*Object{
+				input.Name: input,
+			},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	text := string(contents)
+	require.Contains(t, text, "it.Name = graphql.OmittableOf(data.(*string))")
+	require.Contains(t, text, "it.Name = graphql.OmittableOf[*string](nil)")
+}
+
+// A non-nilable Omittable field (e.g. graphql.Omittable[string] bound to a
+// nullable String — GO is "string", not "*string") needs no nil guard: for an
+// explicit null, ec.UnmarshalCodec's terminal-type arm calls the scalar
+// unmarshaler (e.g. graphql.UnmarshalString(nil)) which returns a boxed zero
+// value ("", nil), never untyped nil — graphql/string_test.go already pins
+// UnmarshalString(nil) == "". So `data.(string)` cannot panic, and the
+// generated code for this arm must stay the single unconditional assignment
+// (no `if data != nil` guard, no else branch) — mirroring upstream
+// codegen/input.gotpl's non-nilable Omittable arm exactly.
+func TestSplitInputOmittableNonNilableNoGuardNeeded(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	input := &Object{
+		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference: &config.TypeReference{
+					Definition:  stringDef,
+					GQL:         ast.NamedType("String", nil),
+					GO:          types.Typ[types.String],
+					IsOmittable: true,
+				},
+			},
+		},
+	}
+	for _, f := range input.Fields {
+		f.Object = input
+	}
+	ownership := &splitOwnershipPlanner{
+		InputOwner: map[string]string{
+			input.Name: "alpha",
+		},
+		InputOwnerKeys: []string{input.Name},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:      &Data{Config: &config.Config{}},
+			ShardName: "alpha",
+			Ownership: ownership,
+			InputByName: map[string]*Object{
+				input.Name: input,
+			},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	text := string(contents)
+	require.Contains(
+		t,
+		text,
+		"if err != nil {\n\t\t\t\treturn it, err\n\t\t\t}\n\t\t\tit.Name = graphql.OmittableOf(data.(string))",
+	)
+	require.NotContains(t, text, "if data != nil")
+}
+
 // A hybrid input (Go type has UnmarshalGQLContext) delegates its plain fields to
 // the method and keeps generated case arms only for fields the method cannot
 // handle: those with directives or a field resolver.

@@ -12,6 +12,13 @@ type ThirdParty struct {
 	str string
 }
 
+// String exposes the unexported value for tests outside this package (the
+// split-packages layout keeps models in their own package, unlike singlefile
+// where ThirdParty and its tests share a package and can reach tp.str directly).
+func (tp ThirdParty) String() string {
+	return tp.str
+}
+
 func MarshalThirdParty(tp ThirdParty) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		_, err := io.WriteString(w, strconv.Quote(tp.str))
