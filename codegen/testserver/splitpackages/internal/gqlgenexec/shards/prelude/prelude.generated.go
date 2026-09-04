@@ -856,6 +856,9 @@ func marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintros
 		return graphql.Null
 	}
 	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
 	ret := make(graphql.Array, rv.Len())
 	var wg sync.WaitGroup
 	isLen1 := rv.Len() == 1
@@ -901,6 +904,9 @@ func marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospect
 		return graphql.Null
 	}
 	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
 	ret := make(graphql.Array, rv.Len())
 	var wg sync.WaitGroup
 	isLen1 := rv.Len() == 1
@@ -946,6 +952,9 @@ func marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintro
 		return graphql.Null
 	}
 	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
 	ret := make(graphql.Array, rv.Len())
 	var wg sync.WaitGroup
 	isLen1 := rv.Len() == 1
@@ -991,6 +1000,9 @@ func marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospecti
 		return graphql.Null
 	}
 	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
 	ret := make(graphql.Array, rv.Len())
 	var wg sync.WaitGroup
 	isLen1 := rv.Len() == 1

@@ -2199,3 +2199,80 @@ func TestSplitCodecSliceUnmarshalMatchesUpstream(t *testing.T) {
 		})
 	}
 }
+
+// TestSplitCodecSliceMarshalNilMatchesUpstream guards against a nil Go slice
+// marshaling as `[]` instead of `null`. The marshal codec's `value` parameter
+// is `any`; a nil Go slice boxed into `any` is a non-nil interface, so a bare
+// `value == nil` guard never fires. The generated codec must also check for
+// nil via reflection (mirroring the terminal-type branch's existing
+// `rv.Kind() == reflect.Ptr && rv.IsNil()` pattern in this same file) so a
+// nilable list type still emits `graphql.Null` for a nil slice.
+func TestSplitCodecSliceMarshalNilMatchesUpstream(t *testing.T) {
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+
+	cases := []struct {
+		name       string
+		ref        *config.TypeReference
+		wantNilChk bool
+	}{
+		{
+			name: "nilable [String]",
+			ref: &config.TypeReference{
+				Definition: stringDef,
+				GQL:        ast.ListType(ast.NamedType("String", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.String]),
+			},
+			wantNilChk: true,
+		},
+		{
+			name: "non-null [String!]!",
+			ref: &config.TypeReference{
+				Definition: stringDef,
+				GQL:        ast.NonNullListType(ast.NonNullNamedType("String", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.String]),
+			},
+			wantNilChk: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			marshalKey := tc.ref.MarshalFunc()
+			ownership := &splitOwnershipPlanner{
+				CodecOwner:     map[string]string{marshalKey: "alpha"},
+				CodecOwnerKeys: []string{marshalKey},
+			}
+
+			outPath := filepath.Join(t.TempDir(), "alpha.generated.go")
+			err := templates.Render(templates.Options{
+				PackageName: "alpha",
+				Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+				Filename:    outPath,
+				Data: splitShardTemplateData{
+					Data:             &Data{Config: &config.Config{}},
+					Scope:            "scope",
+					ShardName:        "alpha",
+					Ownership:        ownership,
+					FieldByLookupKey: map[string]*Field{},
+					FieldByArgsFunc:  map[string]*Field{},
+					InputByName:      map[string]*Object{},
+					CodecByFunc: map[string]*config.TypeReference{
+						marshalKey: tc.ref,
+					},
+				},
+				Packages: internalcode.NewPackages(),
+			})
+			require.NoError(t, err)
+
+			contents, err := os.ReadFile(outPath)
+			require.NoError(t, err)
+			text := string(contents)
+
+			if tc.wantNilChk {
+				require.Contains(t, text, "rv.Kind() == reflect.Slice && rv.IsNil()")
+			} else {
+				require.NotContains(t, text, "rv.Kind() == reflect.Slice && rv.IsNil()")
+			}
+		})
+	}
+}

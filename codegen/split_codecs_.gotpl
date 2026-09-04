@@ -25,6 +25,11 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel
 	}
 	{{- end }}
 	rv := reflect.ValueOf(value)
+	{{- if not $type.GQL.NonNull }}
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
+	{{- end }}
 	ret := make(graphql.Array, rv.Len())
 	{{- if not $type.IsScalar }}
 	var wg sync.WaitGroup

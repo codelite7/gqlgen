@@ -375,6 +375,9 @@ func marshalOString2ᚕstringᚄ(ctx context.Context, ec shardruntime.ObjectExec
 		return graphql.Null
 	}
 	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
 	ret := make(graphql.Array, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		ret[i] = ec.MarshalCodec(ctx, "marshalNString2string", sel, rv.Index(i).Interface())
@@ -393,6 +396,9 @@ func marshalOString2ᚕᚖstring(ctx context.Context, ec shardruntime.ObjectExec
 		return graphql.Null
 	}
 	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
+		return graphql.Null
+	}
 	ret := make(graphql.Array, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		ret[i] = ec.MarshalCodec(ctx, "marshalOString2ᚖstring", sel, rv.Index(i).Interface())

@@ -30,14 +30,8 @@ func TestSlices(t *testing.T) {
 			Slices Slices
 		}
 		c.MustPost(`query { slices { test1, test2, test3, test4 }}`, &resp)
-		// NOTE: unlike the singlefile oracle, test1/test2 (nilable list
-		// fields) are NOT asserted Nil here. The split marshal codec's
-		// `$type.IsSlice` branch checks `value == nil` directly on the `any`
-		// parameter; a nil Go slice boxed into `any` is a non-nil interface,
-		// so the check never fires and a nil slice marshals as `[]` instead
-		// of `null`. This is a real, pre-existing bug in the marshal side —
-		// distinct from and out of scope for Task 16, which fixes only the
-		// unmarshal codec. Flagged as a concern in the Task 16 report.
+		require.Nil(t, resp.Slices.Test1)
+		require.Nil(t, resp.Slices.Test2)
 		require.NotNil(t, resp.Slices.Test3)
 		require.NotNil(t, resp.Slices.Test4)
 	})
