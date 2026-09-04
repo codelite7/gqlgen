@@ -1,0 +1,25 @@
+scalar Bytes
+
+type Slices {
+    test1: [String]
+    test2: [String!]
+    test3: [String]!
+    test4: [String!]!
+}
+
+type PtrToSliceContainer {
+    ptrToSlice: [String!]
+}
+
+input ListFieldInput {
+    items: [String]
+}
+
+extend type Query {
+    slices: Slices
+    scalarSlice: Bytes!
+    ptrToSliceContainer: PtrToSliceContainer
+    inputSlice(arg: [String!]!): Boolean!
+    inputNullableSlice(arg: [String!]): Boolean!
+    inputListField(arg: ListFieldInput!): String!
+}

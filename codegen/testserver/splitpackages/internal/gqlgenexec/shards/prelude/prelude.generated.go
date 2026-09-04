@@ -515,19 +515,6 @@ func __splitArgs_field___Type_fields_args(ctx context.Context, ec shardruntime.O
 }
 
 // split_codecs_.gotpl — marshal
-func marshalNBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	_ = sel
-	v := value.(bool)
-	res := graphql.MarshalBoolean(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-// split_codecs_.gotpl — marshal
 func marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 	handler, ok := shardruntime.LookupObject(splitScope, "__Directive")
 	if !ok {
@@ -1044,12 +1031,6 @@ func marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospecti
 }
 
 // split_codecs_.gotpl — unmarshal
-func unmarshalNBoolean2bool(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	res, err := graphql.UnmarshalBoolean(value)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-// split_codecs_.gotpl — unmarshal
 func unmarshalN__DirectiveLocation2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	res, err := graphql.UnmarshalString(value)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -1058,31 +1039,18 @@ func unmarshalN__DirectiveLocation2string(ctx context.Context, ec shardruntime.O
 // split_codecs_.gotpl — unmarshal
 func unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	vSlice := graphql.CoerceList(value)
-	if len(vSlice) == 0 {
-		return ([]string)(nil), nil
-	}
-	res := make([]any, len(vSlice))
+	res := make([]string, len(vSlice))
 	for i := range vSlice {
 		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		elem, err := ec.UnmarshalCodec(elemCtx, "unmarshalN__DirectiveLocation2string", vSlice[i])
 		if err != nil {
 			return nil, err
 		}
-		res[i] = elem
-	}
-	for _, e := range res {
-		if e != nil {
-			sliceType := reflect.SliceOf(reflect.TypeOf(e))
-			typedSlice := reflect.MakeSlice(sliceType, len(res), len(res))
-			for i, elem := range res {
-				if elem != nil {
-					typedSlice.Index(i).Set(reflect.ValueOf(elem))
-				}
-			}
-			return typedSlice.Interface(), nil
+		if elem != nil {
+			res[i] = elem.(string)
 		}
 	}
-	return ([]string)(nil), nil
+	return res, nil
 }
 
 // split_codecs_.gotpl — unmarshal

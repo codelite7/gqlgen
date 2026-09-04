@@ -112,6 +112,7 @@ type Stub struct {
 		NotAnInterface                   func(ctx context.Context) (BackedByInterface, error)
 		Dog                              func(ctx context.Context) (*Dog, error)
 		Issue896a                        func(ctx context.Context) ([]*CheckIssue896, error)
+		InputListField                   func(ctx context.Context, arg ListFieldInput) (string, error)
 		MapStringInterface               func(ctx context.Context, in map[string]any) (map[string]any, error)
 		MapNestedStringInterface         func(ctx context.Context, in *NestedMapInput) (map[string]any, error)
 		MapNestedMapSlice                func(ctx context.Context, input map[string]any) (*bool, error)
@@ -497,6 +498,9 @@ func (r *stubQuery) Dog(ctx context.Context) (*Dog, error) {
 }
 func (r *stubQuery) Issue896a(ctx context.Context) ([]*CheckIssue896, error) {
 	return r.QueryResolver.Issue896a(ctx)
+}
+func (r *stubQuery) InputListField(ctx context.Context, arg ListFieldInput) (string, error) {
+	return r.QueryResolver.InputListField(ctx, arg)
 }
 func (r *stubQuery) MapStringInterface(ctx context.Context, in map[string]any) (map[string]any, error) {
 	return r.QueryResolver.MapStringInterface(ctx, in)

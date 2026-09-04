@@ -110,6 +110,36 @@ func (r *queryResolver) HybridInputNullable(ctx context.Context, arg *model.Hybr
 	panic("not implemented")
 }
 
+// Slices is the resolver for the slices field.
+func (r *queryResolver) Slices(ctx context.Context) (*model.Slices, error) {
+	panic("not implemented")
+}
+
+// ScalarSlice is the resolver for the scalarSlice field.
+func (r *queryResolver) ScalarSlice(ctx context.Context) ([]byte, error) {
+	panic("not implemented")
+}
+
+// PtrToSliceContainer is the resolver for the ptrToSliceContainer field.
+func (r *queryResolver) PtrToSliceContainer(ctx context.Context) (*model.PtrToSliceContainer, error) {
+	panic("not implemented")
+}
+
+// InputSlice is the resolver for the inputSlice field.
+func (r *queryResolver) InputSlice(ctx context.Context, arg []string) (bool, error) {
+	panic("not implemented")
+}
+
+// InputNullableSlice is the resolver for the inputNullableSlice field.
+func (r *queryResolver) InputNullableSlice(ctx context.Context, arg []string) (bool, error) {
+	panic("not implemented")
+}
+
+// InputListField is the resolver for the inputListField field.
+func (r *queryResolver) InputListField(ctx context.Context, arg model.ListFieldInput) (string, error) {
+	panic("not implemented")
+}
+
 // DirectiveArg is the resolver for the directiveArg field.
 func (r *subscriptionResolver) DirectiveArg(ctx context.Context, arg string) (<-chan *string, error) {
 	panic("not implemented")

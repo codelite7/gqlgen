@@ -1,0 +1,7 @@
+input ListFieldInput {
+    items: [String]
+}
+
+extend type Query {
+    inputListField(arg: ListFieldInput!): String!
+}

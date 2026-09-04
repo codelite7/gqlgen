@@ -32,6 +32,12 @@ type Stub struct {
 		GoodbyeFromExtras                func(ctx context.Context, name string) (string, error)
 		HybridInput                      func(ctx context.Context, arg model.HybridInput) (string, error)
 		HybridInputNullable              func(ctx context.Context, arg *model.HybridInput) (string, error)
+		Slices                           func(ctx context.Context) (*model.Slices, error)
+		ScalarSlice                      func(ctx context.Context) ([]byte, error)
+		PtrToSliceContainer              func(ctx context.Context) (*model.PtrToSliceContainer, error)
+		InputSlice                       func(ctx context.Context, arg []string) (bool, error)
+		InputNullableSlice               func(ctx context.Context, arg []string) (bool, error)
+		InputListField                   func(ctx context.Context, arg model.ListFieldInput) (string, error)
 	}
 	SubscriptionResolver struct {
 		DirectiveArg           func(ctx context.Context, arg string) (<-chan *string, error)
@@ -123,6 +129,24 @@ func (r *stubQuery) HybridInput(ctx context.Context, arg model.HybridInput) (str
 }
 func (r *stubQuery) HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error) {
 	return r.QueryResolver.HybridInputNullable(ctx, arg)
+}
+func (r *stubQuery) Slices(ctx context.Context) (*model.Slices, error) {
+	return r.QueryResolver.Slices(ctx)
+}
+func (r *stubQuery) ScalarSlice(ctx context.Context) ([]byte, error) {
+	return r.QueryResolver.ScalarSlice(ctx)
+}
+func (r *stubQuery) PtrToSliceContainer(ctx context.Context) (*model.PtrToSliceContainer, error) {
+	return r.QueryResolver.PtrToSliceContainer(ctx)
+}
+func (r *stubQuery) InputSlice(ctx context.Context, arg []string) (bool, error) {
+	return r.QueryResolver.InputSlice(ctx, arg)
+}
+func (r *stubQuery) InputNullableSlice(ctx context.Context, arg []string) (bool, error) {
+	return r.QueryResolver.InputNullableSlice(ctx, arg)
+}
+func (r *stubQuery) InputListField(ctx context.Context, arg model.ListFieldInput) (string, error) {
+	return r.QueryResolver.InputListField(ctx, arg)
 }
 
 type stubSubscription struct{ *Stub }

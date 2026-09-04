@@ -80,6 +80,10 @@ type ComplexityRoot struct {
 		NullableText func(childComplexity int) int
 	}
 
+	PtrToSliceContainer struct {
+		PtrToSlice func(childComplexity int) int
+	}
+
 	Query struct {
 		DirectiveArg                     func(childComplexity int, arg string) int
 		DirectiveDouble                  func(childComplexity int) int
@@ -99,6 +103,19 @@ type ComplexityRoot struct {
 		Hello                            func(childComplexity int, name string) int
 		HybridInput                      func(childComplexity int, arg model.HybridInput) int
 		HybridInputNullable              func(childComplexity int, arg *model.HybridInput) int
+		InputListField                   func(childComplexity int, arg model.ListFieldInput) int
+		InputNullableSlice               func(childComplexity int, arg []string) int
+		InputSlice                       func(childComplexity int, arg []string) int
+		PtrToSliceContainer              func(childComplexity int) int
+		ScalarSlice                      func(childComplexity int) int
+		Slices                           func(childComplexity int) int
+	}
+
+	Slices struct {
+		Test1 func(childComplexity int) int
+		Test2 func(childComplexity int) int
+		Test3 func(childComplexity int) int
+		Test4 func(childComplexity int) int
 	}
 
 	Subscription struct {
@@ -132,6 +149,12 @@ type QueryResolver interface {
 	GoodbyeFromExtras(ctx context.Context, name string) (string, error)
 	HybridInput(ctx context.Context, arg model.HybridInput) (string, error)
 	HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error)
+	Slices(ctx context.Context) (*model.Slices, error)
+	ScalarSlice(ctx context.Context) ([]byte, error)
+	PtrToSliceContainer(ctx context.Context) (*model.PtrToSliceContainer, error)
+	InputSlice(ctx context.Context, arg []string) (bool, error)
+	InputNullableSlice(ctx context.Context, arg []string) (bool, error)
+	InputListField(ctx context.Context, arg model.ListFieldInput) (string, error)
 }
 type SubscriptionResolver interface {
 	DirectiveArg(ctx context.Context, arg string) (<-chan *string, error)
@@ -213,6 +236,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ObjectDirectivesWithCustomGoModel.NullableText(childComplexity), true
+
+	case "PtrToSliceContainer.ptrToSlice":
+		if e.complexity.PtrToSliceContainer.PtrToSlice == nil {
+			break
+		}
+
+		return e.complexity.PtrToSliceContainer.PtrToSlice(childComplexity), true
 
 	case "Query.directiveArg":
 		if e.complexity.Query.DirectiveArg == nil {
@@ -456,6 +486,103 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.HybridInputNullable(childComplexity, args["arg"].(*model.HybridInput)), true
+
+	case "Query.inputListField":
+		if e.complexity.Query.InputListField == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputListField_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputListField(childComplexity, args["arg"].(model.ListFieldInput)), true
+
+	case "Query.inputNullableSlice":
+		if e.complexity.Query.InputNullableSlice == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputNullableSlice_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputNullableSlice(childComplexity, args["arg"].([]string)), true
+
+	case "Query.inputSlice":
+		if e.complexity.Query.InputSlice == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputSlice_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputSlice(childComplexity, args["arg"].([]string)), true
+
+	case "Query.ptrToSliceContainer":
+		if e.complexity.Query.PtrToSliceContainer == nil {
+			break
+		}
+
+		return e.complexity.Query.PtrToSliceContainer(childComplexity), true
+
+	case "Query.scalarSlice":
+		if e.complexity.Query.ScalarSlice == nil {
+			break
+		}
+
+		return e.complexity.Query.ScalarSlice(childComplexity), true
+
+	case "Query.slices":
+		if e.complexity.Query.Slices == nil {
+			break
+		}
+
+		return e.complexity.Query.Slices(childComplexity), true
+
+	case "Slices.test1":
+		if e.complexity.Slices.Test1 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test1(childComplexity), true
+
+	case "Slices.test2":
+		if e.complexity.Slices.Test2 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test2(childComplexity), true
+
+	case "Slices.test3":
+		if e.complexity.Slices.Test3 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test3(childComplexity), true
+
+	case "Slices.test4":
+		if e.complexity.Slices.Test4 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test4(childComplexity), true
 
 	case "Subscription.directiveArg":
 		if e.complexity.Subscription.DirectiveArg == nil {
@@ -1062,6 +1189,13 @@ func (ec *executionContext) _ObjectDirectivesWithCustomGoModel(ctx context.Conte
 	}
 	return handler(ctx, ec, sel, obj)
 }
+func (ec *executionContext) _PtrToSliceContainer(ctx context.Context, sel ast.SelectionSet, obj *model.PtrToSliceContainer) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "PtrToSliceContainer")
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", "PtrToSliceContainer"))
+	}
+	return handler(ctx, ec, sel, obj)
+}
 
 var queryImplementors = []string{"Query"}
 
@@ -1095,6 +1229,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		return graphql.Null
 	}
 	return out
+}
+func (ec *executionContext) _Slices(ctx context.Context, sel ast.SelectionSet, obj *model.Slices) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "Slices")
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", "Slices"))
+	}
+	return handler(ctx, ec, sel, obj)
 }
 
 var subscriptionImplementors = []string{"Subscription"}
@@ -1279,6 +1420,42 @@ func init() {
 		_ = fc
 		return ec.resolvers.Query().HybridInputNullable(ctx, fc.Args["arg"].(*model.HybridInput))
 	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "slices", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().Slices(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "scalarSlice", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().ScalarSlice(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "ptrToSliceContainer", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().PtrToSliceContainer(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputSlice", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputSlice(ctx, fc.Args["arg"].([]string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputNullableSlice", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputNullableSlice(ctx, fc.Args["arg"].([]string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputListField", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputListField(ctx, fc.Args["arg"].(model.ListFieldInput))
+	})
 	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
 		fc := graphql.GetFieldContext(ctx)
@@ -1320,7 +1497,7 @@ func init() {
 	})
 }
 
-//go:embed "directive.graphql" "extras.graphql" "hybrid_input.graphql" "schema.graphql"
+//go:embed "directive.graphql" "extras.graphql" "hybrid_input.graphql" "lists.graphql" "schema.graphql"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -1335,6 +1512,7 @@ var sources = []*ast.Source{
 	{Name: "directive.graphql", Input: sourceData("directive.graphql"), BuiltIn: false},
 	{Name: "extras.graphql", Input: sourceData("extras.graphql"), BuiltIn: false},
 	{Name: "hybrid_input.graphql", Input: sourceData("hybrid_input.graphql"), BuiltIn: false},
+	{Name: "lists.graphql", Input: sourceData("lists.graphql"), BuiltIn: false},
 	{Name: "schema.graphql", Input: sourceData("schema.graphql"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

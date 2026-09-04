@@ -402,6 +402,11 @@ func (r *queryResolver) Issue896a(ctx context.Context) ([]*CheckIssue896, error)
 	panic("not implemented")
 }
 
+// InputListField is the resolver for the inputListField field.
+func (r *queryResolver) InputListField(ctx context.Context, arg ListFieldInput) (string, error) {
+	panic("not implemented")
+}
+
 // MapStringInterface is the resolver for the mapStringInterface field.
 func (r *queryResolver) MapStringInterface(ctx context.Context, in map[string]any) (map[string]any, error) {
 	panic("not implemented")

@@ -1372,31 +1372,18 @@ func unmarshalNOuterWrapperInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋt
 // split_codecs_.gotpl — unmarshal
 func unmarshalNString2ᚕstringᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	vSlice := graphql.CoerceList(value)
-	if len(vSlice) == 0 {
-		return ([]string)(nil), nil
-	}
-	res := make([]any, len(vSlice))
+	res := make([]string, len(vSlice))
 	for i := range vSlice {
 		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		elem, err := ec.UnmarshalCodec(elemCtx, "unmarshalNString2string", vSlice[i])
 		if err != nil {
 			return nil, err
 		}
-		res[i] = elem
-	}
-	for _, e := range res {
-		if e != nil {
-			sliceType := reflect.SliceOf(reflect.TypeOf(e))
-			typedSlice := reflect.MakeSlice(sliceType, len(res), len(res))
-			for i, elem := range res {
-				if elem != nil {
-					typedSlice.Index(i).Set(reflect.ValueOf(elem))
-				}
-			}
-			return typedSlice.Interface(), nil
+		if elem != nil {
+			res[i] = elem.(string)
 		}
 	}
-	return ([]string)(nil), nil
+	return res, nil
 }
 
 // split_codecs_.gotpl — unmarshal

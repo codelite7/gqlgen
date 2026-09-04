@@ -2105,3 +2105,97 @@ extend type Query {
 	// FIELD_DEFINITION directives are wired into the field registration.
 	require.Contains(t, shards, "__splitDirectives_Query_guarded(ctx, ec, obj, next)")
 }
+
+// The split unmarshal codec for a list type must match upstream codegen/type.gotpl:
+// [] -> a non-nil empty slice, [null] -> a one-element slice holding a nil/zero
+// element, built directly (typed make + assertion), never via the reflect path
+// that returns a nil slice when every element happens to be nil.
+func TestSplitCodecSliceUnmarshalMatchesUpstream(t *testing.T) {
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	intDef := &ast.Definition{Name: "Int", Kind: ast.Scalar}
+	const modelImportPath = "example.com/project/model"
+	someInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "SomeInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	someInputDef := &ast.Definition{Name: "SomeInput", Kind: ast.InputObject}
+
+	cases := []struct {
+		name      string
+		ref       *config.TypeReference
+		wantMake  string
+		wantAssrt string
+	}{
+		{
+			name: "String",
+			ref: &config.TypeReference{
+				Definition: stringDef,
+				GQL:        ast.ListType(ast.NamedType("String", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.String]),
+			},
+			wantMake:  "res := make([]string, len(vSlice))",
+			wantAssrt: "res[i] = elem.(string)",
+		},
+		{
+			name: "Int!]!",
+			ref: &config.TypeReference{
+				Definition: intDef,
+				GQL:        ast.NonNullListType(ast.NonNullNamedType("Int", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.Int]),
+			},
+			wantMake:  "res := make([]int, len(vSlice))",
+			wantAssrt: "res[i] = elem.(int)",
+		},
+		{
+			name: "SomeInput!",
+			ref: &config.TypeReference{
+				Definition: someInputDef,
+				GQL:        ast.ListType(ast.NonNullNamedType("SomeInput", nil), nil),
+				GO:         types.NewSlice(someInputType),
+			},
+			wantMake:  "res := make([]model.SomeInput, len(vSlice))",
+			wantAssrt: "res[i] = elem.(model.SomeInput)",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			unmarshalKey := tc.ref.UnmarshalFunc()
+			ownership := &splitOwnershipPlanner{
+				CodecOwner:     map[string]string{unmarshalKey: "alpha"},
+				CodecOwnerKeys: []string{unmarshalKey},
+			}
+
+			outPath := filepath.Join(t.TempDir(), "alpha.generated.go")
+			err := templates.Render(templates.Options{
+				PackageName: "alpha",
+				Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+				Filename:    outPath,
+				Data: splitShardTemplateData{
+					Data:             &Data{Config: &config.Config{}},
+					Scope:            "scope",
+					ShardName:        "alpha",
+					Ownership:        ownership,
+					FieldByLookupKey: map[string]*Field{},
+					FieldByArgsFunc:  map[string]*Field{},
+					InputByName:      map[string]*Object{},
+					CodecByFunc: map[string]*config.TypeReference{
+						unmarshalKey: tc.ref,
+					},
+				},
+				Packages: internalcode.NewPackages(),
+			})
+			require.NoError(t, err)
+
+			contents, err := os.ReadFile(outPath)
+			require.NoError(t, err)
+			text := string(contents)
+
+			require.Contains(t, text, tc.wantMake)
+			require.Contains(t, text, tc.wantAssrt)
+			require.NotContains(t, text, "len(vSlice) == 0")
+			require.NotContains(t, text, "reflect.MakeSlice")
+		})
+	}
+}

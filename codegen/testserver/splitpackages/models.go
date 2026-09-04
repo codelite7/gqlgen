@@ -12,4 +12,7 @@ type (
 	InputDirectives                   = model.InputDirectives
 	ObjectDirectives                  = model.ObjectDirectives
 	ObjectDirectivesWithCustomGoModel = model.ObjectDirectivesWithCustomGoModel
+	Slices                            = model.Slices
+	PtrToSliceContainer               = model.PtrToSliceContainer
+	ListFieldInput                    = model.ListFieldInput
 )

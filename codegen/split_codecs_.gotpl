@@ -203,34 +203,20 @@ func {{ $key }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, val
 	return ptr.Interface(), nil
 
 	{{- else if $type.IsSlice }}
-	{{- /* Slice: coerce to list, unmarshal each element */}}
+	{{- /* Slice: coerce to list, unmarshal each element (mirrors codegen/type.gotpl) */}}
 	vSlice := graphql.CoerceList(value)
-	if len(vSlice) == 0 {
-		return ({{ $type.GO | ref }})(nil), nil
-	}
-	res := make([]any, len(vSlice))
+	res := make({{ $type.GO | ref }}, len(vSlice))
 	for i := range vSlice {
 		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		elem, err := ec.UnmarshalCodec(elemCtx, {{ $type.Elem.UnmarshalFunc | quote }}, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
-		res[i] = elem
-	}
-	{{- /* Convert []any to the correct typed slice using reflect */}}
-	for _, e := range res {
-		if e != nil {
-			sliceType := reflect.SliceOf(reflect.TypeOf(e))
-			typedSlice := reflect.MakeSlice(sliceType, len(res), len(res))
-			for i, elem := range res {
-				if elem != nil {
-					typedSlice.Index(i).Set(reflect.ValueOf(elem))
-				}
-			}
-			return typedSlice.Interface(), nil
+		if elem != nil {
+			res[i] = elem.({{ $type.GO.Elem | ref }})
 		}
 	}
-	return ({{ $type.GO | ref }})(nil), nil
+	return res, nil
 
 	{{- else if and $type.IsPtrToPtr (not $type.Unmarshaler) (not $type.IsMarshaler) }}
 	{{- /* Pointer-to-pointer: delegate to elem, wrap in pointer */}}

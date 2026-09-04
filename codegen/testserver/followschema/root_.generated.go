@@ -356,6 +356,7 @@ type ComplexityRoot struct {
 		HybridInput                      func(childComplexity int, arg HybridInput) int
 		HybridInputNullable              func(childComplexity int, arg *HybridInput) int
 		Infinity                         func(childComplexity int) int
+		InputListField                   func(childComplexity int, arg ListFieldInput) int
 		InputNullableSlice               func(childComplexity int, arg []string) int
 		InputOmittable                   func(childComplexity int, arg OmittableInput) int
 		InputSlice                       func(childComplexity int, arg []string) int
@@ -1628,6 +1629,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Infinity(childComplexity), true
 
+	case "Query.inputListField":
+		if e.ComplexityRoot.Query.InputListField == nil {
+			break
+		}
+
+		args, err := ec.field_Query_inputListField_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.InputListField(childComplexity, args["arg"].(ListFieldInput)), true
+
 	case "Query.inputNullableSlice":
 		if e.ComplexityRoot.Query.InputNullableSlice == nil {
 			break
@@ -2396,6 +2409,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputInputWithEnumValue,
 		ec.unmarshalInputIssue4053Input1,
 		ec.unmarshalInputIssue4053Input2,
+		ec.unmarshalInputListFieldInput,
 		ec.unmarshalInputMapNestedInput,
 		ec.unmarshalInputMapNestedMapSliceInput,
 		ec.unmarshalInputMapStringInterfaceInput,
@@ -2734,6 +2748,9 @@ input Issue4053Input2 {
 type It {
 	id: ID!
 }
+input ListFieldInput {
+	items: [String]
+}
 type LoopA {
 	b: LoopB!
 }
@@ -2922,6 +2939,7 @@ type Query {
 	notAnInterface: BackedByInterface
 	dog: Dog
 	issue896a: [CheckIssue896!]
+	inputListField(arg: ListFieldInput!): String!
 	mapStringInterface(in: MapStringInterfaceInput): MapStringInterfaceType
 	mapNestedStringInterface(in: NestedMapInput): MapStringInterfaceType
 	mapNestedMapSlice(input: MapNestedMapSliceInput): Boolean

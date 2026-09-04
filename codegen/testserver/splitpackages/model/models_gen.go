@@ -22,6 +22,10 @@ type InputDirectivesWithArgs struct {
 	Text string `json:"text"`
 }
 
+type ListFieldInput struct {
+	Items []*string `json:"items,omitempty"`
+}
+
 type Mutation struct {
 }
 
@@ -36,6 +40,13 @@ type OuterWrapperInput struct {
 }
 
 type Query struct {
+}
+
+type Slices struct {
+	Test1 []*string `json:"test1,omitempty"`
+	Test2 []string  `json:"test2,omitempty"`
+	Test3 []*string `json:"test3"`
+	Test4 []string  `json:"test4"`
 }
 
 type Subscription struct {
