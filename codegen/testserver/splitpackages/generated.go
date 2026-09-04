@@ -40,6 +40,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
 	HybridInput() HybridInputResolver
+	HybridNested() HybridNestedResolver
 }
 
 type DirectiveRoot struct {
@@ -167,6 +168,9 @@ type SubscriptionResolver interface {
 
 type HybridInputResolver interface {
 	Resolved(ctx context.Context, obj *model.HybridInput, data string) error
+}
+type HybridNestedResolver interface {
+	Resolved(ctx context.Context, obj *model.HybridNested, data string) error
 }
 
 type executableSchema struct {
@@ -1518,6 +1522,11 @@ func init() {
 		ec := oec.(*executionContext)
 		args := obj.([]any)
 		return nil, ec.resolvers.HybridInput().Resolved(ctx, args[0].(*model.HybridInput), args[1].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "HybridNested", "resolved", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		args := obj.([]any)
+		return nil, ec.resolvers.HybridNested().Resolved(ctx, args[0].(*model.HybridNested), args[1].(string))
 	})
 }
 

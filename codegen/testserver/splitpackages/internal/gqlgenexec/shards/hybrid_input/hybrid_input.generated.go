@@ -89,7 +89,7 @@ func __splitInput_HybridInput(ctx context.Context, ec shardruntime.ObjectExecuti
 	plain := make(map[string]any, len(asMap))
 	for k, v := range asMap {
 		switch k {
-		case "directed", "resolved":
+		case "directed", "resolved", "nested", "nestedList", "selfRef":
 		default:
 			plain[k] = v
 		}
@@ -98,7 +98,7 @@ func __splitInput_HybridInput(ctx context.Context, ec shardruntime.ObjectExecuti
 		return it, err
 	}
 
-	fieldsInOrder := [...]string{"directed", "resolved"}
+	fieldsInOrder := [...]string{"directed", "resolved", "nested", "nestedList", "selfRef"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -132,6 +132,108 @@ func __splitInput_HybridInput(ctx context.Context, ec shardruntime.ObjectExecuti
 			if _, err := ec.InvokeResolver(ctx, "HybridInput", "resolved", []any{&it, data}); err != nil {
 				return it, err
 			}
+		case "nested":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nested"))
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", v)
+			if err != nil {
+				return it, err
+			}
+			if data != nil {
+				it.Nested = data.(*model.HybridNested)
+			}
+		case "nestedList":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nestedList"))
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNestedᚄ", v)
+			if err != nil {
+				return it, err
+			}
+			if data != nil {
+				it.NestedList = data.([]*model.HybridNested)
+			}
+		case "selfRef":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selfRef"))
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInputᚄ", v)
+			if err != nil {
+				return it, err
+			}
+			if data != nil {
+				it.SelfRef = data.([]*model.HybridInput)
+			}
+		}
+	}
+
+	return it, nil
+}
+
+// split_inputs_.gotpl
+func __splitInput_HybridNested(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (model.HybridNested, error) {
+	// If already unmarshaled to the correct type, return directly.
+	if typed, ok := obj.(model.HybridNested); ok {
+		return typed, nil
+	}
+	if typed, ok := obj.(*model.HybridNested); ok {
+		if typed == nil {
+			var zero model.HybridNested
+			return zero, nil
+		}
+		return *typed, nil
+	}
+	var it model.HybridNested
+	if obj == nil {
+		return it, nil
+	}
+	asMap := map[string]any{}
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputHybridNested: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"gated", "resolved", "deeper"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "gated":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gated"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			}
+			directive1 := func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, "toUpper", obj, directive0, nil)
+			}
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(string); ok {
+				it.Gated = data
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "resolved":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolved"))
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return it, err
+			}
+			if _, err := ec.InvokeResolver(ctx, "HybridNested", "resolved", []any{&it, data}); err != nil {
+				return it, err
+			}
+		case "deeper":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deeper"))
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", v)
+			if err != nil {
+				return it, err
+			}
+			if data != nil {
+				it.Deeper = data.(*model.HybridNested)
+			}
 		}
 	}
 
@@ -148,10 +250,57 @@ func unmarshalNHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestser
 }
 
 // split_codecs_.gotpl — unmarshal
+func unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := __splitInput_HybridInput(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
+func unmarshalNHybridNested2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := __splitInput_HybridNested(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
+func unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := __splitInput_HybridNested(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
 func unmarshalOHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 	res, err := __splitInput_HybridInput(ctx, ec, value)
 	if err != nil {
 		return nil, err
+	}
+	return res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
+func unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInputᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(value)
+	res := make([]*model.HybridInput, len(vSlice))
+	for i := range vSlice {
+		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		elem, err := ec.UnmarshalCodec(elemCtx, "unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput", vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+		if elem != nil {
+			res[i] = elem.(*model.HybridInput)
+		}
 	}
 	return res, nil
 }
@@ -162,6 +311,47 @@ func unmarshalOHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtest
 		return nil, nil
 	}
 	res, err := __splitInput_HybridInput(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
+func unmarshalOHybridNested2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	res, err := __splitInput_HybridNested(ctx, ec, value)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
+func unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNestedᚄ(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(value)
+	res := make([]*model.HybridNested, len(vSlice))
+	for i := range vSlice {
+		elemCtx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		elem, err := ec.UnmarshalCodec(elemCtx, "unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+		if elem != nil {
+			res[i] = elem.(*model.HybridNested)
+		}
+	}
+	return res, nil
+}
+
+// split_codecs_.gotpl — unmarshal
+func unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
+	res, err := __splitInput_HybridNested(ctx, ec, value)
 	if err != nil {
 		return nil, err
 	}

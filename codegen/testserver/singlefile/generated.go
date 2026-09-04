@@ -49,6 +49,7 @@ type ResolverRoot interface {
 	WrappedSlice() WrappedSliceResolver
 	FieldsOrderInput() FieldsOrderInputResolver
 	HybridInput() HybridInputResolver
+	HybridNested() HybridNestedResolver
 }
 
 type DirectiveRoot struct {
@@ -672,6 +673,9 @@ type FieldsOrderInputResolver interface {
 }
 type HybridInputResolver interface {
 	Resolved(ctx context.Context, obj *HybridInput, data string) error
+}
+type HybridNestedResolver interface {
+	Resolved(ctx context.Context, obj *HybridNested, data string) error
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -2414,6 +2418,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDirectiveInput,
 		ec.unmarshalInputFieldsOrderInput,
 		ec.unmarshalInputHybridInput,
+		ec.unmarshalInputHybridNested,
 		ec.unmarshalInputInnerDirectives,
 		ec.unmarshalInputInnerInput,
 		ec.unmarshalInputInputDirectives,
@@ -2724,6 +2729,20 @@ input HybridInput {
 	withDefault: String! = "fromDefault"
 	directed: String! @toUpper
 	resolved: String!
+	nested: HybridNested
+	nestedList: [HybridNested!]
+	selfRef: [HybridInput!]
+}
+"""
+HybridNested is reached from HybridInput only through fields that carry no
+directive of their own (nested, nestedList, selfRef). Its own @toUpper directive
+and its ` + "`" + `resolved` + "`" + ` field resolver must still run: a hybrid body that hands those
+fields to UnmarshalGQLContext skips them silently.
+"""
+input HybridNested {
+	gated: String! @toUpper
+	resolved: String!
+	deeper: HybridNested
 }
 input InnerDirectives {
 	message: String! @length(min: 1, message: "not valid")
@@ -14898,7 +14917,7 @@ func (ec *executionContext) unmarshalInputHybridInput(ctx context.Context, obj a
 	plain := make(map[string]any, len(asMap))
 	for k, v := range asMap {
 		switch k {
-		case "directed", "resolved":
+		case "directed", "resolved", "nested", "nestedList", "selfRef":
 		default:
 			plain[k] = v
 		}
@@ -14907,7 +14926,7 @@ func (ec *executionContext) unmarshalInputHybridInput(ctx context.Context, obj a
 		return it, err
 	}
 
-	fieldsInOrder := [...]string{"directed", "resolved"}
+	fieldsInOrder := [...]string{"directed", "resolved", "nested", "nestedList", "selfRef"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14945,6 +14964,92 @@ func (ec *executionContext) unmarshalInputHybridInput(ctx context.Context, obj a
 			if err = ec.Resolvers.HybridInput().Resolved(ctx, &it, data); err != nil {
 				return it, err
 			}
+		case "nested":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nested"))
+			data, err := ec.unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Nested = data
+		case "nestedList":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nestedList"))
+			data, err := ec.unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNestedᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NestedList = data
+		case "selfRef":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selfRef"))
+			data, err := ec.unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelfRef = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputHybridNested(ctx context.Context, obj any) (HybridNested, error) {
+	var it HybridNested
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputHybridNested: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"gated", "resolved", "deeper"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "gated":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gated"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.ToUpper == nil {
+					var zeroVal string
+					return zeroVal, errors.New("directive toUpper is not implemented")
+				}
+				return ec.Directives.ToUpper(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(string); ok {
+				it.Gated = data
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "resolved":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolved"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.Resolvers.HybridNested().Resolved(ctx, &it, data); err != nil {
+				return it, err
+			}
+		case "deeper":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deeper"))
+			data, err := ec.unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Deeper = data
 		}
 	}
 	return it, nil
@@ -22407,6 +22512,16 @@ func (ec *executionContext) unmarshalNHybridInput2githubᚗcomᚋ99designsᚋgql
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx context.Context, v any) (*HybridInput, error) {
+	res, err := ec.unmarshalInputHybridInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx context.Context, v any) (*HybridNested, error) {
+	res, err := ec.unmarshalInputHybridNested(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNID2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalIntID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -23438,11 +23553,55 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
+func (ec *executionContext) unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInputᚄ(ctx context.Context, v any) ([]*HybridInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*HybridInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalOHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx context.Context, v any) (*HybridInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputHybridInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNestedᚄ(ctx context.Context, v any) ([]*HybridNested, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*HybridNested, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx context.Context, v any) (*HybridNested, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputHybridNested(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

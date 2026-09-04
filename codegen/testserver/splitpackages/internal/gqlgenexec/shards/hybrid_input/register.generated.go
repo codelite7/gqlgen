@@ -46,13 +46,35 @@ func init() {
 	shardruntime.RegisterArgs(splitScope, "field_Query_hybridInputNullable_args", __splitArgs_field_Query_hybridInputNullable_args)
 	shardruntime.RegisterArgs(splitScope, "field_Query_hybridInput_args", __splitArgs_field_Query_hybridInput_args)
 	shardruntime.RegisterInputUnmarshaler(splitScope, "HybridInput", __splitInput_HybridInput)
+	shardruntime.RegisterInputUnmarshaler(splitScope, "HybridNested", __splitInput_HybridNested)
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalNHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput(ctx, ec, value)
+	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput(ctx, ec, value)
+	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNHybridNested2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalNHybridNested2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx, ec, value)
+	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx, ec, value)
 	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalOHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput(ctx, ec, value)
 	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInputᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInputᚄ(ctx, ec, value)
+	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalOHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridInput(ctx, ec, value)
+	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOHybridNested2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOHybridNested2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx, ec, value)
+	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNestedᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNestedᚄ(ctx, ec, value)
+	})
+	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
+		return unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsplitpackagesᚋmodelᚐHybridNested(ctx, ec, value)
 	})
 }

@@ -35,6 +35,11 @@ type Object struct {
 	Stream                   bool
 	Directives               []*Directive
 	PointersInUnmarshalInput bool
+
+	// needsGeneratedInput is the input-graph classification shared by all inputs,
+	// computed once by Objects.resolveHybridSpecialFields. Nil outside BuildData,
+	// which just means no field is special by nesting.
+	needsGeneratedInput map[string]bool
 }
 
 func (b *builder) buildObject(typ *ast.Definition) (*Object, error) {
@@ -130,15 +135,78 @@ func (o *Object) HasContextUnmarshal() bool {
 
 // HybridSpecialFields returns the fields a hybrid unmarshaler must still handle
 // itself, because UnmarshalGQLContext cannot: those with INPUT_FIELD_DEFINITION
-// directives, and those backed by a field resolver.
+// directives, those backed by a field resolver, and those whose type is an input
+// object that itself needs generated handling — handing such a value to the
+// method would skip the nested input's directives and resolvers silently.
+//
+// The nested case needs Objects.resolveHybridSpecialFields to have run over the
+// whole input graph; BuildData does that.
 func (o *Object) HybridSpecialFields() []*Field {
 	var special []*Field
 	for _, f := range o.Fields {
-		if len(f.ImplDirectives()) > 0 || f.IsResolver {
+		if hybridSpecialField(f, o.needsGeneratedInput) {
 			special = append(special, f)
 		}
 	}
 	return special
+}
+
+func hybridSpecialField(f *Field, needsGenerated map[string]bool) bool {
+	if len(f.ImplDirectives()) > 0 || f.IsResolver {
+		return true
+	}
+	// TypeReference.Definition is the named type behind any list/non-null
+	// wrapping, so [X!]! and X classify alike.
+	if f.TypeReference == nil || f.TypeReference.Definition == nil {
+		return false
+	}
+	def := f.TypeReference.Definition
+	return def.Kind == ast.InputObject && needsGenerated[def.Name]
+}
+
+// resolveHybridSpecialFields classifies the input graph for the hybrid
+// unmarshaler: an input "needs generated handling" when it has a field a custom
+// UnmarshalGQLContext cannot reproduce — one with a directive, a resolver or a
+// default, an INPUT_OBJECT-level directive on the input itself, or a field whose
+// type is an input that needs generated handling. That last clause makes the
+// relation transitive, and the input graph is cyclic (`and: [XWhereInput!]`), so
+// it is computed as a fixpoint rather than by recursion.
+//
+// The result is shared with every input so HybridSpecialFields, which the
+// templates call per input, can see past its own fields.
+func (os Objects) resolveHybridSpecialFields() {
+	// ponytail: plain repeated passes, no worklist — O(passes x inputs x fields),
+	// two or three passes on real schemas. Add a reverse-edge worklist only if a
+	// large schema shows this in a codegen profile.
+	needsGenerated := make(map[string]bool, len(os))
+	for changed := true; changed; {
+		changed = false
+		for _, in := range os {
+			if needsGenerated[in.Name] || !in.requiresGeneratedUnmarshal(needsGenerated) {
+				continue
+			}
+			needsGenerated[in.Name] = true
+			changed = true
+		}
+	}
+	for _, in := range os {
+		in.needsGeneratedInput = needsGenerated
+	}
+}
+
+func (o *Object) requiresGeneratedUnmarshal(needsGenerated map[string]bool) bool {
+	if len(o.InputObjectDirectives()) > 0 {
+		return true
+	}
+	for _, f := range o.Fields {
+		// A default is applied to the map before the method is called, so it does
+		// not make the field special here — but a parent handing this whole input
+		// to its own decoder would drop it.
+		if f.Default != nil || hybridSpecialField(f, needsGenerated) {
+			return true
+		}
+	}
+	return false
 }
 
 func (o *Object) hasMethod(name string) bool {

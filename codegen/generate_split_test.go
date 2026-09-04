@@ -885,6 +885,87 @@ func TestSplitInputGeneratesHybridUnmarshalBody(t *testing.T) {
 	require.Contains(t, text, `fieldsInOrder := [...]string{"computed"}`)
 }
 
+// The hybrid classification is transitive: a field with no directive of its own
+// whose type is an input object that (transitively) needs generated handling
+// must keep its case arm, or the nested input's directives and resolvers are
+// silently skipped when the custom decoder swallows the whole value.
+func TestSplitInputHybridKeepsNestedInputArms(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	pkg := types.NewPackage(modelImportPath, "model")
+	outerType := types.NewNamed(types.NewTypeName(0, pkg, "Outer", nil), types.NewStruct(nil, nil), nil)
+	outerType.AddMethod(types.NewFunc(0, pkg, "UnmarshalGQLContext",
+		types.NewSignatureType(types.NewVar(0, pkg, "i", types.NewPointer(outerType)), nil, nil, nil, nil, false)))
+	innerType := types.NewNamed(types.NewTypeName(0, pkg, "Inner", nil), types.NewStruct(nil, nil), nil)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	innerDef := &ast.Definition{Name: "Inner", Kind: ast.InputObject}
+	outerDef := &ast.Definition{Name: "Outer", Kind: ast.InputObject}
+	strRef := func() *config.TypeReference {
+		return &config.TypeReference{Definition: stringDef, GQL: ast.NonNullNamedType("String", nil), GO: types.Typ[types.String]}
+	}
+	// TypeReference.Definition is the unwrapped named type, so lists and non-null
+	// need no special handling here.
+	inputRef := func(def *ast.Definition, named *types.Named) *config.TypeReference {
+		return &config.TypeReference{Definition: def, GQL: ast.NamedType(def.Name, nil), GO: types.NewPointer(named)}
+	}
+
+	inner := &Object{
+		Definition: innerDef,
+		Type:       innerType,
+		Fields: []*Field{{
+			FieldDefinition: &ast.FieldDefinition{Name: "gated"},
+			GoFieldName:     "Gated",
+			TypeReference:   strRef(),
+			Directives: []*Directive{{
+				Name:                "someDirective",
+				DirectiveDefinition: &ast.DirectiveDefinition{Name: "someDirective", Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition}},
+			}},
+		}},
+	}
+	outer := &Object{
+		Definition: outerDef,
+		Type:       outerType,
+		Fields: []*Field{
+			{FieldDefinition: &ast.FieldDefinition{Name: "plain"}, GoFieldName: "Plain", TypeReference: strRef()},
+			{FieldDefinition: &ast.FieldDefinition{Name: "nested"}, GoFieldName: "Nested", TypeReference: inputRef(innerDef, innerType)},
+			{FieldDefinition: &ast.FieldDefinition{Name: "nestedList"}, GoFieldName: "NestedList", TypeReference: inputRef(innerDef, innerType)},
+			{FieldDefinition: &ast.FieldDefinition{Name: "selfRef"}, GoFieldName: "SelfRef", TypeReference: inputRef(outerDef, outerType)},
+		},
+	}
+	for _, in := range []*Object{inner, outer} {
+		for _, f := range in.Fields {
+			f.Object = in
+		}
+	}
+	Objects{inner, outer}.resolveHybridSpecialFields()
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:        &Data{Config: &config.Config{}},
+			ShardName:   "alpha",
+			Ownership:   &splitOwnershipPlanner{InputOwner: map[string]string{"Outer": "alpha"}, InputOwnerKeys: []string{"Outer"}},
+			InputByName: map[string]*Object{"Outer": outer, "Inner": inner},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	text := string(contents)
+
+	require.Contains(t, text, `fieldsInOrder := [...]string{"nested", "nestedList", "selfRef"}`)
+	require.Contains(t, text, `case "nested":`)
+	require.Contains(t, text, `case "nestedList":`)
+	require.Contains(t, text, `case "selfRef":`)
+	require.NotContains(t, text, `case "plain":`)
+	require.Contains(t, text, "it.UnmarshalGQLContext(ctx, plain)")
+}
+
 func TestSplitRootUsesLookupField(t *testing.T) {
 	workDir := chdirToLocalSplitFixtureWorkspace(t)
 

@@ -172,6 +172,9 @@ type Stub struct {
 	HybridInputResolver struct {
 		Resolved func(ctx context.Context, obj *HybridInput, data string) error
 	}
+	HybridNestedResolver struct {
+		Resolved func(ctx context.Context, obj *HybridNested, data string) error
+	}
 }
 
 func (r *Stub) BackedByInterface() BackedByInterfaceResolver {
@@ -228,6 +231,9 @@ func (r *Stub) FieldsOrderInput() FieldsOrderInputResolver {
 }
 func (r *Stub) HybridInput() HybridInputResolver {
 	return &stubHybridInput{r}
+}
+func (r *Stub) HybridNested() HybridNestedResolver {
+	return &stubHybridNested{r}
 }
 
 type stubBackedByInterface struct{ *Stub }
@@ -654,4 +660,10 @@ type stubHybridInput struct{ *Stub }
 
 func (r *stubHybridInput) Resolved(ctx context.Context, obj *HybridInput, data string) error {
 	return r.HybridInputResolver.Resolved(ctx, obj, data)
+}
+
+type stubHybridNested struct{ *Stub }
+
+func (r *stubHybridNested) Resolved(ctx context.Context, obj *HybridNested, data string) error {
+	return r.HybridNestedResolver.Resolved(ctx, obj, data)
 }

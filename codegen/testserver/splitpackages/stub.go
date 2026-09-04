@@ -50,6 +50,9 @@ type Stub struct {
 	HybridInputResolver struct {
 		Resolved func(ctx context.Context, obj *model.HybridInput, data string) error
 	}
+	HybridNestedResolver struct {
+		Resolved func(ctx context.Context, obj *model.HybridNested, data string) error
+	}
 }
 
 func (r *Stub) Mutation() MutationResolver {
@@ -64,6 +67,9 @@ func (r *Stub) Subscription() SubscriptionResolver {
 
 func (r *Stub) HybridInput() HybridInputResolver {
 	return &stubHybridInput{r}
+}
+func (r *Stub) HybridNested() HybridNestedResolver {
+	return &stubHybridNested{r}
 }
 
 type stubMutation struct{ *Stub }
@@ -172,4 +178,10 @@ type stubHybridInput struct{ *Stub }
 
 func (r *stubHybridInput) Resolved(ctx context.Context, obj *model.HybridInput, data string) error {
 	return r.HybridInputResolver.Resolved(ctx, obj, data)
+}
+
+type stubHybridNested struct{ *Stub }
+
+func (r *stubHybridNested) Resolved(ctx context.Context, obj *model.HybridNested, data string) error {
+	return r.HybridNestedResolver.Resolved(ctx, obj, data)
 }

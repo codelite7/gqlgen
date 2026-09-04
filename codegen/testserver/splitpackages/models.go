@@ -8,6 +8,7 @@ import "github.com/99designs/gqlgen/codegen/testserver/splitpackages/model"
 // package, and the root imports the shards.
 type (
 	HybridInput                       = model.HybridInput
+	HybridNested                      = model.HybridNested
 	InnerInput                        = model.InnerInput
 	InputDirectives                   = model.InputDirectives
 	ObjectDirectives                  = model.ObjectDirectives

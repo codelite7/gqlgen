@@ -363,6 +363,11 @@ func BuildData(cfg *config.Config, plugins ...any) (*Data, error) {
 		return nil, err
 	}
 
+	// Classify the input graph for hybrid unmarshalers (Object.HybridSpecialFields).
+	// It has to run here, once all inputs exist: the classification is transitive
+	// and cyclic, so no single input can compute its own.
+	s.Inputs.resolveHybridSpecialFields()
+
 	if b.Binder.SawInvalid {
 		// if we have a syntax error, show it
 		err := cfg.Packages.Errors()

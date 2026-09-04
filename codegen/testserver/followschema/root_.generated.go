@@ -40,6 +40,7 @@ type ResolverRoot interface {
 	WrappedSlice() WrappedSliceResolver
 	FieldsOrderInput() FieldsOrderInputResolver
 	HybridInput() HybridInputResolver
+	HybridNested() HybridNestedResolver
 }
 
 type DirectiveRoot struct {
@@ -2402,6 +2403,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDirectiveInput,
 		ec.unmarshalInputFieldsOrderInput,
 		ec.unmarshalInputHybridInput,
+		ec.unmarshalInputHybridNested,
 		ec.unmarshalInputInnerDirectives,
 		ec.unmarshalInputInnerInput,
 		ec.unmarshalInputInputDirectives,
@@ -2712,6 +2714,20 @@ input HybridInput {
 	withDefault: String! = "fromDefault"
 	directed: String! @toUpper
 	resolved: String!
+	nested: HybridNested
+	nestedList: [HybridNested!]
+	selfRef: [HybridInput!]
+}
+"""
+HybridNested is reached from HybridInput only through fields that carry no
+directive of their own (nested, nestedList, selfRef). Its own @toUpper directive
+and its ` + "`" + `resolved` + "`" + ` field resolver must still run: a hybrid body that hands those
+fields to UnmarshalGQLContext skips them silently.
+"""
+input HybridNested {
+	gated: String! @toUpper
+	resolved: String!
+	deeper: HybridNested
 }
 input InnerDirectives {
 	message: String! @length(min: 1, message: "not valid")

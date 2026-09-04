@@ -11,6 +11,21 @@ input HybridInput {
 	withDefault: String! = "fromDefault"
 	directed: String! @toUpper
 	resolved: String!
+	nested: HybridNested
+	nestedList: [HybridNested!]
+	selfRef: [HybridInput!]
+}
+
+"""
+HybridNested is reached from HybridInput only through fields that carry no
+directive of their own (nested, nestedList, selfRef). Its own @toUpper directive
+and its `resolved` field resolver must still run: a hybrid body that hands those
+fields to UnmarshalGQLContext skips them silently.
+"""
+input HybridNested {
+	gated: String!  @toUpper
+	resolved: String!
+	deeper: HybridNested
 }
 
 extend type Query {

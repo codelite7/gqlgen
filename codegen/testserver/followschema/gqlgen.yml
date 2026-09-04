@@ -28,3 +28,7 @@ models:
     fields:
       resolved:
         resolver: true
+  HybridNested:
+    fields:
+      resolved:
+        resolver: true
