@@ -183,8 +183,19 @@ func TestImplDirectivesContext_ErrReturn(t *testing.T) {
 
 func TestCheckCustomUnmarshalInputs(t *testing.T) {
 	pkg := types.NewPackage("example.com/x", "x")
-	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "In", nil), types.NewStruct(nil, nil), nil)
-	sig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)), nil, nil, nil, nil, false)
+	named := types.NewNamed(
+		types.NewTypeName(token.NoPos, pkg, "In", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	sig := types.NewSignatureType(
+		types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)),
+		nil,
+		nil,
+		nil,
+		nil,
+		false,
+	)
 	named.AddMethod(types.NewFunc(token.NoPos, pkg, "UnmarshalGQL", sig))
 	in := &Object{Definition: &ast.Definition{Name: "In", Kind: ast.InputObject}, Type: named}
 
@@ -194,35 +205,68 @@ func TestCheckCustomUnmarshalInputs(t *testing.T) {
 
 	withDefault := &Field{FieldDefinition: &ast.FieldDefinition{Name: "n"}, Object: in, Default: 1}
 	in.Fields = []*Field{plain, withDefault}
-	require.EqualError(t, checkCustomUnmarshalInputs(Objects{in}),
-		`input In has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "n" declares a default value; custom unmarshalers cannot apply defaults`)
+	require.EqualError(
+		t,
+		checkCustomUnmarshalInputs(Objects{in}),
+		`input In has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "n" declares a default value; custom unmarshalers cannot apply defaults`,
+	)
 
-	withDirective := &Field{FieldDefinition: &ast.FieldDefinition{Name: "d"}, Object: in,
+	withDirective := &Field{
+		FieldDefinition: &ast.FieldDefinition{Name: "d"}, Object: in,
 		Directives: []*Directive{{
 			Name: "constraint",
 			DirectiveDefinition: &ast.DirectiveDefinition{
 				Name:      "constraint",
 				Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
 			},
-		}}}
+		}},
+	}
 	in.Fields = []*Field{plain, withDirective}
-	require.EqualError(t, checkCustomUnmarshalInputs(Objects{in}),
-		`input In has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "d" has directives; custom unmarshalers cannot run field directives`)
+	require.EqualError(
+		t,
+		checkCustomUnmarshalInputs(Objects{in}),
+		`input In has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "d" has directives; custom unmarshalers cannot run field directives`,
+	)
 
-	withResolver := &Field{FieldDefinition: &ast.FieldDefinition{Name: "r"}, Object: in, IsResolver: true}
+	withResolver := &Field{
+		FieldDefinition: &ast.FieldDefinition{Name: "r"},
+		Object:          in,
+		IsResolver:      true,
+	}
 	in.Fields = []*Field{plain, withResolver}
-	require.EqualError(t, checkCustomUnmarshalInputs(Objects{in}),
-		`input In has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "r" has a resolver; custom unmarshalers cannot run field resolvers`)
+	require.EqualError(
+		t,
+		checkCustomUnmarshalInputs(Objects{in}),
+		`input In has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "r" has a resolver; custom unmarshalers cannot run field resolvers`,
+	)
 
 	// UnmarshalGQLContext inputs get a hybrid unmarshaler that still applies
 	// defaults and runs directives and resolvers, so the guard leaves them alone.
-	ctxNamed := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "CtxIn", nil), types.NewStruct(nil, nil), nil)
-	ctxSig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(ctxNamed)), nil, nil, nil, nil, false)
+	ctxNamed := types.NewNamed(
+		types.NewTypeName(token.NoPos, pkg, "CtxIn", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	ctxSig := types.NewSignatureType(
+		types.NewVar(token.NoPos, pkg, "i", types.NewPointer(ctxNamed)),
+		nil,
+		nil,
+		nil,
+		nil,
+		false,
+	)
 	ctxNamed.AddMethod(types.NewFunc(token.NoPos, pkg, "UnmarshalGQLContext", ctxSig))
-	ctxIn := &Object{Definition: &ast.Definition{Name: "CtxIn", Kind: ast.InputObject}, Type: ctxNamed}
+	ctxIn := &Object{
+		Definition: &ast.Definition{Name: "CtxIn", Kind: ast.InputObject},
+		Type:       ctxNamed,
+	}
 	ctxIn.Fields = []*Field{
 		{FieldDefinition: &ast.FieldDefinition{Name: "n"}, Object: ctxIn, Default: 1},
-		{FieldDefinition: &ast.FieldDefinition{Name: "d"}, Object: ctxIn, Directives: withDirective.Directives},
+		{
+			FieldDefinition: &ast.FieldDefinition{Name: "d"},
+			Object:          ctxIn,
+			Directives:      withDirective.Directives,
+		},
 		{FieldDefinition: &ast.FieldDefinition{Name: "r"}, Object: ctxIn, IsResolver: true},
 	}
 	require.NoError(t, checkCustomUnmarshalInputs(Objects{ctxIn}))
@@ -232,14 +276,35 @@ func TestCheckCustomUnmarshalInputs(t *testing.T) {
 	// UnmarshalGQLContext directly and no generated unmarshaler — hybrid or not —
 	// is ever reached. The guard must catch it, or the directive on "d" is dropped
 	// silently at generation time.
-	pairNamed := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "PairIn", nil), types.NewStruct(nil, nil), nil)
-	pairSig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(pairNamed)), nil, nil, nil, nil, false)
+	pairNamed := types.NewNamed(
+		types.NewTypeName(token.NoPos, pkg, "PairIn", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	pairSig := types.NewSignatureType(
+		types.NewVar(token.NoPos, pkg, "i", types.NewPointer(pairNamed)),
+		nil,
+		nil,
+		nil,
+		nil,
+		false,
+	)
 	pairNamed.AddMethod(types.NewFunc(token.NoPos, pkg, "UnmarshalGQLContext", pairSig))
 	pairNamed.AddMethod(types.NewFunc(token.NoPos, pkg, "MarshalGQLContext", pairSig))
-	pairIn := &Object{Definition: &ast.Definition{Name: "PairIn", Kind: ast.InputObject}, Type: pairNamed}
-	pairIn.Fields = []*Field{
-		{FieldDefinition: &ast.FieldDefinition{Name: "d"}, Object: pairIn, Directives: withDirective.Directives},
+	pairIn := &Object{
+		Definition: &ast.Definition{Name: "PairIn", Kind: ast.InputObject},
+		Type:       pairNamed,
 	}
-	require.EqualError(t, checkCustomUnmarshalInputs(Objects{pairIn}),
-		`input PairIn has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "d" has directives; custom unmarshalers cannot run field directives`)
+	pairIn.Fields = []*Field{
+		{
+			FieldDefinition: &ast.FieldDefinition{Name: "d"},
+			Object:          pairIn,
+			Directives:      withDirective.Directives,
+		},
+	}
+	require.EqualError(
+		t,
+		checkCustomUnmarshalInputs(Objects{pairIn}),
+		`input PairIn has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field "d" has directives; custom unmarshalers cannot run field directives`,
+	)
 }

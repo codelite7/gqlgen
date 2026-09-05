@@ -1733,9 +1733,13 @@ func TestDirectiveChain_NilStaysNil(t *testing.T) {
 	if directiveChain(&fakeEC{}, nil, nil) != nil {
 		t.Fatal("expected nil middleware chain for a FieldDef with no directives")
 	}
-	if directiveChain(&fakeEC{}, nil, func(_ context.Context, _ ObjectExecutionContext, _ any, next graphql.Resolver) graphql.Resolver {
-		return next
-	}) == nil {
+	if directiveChain(
+		&fakeEC{},
+		nil,
+		func(_ context.Context, _ ObjectExecutionContext, _ any, next graphql.Resolver) graphql.Resolver {
+			return next
+		},
+	) == nil {
 		t.Fatal("expected non-nil middleware chain when Directives is set")
 	}
 }

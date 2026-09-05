@@ -877,7 +877,11 @@ func TestSplitInputGeneratesHybridUnmarshalBody(t *testing.T) {
 	require.NoError(t, err)
 	text := string(contents)
 
-	require.Contains(t, text, `fmt.Errorf("unmarshalInputUserInput: expected map[string]any, got %T", obj)`)
+	require.Contains(
+		t,
+		text,
+		`fmt.Errorf("unmarshalInputUserInput: expected map[string]any, got %T", obj)`,
+	)
 	require.Contains(t, text, "it.UnmarshalGQLContext(ctx, plain)")
 	require.Contains(t, text, `case "computed":`)
 	require.Contains(t, text, `ec.InvokeResolver(ctx, "UserInput", "computed"`)
@@ -895,21 +899,48 @@ func TestSplitInputGeneratesHybridUnmarshalBody(t *testing.T) {
 func TestSplitInputHybridKeepsNestedInputArms(t *testing.T) {
 	const modelImportPath = "example.com/project/model"
 	pkg := types.NewPackage(modelImportPath, "model")
-	outerType := types.NewNamed(types.NewTypeName(0, pkg, "Outer", nil), types.NewStruct(nil, nil), nil)
-	outerType.AddMethod(types.NewFunc(0, pkg, "UnmarshalGQLContext",
-		types.NewSignatureType(types.NewVar(0, pkg, "i", types.NewPointer(outerType)), nil, nil, nil, nil, false)))
-	innerType := types.NewNamed(types.NewTypeName(0, pkg, "Inner", nil), types.NewStruct(nil, nil), nil)
+	outerType := types.NewNamed(
+		types.NewTypeName(0, pkg, "Outer", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	outerType.AddMethod(types.NewFunc(
+		0,
+		pkg,
+		"UnmarshalGQLContext",
+		types.NewSignatureType(
+			types.NewVar(0, pkg, "i", types.NewPointer(outerType)),
+			nil,
+			nil,
+			nil,
+			nil,
+			false,
+		),
+	))
+	innerType := types.NewNamed(
+		types.NewTypeName(0, pkg, "Inner", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
 
 	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
 	innerDef := &ast.Definition{Name: "Inner", Kind: ast.InputObject}
 	outerDef := &ast.Definition{Name: "Outer", Kind: ast.InputObject}
 	strRef := func() *config.TypeReference {
-		return &config.TypeReference{Definition: stringDef, GQL: ast.NonNullNamedType("String", nil), GO: types.Typ[types.String]}
+		return &config.TypeReference{
+			Definition: stringDef,
+			GQL:        ast.NonNullNamedType("String", nil),
+			GO:         types.Typ[types.String],
+		}
 	}
 	// TypeReference.Definition is the unwrapped named type, so lists and non-null
 	// need no special handling here.
 	inputRef := func(def *ast.Definition, named *types.Named) *config.TypeReference {
-		return &config.TypeReference{Definition: def, GQL: ast.NamedType(def.Name, nil), GO: types.NewPointer(named)}
+		return &config.TypeReference{
+			Definition: def,
+			GQL:        ast.NamedType(def.Name, nil),
+			GO:         types.NewPointer(named),
+		}
 	}
 
 	inner := &Object{
@@ -919,20 +950,41 @@ func TestSplitInputHybridKeepsNestedInputArms(t *testing.T) {
 			FieldDefinition: &ast.FieldDefinition{Name: "gated"},
 			GoFieldName:     "Gated",
 			TypeReference:   strRef(),
-			Directives: []*Directive{{
-				Name:                "someDirective",
-				DirectiveDefinition: &ast.DirectiveDefinition{Name: "someDirective", Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition}},
-			}},
+			Directives: []*Directive{
+				{
+					Name: "someDirective",
+					DirectiveDefinition: &ast.DirectiveDefinition{
+						Name:      "someDirective",
+						Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
+					},
+				},
+			},
 		}},
 	}
 	outer := &Object{
 		Definition: outerDef,
 		Type:       outerType,
 		Fields: []*Field{
-			{FieldDefinition: &ast.FieldDefinition{Name: "plain"}, GoFieldName: "Plain", TypeReference: strRef()},
-			{FieldDefinition: &ast.FieldDefinition{Name: "nested"}, GoFieldName: "Nested", TypeReference: inputRef(innerDef, innerType)},
-			{FieldDefinition: &ast.FieldDefinition{Name: "nestedList"}, GoFieldName: "NestedList", TypeReference: inputRef(innerDef, innerType)},
-			{FieldDefinition: &ast.FieldDefinition{Name: "selfRef"}, GoFieldName: "SelfRef", TypeReference: inputRef(outerDef, outerType)},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "plain"},
+				GoFieldName:     "Plain",
+				TypeReference:   strRef(),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "nested"},
+				GoFieldName:     "Nested",
+				TypeReference:   inputRef(innerDef, innerType),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "nestedList"},
+				GoFieldName:     "NestedList",
+				TypeReference:   inputRef(innerDef, innerType),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "selfRef"},
+				GoFieldName:     "SelfRef",
+				TypeReference:   inputRef(outerDef, outerType),
+			},
 		},
 	}
 	for _, in := range []*Object{inner, outer} {
@@ -948,9 +1000,12 @@ func TestSplitInputHybridKeepsNestedInputArms(t *testing.T) {
 		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
 		Filename:    outPath,
 		Data: splitShardTemplateData{
-			Data:        &Data{Config: &config.Config{}},
-			ShardName:   "alpha",
-			Ownership:   &splitOwnershipPlanner{InputOwner: map[string]string{"Outer": "alpha"}, InputOwnerKeys: []string{"Outer"}},
+			Data:      &Data{Config: &config.Config{}},
+			ShardName: "alpha",
+			Ownership: &splitOwnershipPlanner{
+				InputOwner:     map[string]string{"Outer": "alpha"},
+				InputOwnerKeys: []string{"Outer"},
+			},
 			InputByName: map[string]*Object{"Outer": outer, "Inner": inner},
 		},
 		Packages: internalcode.NewPackages(),
@@ -2274,7 +2329,9 @@ func TestSplitDirectivesAreExecuted(t *testing.T) {
 	workDir := chdirToLocalSplitFixtureWorkspace(t)
 
 	schemaPath := filepath.Join(workDir, "graph", "directives.graphqls")
-	require.NoError(t, os.WriteFile(schemaPath, []byte(`directive @goModel(model: String) on INPUT_OBJECT
+	require.NoError(
+		t,
+		os.WriteFile(schemaPath, []byte(`directive @goModel(model: String) on INPUT_OBJECT
 directive @fieldDirective on FIELD_DEFINITION
 directive @argDirective(max: Int!) on ARGUMENT_DEFINITION
 directive @inputFieldDirective on INPUT_FIELD_DEFINITION
@@ -2287,7 +2344,8 @@ input Thing @goModel(model: "map[string]interface{}") @inputObjectDirective {
 extend type Query {
   guarded(size: Int! @argDirective(max: 10), thing: Thing!): String! @fieldDirective
 }
-`), 0o644))
+`), 0o644),
+	)
 	t.Cleanup(func() {
 		_ = os.Remove(schemaPath)
 	})
@@ -2297,9 +2355,12 @@ extend type Query {
 
 	generated, ok := snapshot[filepath.Join("graph", "generated.go")]
 	require.True(t, ok)
-	require.Contains(t, string(generated),
+	require.Contains(
+		t,
+		string(generated),
 		"func (ec *executionContext) InvokeDirective(ctx context.Context, name string, obj any, next graphql.Resolver, args map[string]any) (any, error)",
-		"root package must expose the directive dispatcher shards call into")
+		"root package must expose the directive dispatcher shards call into",
+	)
 
 	shardPrefix := filepath.Join("graph", "internal", "gqlgenexec", "shards")
 	var shardText strings.Builder

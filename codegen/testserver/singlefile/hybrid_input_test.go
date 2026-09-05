@@ -54,20 +54,30 @@ func TestHybridInputUnmarshaler(t *testing.T) {
 	srv.AddTransport(transport.POST{})
 	c := client.New(srv)
 
-	t.Run("method decodes plain fields, directive and resolver fields are withheld from it", func(t *testing.T) {
-		var resp struct{ HybridInput string }
-		c.MustPost(`{ hybridInput(arg: {plain: "p", withDefault: "explicit", directed: "up", resolved: "r"}) }`, &resp)
-		require.Equal(t,
-			`plain="p" default="explicit" directed="UP" resolved="resolver(r)" saw=plain,withDefault`,
-			resp.HybridInput)
-	})
+	t.Run(
+		"method decodes plain fields, directive and resolver fields are withheld from it",
+		func(t *testing.T) {
+			var resp struct{ HybridInput string }
+			c.MustPost(
+				`{ hybridInput(arg: {plain: "p", withDefault: "explicit", directed: "up", resolved: "r"}) }`,
+				&resp,
+			)
+			require.Equal(
+				t,
+				`plain="p" default="explicit" directed="UP" resolved="resolver(r)" saw=plain,withDefault`,
+				resp.HybridInput,
+			)
+		},
+	)
 
 	t.Run("default is applied and reaches the method", func(t *testing.T) {
 		var resp struct{ HybridInput string }
 		c.MustPost(`{ hybridInput(arg: {plain: "p", directed: "up", resolved: "r"}) }`, &resp)
-		require.Equal(t,
+		require.Equal(
+			t,
 			`plain="p" default="fromDefault" directed="UP" resolved="resolver(r)" saw=plain,withDefault`,
-			resp.HybridInput)
+			resp.HybridInput,
+		)
 	})
 
 	t.Run("explicit null input is not an error", func(t *testing.T) {
@@ -117,15 +127,19 @@ func TestHybridInputNestedKeepsDirectivesAndResolvers(t *testing.T) {
 		if in == nil {
 			return "<nil>"
 		}
-		s := fmt.Sprintf("directed=%q resolved=%q saw=%s nested=%s",
+		var b strings.Builder
+		fmt.Fprintf(&b, "directed=%q resolved=%q saw=%s nested=%s",
 			in.Directed, in.Resolved, strings.Join(in.SawKeys, ","), describeNested(in.Nested))
 		for _, n := range in.NestedList {
-			s += " list=" + describeNested(n)
+			b.WriteString(" list=")
+			b.WriteString(describeNested(n))
 		}
 		for _, c := range in.SelfRef {
-			s += " self=(" + describe(c) + ")"
+			b.WriteString(" self=(")
+			b.WriteString(describe(c))
+			b.WriteString(")")
 		}
-		return s
+		return b.String()
 	}
 
 	resolvers := &Stub{}
@@ -165,9 +179,11 @@ func TestHybridInputNestedKeepsDirectivesAndResolvers(t *testing.T) {
 		var resp struct{ HybridInput string }
 		c.MustPost(`{ hybridInput(arg: {plain: "p", directed: "d", resolved: "r",
 			nested: {gated: "g", resolved: "n"}}) }`, &resp)
-		require.Equal(t,
+		require.Equal(
+			t,
 			`directed="D" resolved="resolver(r)" saw=plain,withDefault nested={gated="G" resolved="nestedResolver(n)"}`,
-			resp.HybridInput)
+			resp.HybridInput,
+		)
 	})
 
 	t.Run("nested list keeps its directive and resolver", func(t *testing.T) {
@@ -198,13 +214,16 @@ func TestHybridInputNestedKeepsDirectivesAndResolvers(t *testing.T) {
 		require.ErrorContains(t, err, `"nested","gated"`)
 	})
 
-	t.Run("self-referential list keeps directives and resolvers at every level", func(t *testing.T) {
-		var resp struct{ HybridInput string }
-		c.MustPost(`{ hybridInput(arg: {plain: "p", directed: "d", resolved: "r",
+	t.Run(
+		"self-referential list keeps directives and resolvers at every level",
+		func(t *testing.T) {
+			var resp struct{ HybridInput string }
+			c.MustPost(`{ hybridInput(arg: {plain: "p", directed: "d", resolved: "r",
 			selfRef: [{plain: "s", directed: "sd", resolved: "sr", nested: {gated: "sg", resolved: "sn"}}]}) }`, &resp)
-		require.Equal(t,
-			`directed="D" resolved="resolver(r)" saw=plain,withDefault nested=<nil>`+
-				` self=(directed="SD" resolved="resolver(sr)" saw=plain,withDefault nested={gated="SG" resolved="nestedResolver(sn)"})`,
-			resp.HybridInput)
-	})
+			require.Equal(t,
+				`directed="D" resolved="resolver(r)" saw=plain,withDefault nested=<nil>`+
+					` self=(directed="SD" resolved="resolver(sr)" saw=plain,withDefault nested={gated="SG" resolved="nestedResolver(sn)"})`,
+				resp.HybridInput)
+		},
+	)
 }

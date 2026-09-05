@@ -53,9 +53,20 @@ func TestObjectInvalidsIncrement_DisableConcurrency(t *testing.T) {
 func mkInputObject(t *testing.T, methods ...string) *Object {
 	t.Helper()
 	pkg := types.NewPackage("example.com/x", "x")
-	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "In", nil), types.NewStruct(nil, nil), nil)
+	named := types.NewNamed(
+		types.NewTypeName(token.NoPos, pkg, "In", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
 	for _, method := range methods {
-		sig := types.NewSignatureType(types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)), nil, nil, nil, nil, false)
+		sig := types.NewSignatureType(
+			types.NewVar(token.NoPos, pkg, "i", types.NewPointer(named)),
+			nil,
+			nil,
+			nil,
+			nil,
+			false,
+		)
 		named.AddMethod(types.NewFunc(token.NoPos, pkg, method, sig))
 	}
 	return &Object{Definition: &ast.Definition{Name: "In", Kind: ast.InputObject}, Type: named}
@@ -81,7 +92,10 @@ func TestObjectHasContextUnmarshal(t *testing.T) {
 	// UnmarshalGQL wins: upstream semantics, no generated function at all.
 	assert.False(t, mkInputObject(t, "UnmarshalGQL", "UnmarshalGQLContext").HasContextUnmarshal())
 	// So does the full context-marshaler pair, for the same reason.
-	assert.False(t, mkInputObject(t, "MarshalGQLContext", "UnmarshalGQLContext").HasContextUnmarshal())
+	assert.False(
+		t,
+		mkInputObject(t, "MarshalGQLContext", "UnmarshalGQLContext").HasContextUnmarshal(),
+	)
 	// Only the *context* pair binds as a ContextMarshaler, so a non-context
 	// MarshalGQL alongside it still gets the hybrid body.
 	assert.True(t, mkInputObject(t, "MarshalGQL", "UnmarshalGQLContext").HasContextUnmarshal())
@@ -147,7 +161,11 @@ func TestHybridSpecialFieldsIsTransitive(t *testing.T) {
 	inert := mkInput("Inert", mkField("nothing"))
 
 	// (e) self-referential cycle: A.and: [A!] and A has a directive field.
-	selfRef := mkInput("SelfRef", withDirective(mkField("gatedScalar")), mkInputField("and", "SelfRef"))
+	selfRef := mkInput(
+		"SelfRef",
+		withDirective(mkField("gatedScalar")),
+		mkInputField("and", "SelfRef"),
+	)
 
 	// (f) two-node cycle A <-> B where only B has a directive field.
 	cycleA := mkInput("CycleA", mkField("plain"), mkInputField("b", "CycleB"))

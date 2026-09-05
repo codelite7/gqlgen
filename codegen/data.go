@@ -436,11 +436,23 @@ func checkCustomUnmarshalInputs(inputs Objects) error {
 		for _, f := range in.Fields {
 			switch {
 			case f.Default != nil:
-				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q declares a default value; custom unmarshalers cannot apply defaults", in.Name, f.Name)
+				return fmt.Errorf(
+					"input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q declares a default value; custom unmarshalers cannot apply defaults",
+					in.Name,
+					f.Name,
+				)
 			case len(f.ImplDirectives()) > 0:
-				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has directives; custom unmarshalers cannot run field directives", in.Name, f.Name)
+				return fmt.Errorf(
+					"input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has directives; custom unmarshalers cannot run field directives",
+					in.Name,
+					f.Name,
+				)
 			case f.IsResolver:
-				return fmt.Errorf("input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has a resolver; custom unmarshalers cannot run field resolvers", in.Name, f.Name)
+				return fmt.Errorf(
+					"input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has a resolver; custom unmarshalers cannot run field resolvers",
+					in.Name,
+					f.Name,
+				)
 			}
 		}
 	}
