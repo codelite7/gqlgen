@@ -8,6 +8,18 @@
 {{- if $input.PointersInUnmarshalInput }}
   {{- $it = "&it" }}
 {{- end }}
+{{- /* Hybrid inputs (Go type has UnmarshalGQLContext): the method decodes every
+       plain field, and only fields the method cannot handle keep a generated
+       case arm — those with INPUT_FIELD_DEFINITION directives, a field resolver,
+       or a type that is an input object needing generated handling itself
+       (transitively: a nested input with a directive, a resolver, a field
+       default or an INPUT_OBJECT directive anywhere below it). See
+       Object.HybridSpecialFields. Mirrors codegen/input.gotpl. */}}
+{{- $hybrid := $input.HasContextUnmarshal }}
+{{- $switchFields := $input.Fields }}
+{{- if $hybrid }}
+{{- $switchFields = $input.HybridSpecialFields }}
+{{- end }}
 
 // split_inputs_.gotpl
 func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) ({{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}, error) {
@@ -29,12 +41,19 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 	}
 	{{- end }}
 	{{- if $input.IsMap }}
-		it := make(map[string]any, len(obj.(map[string]any)))
+	it := map[string]any{}
 	{{- else }}
-		var it {{ $input.Type | ref }}
+	var it {{ $input.Type | ref }}
 	{{- end }}
+	if obj == nil {
+		return {{ $it }}, nil
+	}
 	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return {{ $it }}, fmt.Errorf("unmarshalInput{{ $input.Name }}: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
 		asMap[k] = v
 	}
 	{{ range $field := $input.Fields }}
@@ -45,20 +64,84 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 		{{- end }}
 	{{- end }}
 
-	fieldsInOrder := [...]string{ {{ range $input.Fields }}{{ quote .Name }},{{ end }} }
+	{{- if $hybrid }}
+	{{- if $switchFields }}
+
+	plain := make(map[string]any, len(asMap))
+	for k, v := range asMap {
+		switch k {
+		case {{ range $i, $field := $switchFields }}{{ if $i }}, {{ end }}{{ $field.Name | quote }}{{ end }}:
+		default:
+			plain[k] = v
+		}
+	}
+	if err := it.UnmarshalGQLContext(ctx, plain); err != nil {
+		return {{ $it }}, err
+	}
+	{{- else }}
+
+	if err := it.UnmarshalGQLContext(ctx, asMap); err != nil {
+		return {{ $it }}, err
+	}
+	{{- end }}
+	{{- end }}
+	{{- if or (not $hybrid) $switchFields }}
+
+	fieldsInOrder := [...]string{ {{ range $switchFields }}{{ quote .Name }},{{ end }} }
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		{{- range $field := $input.Fields }}
+		{{- range $field := $switchFields }}
 		case {{ $field.Name | quote }}:
 			{{- $lhs := (printf "it.%s" $field.GoFieldName) }}
 			{{- if $input.IsMap }}
 				{{- $lhs = (printf "it[%q]" $field.Name) }}
 			{{- end }}
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField({{ $field.Name | quote }}))
+			{{- if $field.ImplDirectives }}
+			{{- /* INPUT_FIELD_DEFINITION directives, mirroring codegen/input.gotpl. */}}
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.UnmarshalCodec(ctx, {{ $field.TypeReference.UnmarshalFunc | quote }}, v)
+			}
+			{{- range $i, $directive := $field.ImplDirectives }}
+			directive{{ add $i 1 }} := func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, {{ $directive.Name | quote }}, {{ $field.DirectiveObjName }}, directive{{ $i }}, {{ template "splitDirectiveArgs" $directive }})
+			}
+			{{- end }}
+			tmp, err := directive{{ len $field.ImplDirectives }}(ctx)
+			if err != nil {
+				return {{ $it }}, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.({{ $field.TypeReference.GO | ref }}); ok {
+				{{- if $field.IsResolver }}
+				if _, err := ec.InvokeResolver(ctx, {{ $input.Name | quote }}, {{ $field.Name | quote }}, []any{&it, data}); err != nil {
+					return {{ $it }}, err
+				}
+				{{- else }}
+				{{- if $field.TypeReference.IsOmittable }}
+				{{ $lhs }} = graphql.OmittableOf(data)
+				{{- else }}
+				{{ $lhs }} = data
+				{{- end }}
+				{{- end }}
+			{{- if $field.TypeReference.IsNilable }}
+			{{- if not $field.IsResolver }}
+			} else if tmp == nil {
+				{{- if $field.TypeReference.IsOmittable }}
+				{{ $lhs }} = graphql.OmittableOf[{{ $field.TypeReference.GO | ref }}](nil)
+				{{- else }}
+				{{ $lhs }} = nil
+				{{- end }}
+			{{- end }}
+			{{- end }}
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be {{ $field.TypeReference.GO }}`, tmp)
+				return {{ $it }}, graphql.ErrorOnPath(ctx, err)
+			}
+			{{- else }}
 			data, err := ec.UnmarshalCodec(ctx, {{ $field.TypeReference.UnmarshalFunc | quote }}, v)
 			if err != nil {
 				return {{ $it }}, err
@@ -75,7 +158,13 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 				{{- else }}
 				{{ $lhs }} = data.({{ $field.TypeReference.GO | ref }})
 				{{- end }}
+			{{- if $field.TypeReference.IsOmittable }}
+			} else {
+				{{ $lhs }} = graphql.OmittableOf[{{ $field.TypeReference.GO | ref }}](nil)
 			}
+			{{- else }}
+			}
+			{{- end }}
 			{{- else }}
 				{{- if $field.TypeReference.IsOmittable }}
 			{{ $lhs }} = graphql.OmittableOf(data.({{ $field.TypeReference.GO | ref }}))
@@ -84,11 +173,33 @@ func __splitInput_{{ $input.Name }}(ctx context.Context, ec shardruntime.ObjectE
 				{{- end }}
 			{{- end }}
 			{{- end }}
+			{{- end }}
 		{{- end }}
 		}
 	}
+	{{- end }}
+
+	{{- if $input.InputObjectDirectives }}
+	{{- /* INPUT_OBJECT level directives (e.g. @oneOf), run after all fields
+	       have been unmarshaled. Mirrors codegen/input.gotpl. */}}
+	directive0 := func(ctx context.Context) (any, error) { return {{ $it }}, nil }
+	{{- range $i, $directive := $input.InputObjectDirectives }}
+	directive{{ add $i 1 }} := func(ctx context.Context) (any, error) {
+		return ec.InvokeDirective(ctx, {{ $directive.Name | quote }}, asMap, directive{{ $i }}, {{ template "splitDirectiveArgs" $directive }})
+	}
+	{{- end }}
+	tmp, err := directive{{ len $input.InputObjectDirectives }}(ctx)
+	if err != nil {
+		return {{ $it }}, graphql.ErrorOnPath(ctx, err)
+	}
+	if data, ok := tmp.({{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}); ok {
+		return data, nil
+	}
+	return {{ $it }}, graphql.ErrorOnPath(ctx, fmt.Errorf(`unexpected type %T from INPUT_OBJECT directive, should be {{ if $input.PointersInUnmarshalInput }}*{{ end }}{{ $input.Type | ref }}`, tmp))
+	{{- else }}
 
 	return {{ $it }}, nil
+	{{- end }}
 }
 {{- end }}
 {{- end }}

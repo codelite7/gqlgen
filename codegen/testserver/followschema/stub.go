@@ -94,6 +94,8 @@ type Stub struct {
 		EmbeddedCase2                    func(ctx context.Context) (*EmbeddedCase2, error)
 		EmbeddedCase3                    func(ctx context.Context) (*EmbeddedCase3, error)
 		EnumInInput                      func(ctx context.Context, input *InputWithEnumValue) (EnumTest, error)
+		HybridInput                      func(ctx context.Context, arg HybridInput) (string, error)
+		HybridInputNullable              func(ctx context.Context, arg *HybridInput) (string, error)
 		SearchProducts                   func(ctx context.Context, filters map[string]interface{}) ([]string, error)
 		SearchRequired                   func(ctx context.Context, filters map[string]interface{}) ([]string, error)
 		SearchProductsNormal             func(ctx context.Context, filters map[string]any) ([]string, error)
@@ -110,6 +112,7 @@ type Stub struct {
 		NotAnInterface                   func(ctx context.Context) (BackedByInterface, error)
 		Dog                              func(ctx context.Context) (*Dog, error)
 		Issue896a                        func(ctx context.Context) ([]*CheckIssue896, error)
+		InputListField                   func(ctx context.Context, arg ListFieldInput) (string, error)
 		MapStringInterface               func(ctx context.Context, in map[string]any) (map[string]any, error)
 		MapNestedStringInterface         func(ctx context.Context, in *NestedMapInput) (map[string]any, error)
 		MapNestedMapSlice                func(ctx context.Context, input map[string]any) (*bool, error)
@@ -166,6 +169,12 @@ type Stub struct {
 	FieldsOrderInputResolver struct {
 		OverrideFirstField func(ctx context.Context, obj *FieldsOrderInput, data *string) error
 	}
+	HybridInputResolver struct {
+		Resolved func(ctx context.Context, obj *HybridInput, data string) error
+	}
+	HybridNestedResolver struct {
+		Resolved func(ctx context.Context, obj *HybridNested, data string) error
+	}
 }
 
 func (r *Stub) BackedByInterface() BackedByInterfaceResolver {
@@ -219,6 +228,12 @@ func (r *Stub) WrappedSlice() WrappedSliceResolver {
 
 func (r *Stub) FieldsOrderInput() FieldsOrderInputResolver {
 	return &stubFieldsOrderInput{r}
+}
+func (r *Stub) HybridInput() HybridInputResolver {
+	return &stubHybridInput{r}
+}
+func (r *Stub) HybridNested() HybridNestedResolver {
+	return &stubHybridNested{r}
 }
 
 type stubBackedByInterface struct{ *Stub }
@@ -436,6 +451,12 @@ func (r *stubQuery) EmbeddedCase3(ctx context.Context) (*EmbeddedCase3, error) {
 func (r *stubQuery) EnumInInput(ctx context.Context, input *InputWithEnumValue) (EnumTest, error) {
 	return r.QueryResolver.EnumInInput(ctx, input)
 }
+func (r *stubQuery) HybridInput(ctx context.Context, arg HybridInput) (string, error) {
+	return r.QueryResolver.HybridInput(ctx, arg)
+}
+func (r *stubQuery) HybridInputNullable(ctx context.Context, arg *HybridInput) (string, error) {
+	return r.QueryResolver.HybridInputNullable(ctx, arg)
+}
 func (r *stubQuery) SearchProducts(ctx context.Context, filters map[string]interface{}) ([]string, error) {
 	return r.QueryResolver.SearchProducts(ctx, filters)
 }
@@ -483,6 +504,9 @@ func (r *stubQuery) Dog(ctx context.Context) (*Dog, error) {
 }
 func (r *stubQuery) Issue896a(ctx context.Context) ([]*CheckIssue896, error) {
 	return r.QueryResolver.Issue896a(ctx)
+}
+func (r *stubQuery) InputListField(ctx context.Context, arg ListFieldInput) (string, error) {
+	return r.QueryResolver.InputListField(ctx, arg)
 }
 func (r *stubQuery) MapStringInterface(ctx context.Context, in map[string]any) (map[string]any, error) {
 	return r.QueryResolver.MapStringInterface(ctx, in)
@@ -630,4 +654,16 @@ type stubFieldsOrderInput struct{ *Stub }
 
 func (r *stubFieldsOrderInput) OverrideFirstField(ctx context.Context, obj *FieldsOrderInput, data *string) error {
 	return r.FieldsOrderInputResolver.OverrideFirstField(ctx, obj, data)
+}
+
+type stubHybridInput struct{ *Stub }
+
+func (r *stubHybridInput) Resolved(ctx context.Context, obj *HybridInput, data string) error {
+	return r.HybridInputResolver.Resolved(ctx, obj, data)
+}
+
+type stubHybridNested struct{ *Stub }
+
+func (r *stubHybridNested) Resolved(ctx context.Context, obj *HybridNested, data string) error {
+	return r.HybridNestedResolver.Resolved(ctx, obj, data)
 }

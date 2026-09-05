@@ -359,6 +359,15 @@ func BuildData(cfg *config.Config, plugins ...any) (*Data, error) {
 		return s.Inputs[i].Name < s.Inputs[j].Name
 	})
 
+	if err := checkCustomUnmarshalInputs(s.Inputs); err != nil {
+		return nil, err
+	}
+
+	// Classify the input graph for hybrid unmarshalers (Object.HybridSpecialFields).
+	// It has to run here, once all inputs exist: the classification is transitive
+	// and cyclic, so no single input can compute its own.
+	s.Inputs.resolveHybridSpecialFields()
+
 	if b.Binder.SawInvalid {
 		// if we have a syntax error, show it
 		err := cfg.Packages.Errors()
@@ -409,6 +418,45 @@ func BuildData(cfg *config.Config, plugins ...any) (*Data, error) {
 	s.AugmentedSources = aSources
 
 	return &s, nil
+}
+
+// checkCustomUnmarshalInputs rejects input objects whose bound Go type decodes
+// itself (Object.HasUnmarshal: UnmarshalGQL, or the full
+// MarshalGQLContext/UnmarshalGQLContext pair) but whose schema declares field
+// defaults, field directives or field resolvers: gqlgen emits no unmarshaler for
+// such inputs, so the default, directive or resolver would be silently dropped.
+//
+// Types with only UnmarshalGQLContext are exempt: they get a hybrid unmarshaler
+// (see Object.HasContextUnmarshal) that still does all three.
+func checkCustomUnmarshalInputs(inputs Objects) error {
+	for _, in := range inputs {
+		if in.Type == nil || !in.HasUnmarshal() {
+			continue
+		}
+		for _, f := range in.Fields {
+			switch {
+			case f.Default != nil:
+				return fmt.Errorf(
+					"input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q declares a default value; custom unmarshalers cannot apply defaults",
+					in.Name,
+					f.Name,
+				)
+			case len(f.ImplDirectives()) > 0:
+				return fmt.Errorf(
+					"input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has directives; custom unmarshalers cannot run field directives",
+					in.Name,
+					f.Name,
+				)
+			case f.IsResolver:
+				return fmt.Errorf(
+					"input %s has a custom unmarshaler (UnmarshalGQL, or the MarshalGQLContext/UnmarshalGQLContext pair) but field %q has a resolver; custom unmarshalers cannot run field resolvers",
+					in.Name,
+					f.Name,
+				)
+			}
+		}
+	}
+	return nil
 }
 
 func (b *builder) injectIntrospectionRoots(s *Data) error {

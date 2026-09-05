@@ -538,3 +538,46 @@ func TestTypeReference_UsesPublicAliasOverInternalBindTargetWrapped(t *testing.T
 	require.NoError(t, err)
 	require.Equal(t, "*"+publicPkg+".Operation", ref.GO.String())
 }
+
+// An input object whose Go type only has UnmarshalGQLContext must NOT bind as a
+// context unmarshaler: the codec has to route through the generated (hybrid)
+// unmarshalInput function so field defaults, directives and resolvers still run.
+func TestInputObjectContextUnmarshalerBinding(t *testing.T) {
+	cfg := Config{Models: TypeMap{
+		"CtxInput": TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/codegen/config/testdata/binding.ContextInput"}},
+		"String":   TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/graphql.String"}},
+	}}
+	cfg.Packages = code.NewPackages()
+	cfg.Schema = gqlparser.MustLoadSchema(&ast.Source{Name: "ctxinput.schema", Input: `
+		input CtxInput { text: String }
+		type Query { q(in: CtxInput): String }
+	`})
+	b := cfg.NewBinder()
+	ref, err := b.TypeReference(cfg.Schema.Query.Fields.ForName("q").Arguments.ForName("in").Type, nil)
+	require.NoError(t, err)
+	require.False(t, ref.IsMarshaler)
+	require.False(t, ref.IsContext)
+}
+
+// The sibling of the above: an input object whose Go type carries the full
+// MarshalGQLContext/UnmarshalGQLContext pair DOES bind as a context marshaler,
+// so its codec calls UnmarshalGQLContext directly and never reaches a generated
+// unmarshaler. codegen.Object.HasUnmarshal must return true for such a type, or
+// a hybrid unmarshaler is generated as dead code and every field directive,
+// resolver, default and nested-input enforcement is silently dropped.
+func TestInputObjectContextMarshalerPairBinding(t *testing.T) {
+	cfg := Config{Models: TypeMap{
+		"CtxInput": TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/codegen/config/testdata/binding.ContextInputPair"}},
+		"String":   TypeMapEntry{Model: []string{"github.com/99designs/gqlgen/graphql.String"}},
+	}}
+	cfg.Packages = code.NewPackages()
+	cfg.Schema = gqlparser.MustLoadSchema(&ast.Source{Name: "ctxinputpair.schema", Input: `
+		input CtxInput { text: String }
+		type Query { q(in: CtxInput): String }
+	`})
+	b := cfg.NewBinder()
+	ref, err := b.TypeReference(cfg.Schema.Query.Fields.ForName("q").Arguments.ForName("in").Type, nil)
+	require.NoError(t, err)
+	require.True(t, ref.IsMarshaler)
+	require.True(t, ref.IsContext)
+}

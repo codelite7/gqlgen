@@ -48,6 +48,8 @@ type ResolverRoot interface {
 	WrappedMap() WrappedMapResolver
 	WrappedSlice() WrappedSliceResolver
 	FieldsOrderInput() FieldsOrderInputResolver
+	HybridInput() HybridInputResolver
+	HybridNested() HybridNestedResolver
 }
 
 type DirectiveRoot struct {
@@ -71,6 +73,7 @@ type DirectiveRoot struct {
 	Range             func(ctx context.Context, obj any, next graphql.Resolver, min *int, max *int) (res any, err error)
 	SubscriptionOnly  func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
 	ToNull            func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	ToUpper           func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 	Unimplemented     func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
@@ -360,7 +363,10 @@ type ComplexityRoot struct {
 		FieldWithDeprecatedArg           func(childComplexity int, oldArg *int, newArg *int) int
 		FilterProducts                   func(childComplexity int, query *string, category *string, minPrice *int) int
 		FindProducts                     func(childComplexity int, query *string, category *string, minPrice *int) int
+		HybridInput                      func(childComplexity int, arg HybridInput) int
+		HybridInputNullable              func(childComplexity int, arg *HybridInput) int
 		Infinity                         func(childComplexity int) int
+		InputListField                   func(childComplexity int, arg ListFieldInput) int
 		InputNullableSlice               func(childComplexity int, arg []string) int
 		InputOmittable                   func(childComplexity int, arg OmittableInput) int
 		InputSlice                       func(childComplexity int, arg []string) int
@@ -589,6 +595,8 @@ type QueryResolver interface {
 	EmbeddedCase2(ctx context.Context) (*EmbeddedCase2, error)
 	EmbeddedCase3(ctx context.Context) (*EmbeddedCase3, error)
 	EnumInInput(ctx context.Context, input *InputWithEnumValue) (EnumTest, error)
+	HybridInput(ctx context.Context, arg HybridInput) (string, error)
+	HybridInputNullable(ctx context.Context, arg *HybridInput) (string, error)
 	SearchProducts(ctx context.Context, filters map[string]interface{}) ([]string, error)
 	SearchRequired(ctx context.Context, filters map[string]interface{}) ([]string, error)
 	SearchProductsNormal(ctx context.Context, filters map[string]any) ([]string, error)
@@ -605,6 +613,7 @@ type QueryResolver interface {
 	NotAnInterface(ctx context.Context) (BackedByInterface, error)
 	Dog(ctx context.Context) (*Dog, error)
 	Issue896a(ctx context.Context) ([]*CheckIssue896, error)
+	InputListField(ctx context.Context, arg ListFieldInput) (string, error)
 	MapStringInterface(ctx context.Context, in map[string]any) (map[string]any, error)
 	MapNestedStringInterface(ctx context.Context, in *NestedMapInput) (map[string]any, error)
 	MapNestedMapSlice(ctx context.Context, input map[string]any) (*bool, error)
@@ -661,6 +670,12 @@ type WrappedSliceResolver interface {
 
 type FieldsOrderInputResolver interface {
 	OverrideFirstField(ctx context.Context, obj *FieldsOrderInput, data *string) error
+}
+type HybridInputResolver interface {
+	Resolved(ctx context.Context, obj *HybridInput, data string) error
+}
+type HybridNestedResolver interface {
+	Resolved(ctx context.Context, obj *HybridNested, data string) error
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -1673,12 +1688,45 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.FindProducts(childComplexity, args["query"].(*string), args["category"].(*string), args["minPrice"].(*int)), true
+	case "Query.hybridInput":
+		if e.ComplexityRoot.Query.HybridInput == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hybridInput_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.HybridInput(childComplexity, args["arg"].(HybridInput)), true
+	case "Query.hybridInputNullable":
+		if e.ComplexityRoot.Query.HybridInputNullable == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hybridInputNullable_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.HybridInputNullable(childComplexity, args["arg"].(*HybridInput)), true
 	case "Query.infinity":
 		if e.ComplexityRoot.Query.Infinity == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.Infinity(childComplexity), true
+	case "Query.inputListField":
+		if e.ComplexityRoot.Query.InputListField == nil {
+			break
+		}
+
+		args, err := ec.field_Query_inputListField_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.InputListField(childComplexity, args["arg"].(ListFieldInput)), true
 	case "Query.inputNullableSlice":
 		if e.ComplexityRoot.Query.InputNullableSlice == nil {
 			break
@@ -2369,6 +2417,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDefaultInput,
 		ec.unmarshalInputDirectiveInput,
 		ec.unmarshalInputFieldsOrderInput,
+		ec.unmarshalInputHybridInput,
+		ec.unmarshalInputHybridNested,
 		ec.unmarshalInputInnerDirectives,
 		ec.unmarshalInputInnerInput,
 		ec.unmarshalInputInputDirectives,
@@ -2376,6 +2426,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputInputWithEnumValue,
 		ec.unmarshalInputIssue4053Input1,
 		ec.unmarshalInputIssue4053Input2,
+		ec.unmarshalInputListFieldInput,
 		ec.unmarshalInputMapNestedInput,
 		ec.unmarshalInputMapNestedMapSliceInput,
 		ec.unmarshalInputMapStringInterfaceInput,
@@ -2514,6 +2565,7 @@ directive @queryOnly(reason: String!) on QUERY
 directive @range(min: Int = 0, max: Int) on ARGUMENT_DEFINITION
 directive @subscriptionOnly(reason: String!) on SUBSCRIPTION
 directive @toNull on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+directive @toUpper on INPUT_FIELD_DEFINITION
 directive @unimplemented on FIELD_DEFINITION
 type A {
 	id: ID!
@@ -2666,6 +2718,32 @@ type Horse implements Mammalian & Animal {
 	size: Size!
 	horseBreed: String!
 }
+"""
+HybridInput is bound to a Go type that decodes itself with UnmarshalGQLContext.
+gqlgen still generates an unmarshaler for it, with a hybrid body: the Go method
+decodes plain and defaulted fields, generated code runs the field directive and
+the field resolver.
+"""
+input HybridInput {
+	plain: String!
+	withDefault: String! = "fromDefault"
+	directed: String! @toUpper
+	resolved: String!
+	nested: HybridNested
+	nestedList: [HybridNested!]
+	selfRef: [HybridInput!]
+}
+"""
+HybridNested is reached from HybridInput only through fields that carry no
+directive of their own (nested, nestedList, selfRef). Its own @toUpper directive
+and its ` + "`" + `resolved` + "`" + ` field resolver must still run: a hybrid body that hands those
+fields to UnmarshalGQLContext skips them silently.
+"""
+input HybridNested {
+	gated: String! @toUpper
+	resolved: String!
+	deeper: HybridNested
+}
 input InnerDirectives {
 	message: String! @length(min: 1, message: "not valid")
 }
@@ -2700,6 +2778,9 @@ input Issue4053Input2 {
 }
 type It {
 	id: ID!
+}
+input ListFieldInput {
+	items: [String]
 }
 type LoopA {
 	b: LoopB!
@@ -2871,6 +2952,8 @@ type Query {
 	embeddedCase2: EmbeddedCase2
 	embeddedCase3: EmbeddedCase3
 	enumInInput(input: InputWithEnumValue): EnumTest!
+	hybridInput(arg: HybridInput!): String!
+	hybridInputNullable(arg: HybridInput): String!
 	searchProducts(query: String, category: String, minPrice: Int): [String!]!
 	searchRequired(name: String!, age: Int!): [String!]!
 	searchProductsNormal(filters: SearchFilters): [String!]!
@@ -2887,6 +2970,7 @@ type Query {
 	notAnInterface: BackedByInterface
 	dog: Dog
 	issue896a: [CheckIssue896!]
+	inputListField(arg: ListFieldInput!): String!
 	mapStringInterface(in: MapStringInterfaceInput): MapStringInterfaceType
 	mapNestedStringInterface(in: NestedMapInput): MapStringInterfaceType
 	mapNestedMapSlice(input: MapNestedMapSliceInput): Boolean
@@ -4726,6 +4810,48 @@ func (ec *executionContext) field_Query_findProducts_args(ctx context.Context, r
 		return nil, err
 	}
 	args["minPrice"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hybridInputNullable_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "arg",
+		func(ctx context.Context, v any) (*HybridInput, error) {
+			return ec.unmarshalOHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["arg"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hybridInput_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "arg",
+		func(ctx context.Context, v any) (HybridInput, error) {
+			return ec.unmarshalNHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["arg"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_inputListField_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "arg",
+		func(ctx context.Context, v any) (ListFieldInput, error) {
+			return ec.unmarshalNListFieldInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐListFieldInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["arg"] = arg0
 	return args, nil
 }
 
@@ -10261,6 +10387,98 @@ func (ec *executionContext) fieldContext_Query_enumInInput(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_hybridInput(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_hybridInput(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().HybridInput(ctx, fc.Args["arg"].(HybridInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_hybridInput(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_hybridInput_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_hybridInputNullable(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_hybridInputNullable(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().HybridInputNullable(ctx, fc.Args["arg"].(*HybridInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_hybridInputNullable(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_hybridInputNullable_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_searchProducts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10956,6 +11174,52 @@ func (ec *executionContext) fieldContext_Query_issue896a(_ context.Context, fiel
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_CheckIssue896(ctx, field)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_inputListField(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_inputListField(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().InputListField(ctx, fc.Args["arg"].(ListFieldInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_inputListField(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_inputListField_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -14631,6 +14895,166 @@ func (ec *executionContext) unmarshalInputFieldsOrderInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputHybridInput(ctx context.Context, obj any) (HybridInput, error) {
+	var it HybridInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputHybridInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["withDefault"]; !present {
+		asMap["withDefault"] = "fromDefault"
+	}
+
+	plain := make(map[string]any, len(asMap))
+	for k, v := range asMap {
+		switch k {
+		case "directed", "resolved", "nested", "nestedList", "selfRef":
+		default:
+			plain[k] = v
+		}
+	}
+	if err := it.UnmarshalGQLContext(ctx, plain); err != nil {
+		return it, err
+	}
+
+	fieldsInOrder := [...]string{"directed", "resolved", "nested", "nestedList", "selfRef"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "directed":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("directed"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.ToUpper == nil {
+					var zeroVal string
+					return zeroVal, errors.New("directive toUpper is not implemented")
+				}
+				return ec.Directives.ToUpper(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(string); ok {
+				it.Directed = data
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "resolved":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolved"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.Resolvers.HybridInput().Resolved(ctx, &it, data); err != nil {
+				return it, err
+			}
+		case "nested":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nested"))
+			data, err := ec.unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Nested = data
+		case "nestedList":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nestedList"))
+			data, err := ec.unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNestedᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NestedList = data
+		case "selfRef":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selfRef"))
+			data, err := ec.unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelfRef = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputHybridNested(ctx context.Context, obj any) (HybridNested, error) {
+	var it HybridNested
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputHybridNested: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"gated", "resolved", "deeper"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "gated":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gated"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.ToUpper == nil {
+					var zeroVal string
+					return zeroVal, errors.New("directive toUpper is not implemented")
+				}
+				return ec.Directives.ToUpper(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(string); ok {
+				it.Gated = data
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "resolved":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolved"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.Resolvers.HybridNested().Resolved(ctx, &it, data); err != nil {
+				return it, err
+			}
+		case "deeper":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deeper"))
+			data, err := ec.unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Deeper = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputInnerDirectives(ctx context.Context, obj any) (InnerDirectives, error) {
 	var it InnerDirectives
 	if obj == nil {
@@ -15044,6 +15468,40 @@ func (ec *executionContext) unmarshalInputIssue4053Input2(ctx context.Context, o
 				return it, err
 			}
 			it.HelloWithDefault = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputListFieldInput(ctx context.Context, obj any) (ListFieldInput, error) {
+	var it ListFieldInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	rawMap, ok := obj.(map[string]any)
+	if !ok {
+		return it, fmt.Errorf("unmarshalInputListFieldInput: expected map[string]any, got %T", obj)
+	}
+	for k, v := range rawMap {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"items"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "items":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Items = data
 		}
 	}
 	return it, nil
@@ -19609,6 +20067,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "hybridInput":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_hybridInput(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "hybridInputNullable":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_hybridInputNullable(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "searchProducts":
 			field := field
 
@@ -19931,6 +20433,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_issue896a(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "inputListField":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_inputListField(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -21983,6 +22507,21 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
+func (ec *executionContext) unmarshalNHybridInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx context.Context, v any) (HybridInput, error) {
+	res, err := ec.unmarshalInputHybridInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx context.Context, v any) (*HybridInput, error) {
+	res, err := ec.unmarshalInputHybridInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx context.Context, v any) (*HybridNested, error) {
+	res, err := ec.unmarshalInputHybridNested(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNID2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalIntID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -22101,6 +22640,11 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNListFieldInput2githubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐListFieldInput(ctx context.Context, v any) (ListFieldInput, error) {
+	res, err := ec.unmarshalInputListFieldInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNLoopA2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐLoopA(ctx context.Context, sel ast.SelectionSet, v *LoopA) graphql.Marshaler {
@@ -23007,6 +23551,58 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	_ = sel
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOHybridInput2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInputᚄ(ctx context.Context, v any) ([]*HybridInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*HybridInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOHybridInput2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridInput(ctx context.Context, v any) (*HybridInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputHybridInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOHybridNested2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNestedᚄ(ctx context.Context, v any) ([]*HybridNested, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*HybridNested, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOHybridNested2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋcodegenᚋtestserverᚋsinglefileᚐHybridNested(ctx context.Context, v any) (*HybridNested, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputHybridNested(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {

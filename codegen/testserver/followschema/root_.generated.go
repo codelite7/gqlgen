@@ -39,6 +39,8 @@ type ResolverRoot interface {
 	WrappedMap() WrappedMapResolver
 	WrappedSlice() WrappedSliceResolver
 	FieldsOrderInput() FieldsOrderInputResolver
+	HybridInput() HybridInputResolver
+	HybridNested() HybridNestedResolver
 }
 
 type DirectiveRoot struct {
@@ -62,6 +64,7 @@ type DirectiveRoot struct {
 	Range             func(ctx context.Context, obj any, next graphql.Resolver, min *int, max *int) (res any, err error)
 	SubscriptionOnly  func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
 	ToNull            func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	ToUpper           func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 	Unimplemented     func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
@@ -351,7 +354,10 @@ type ComplexityRoot struct {
 		FieldWithDeprecatedArg           func(childComplexity int, oldArg *int, newArg *int) int
 		FilterProducts                   func(childComplexity int, query *string, category *string, minPrice *int) int
 		FindProducts                     func(childComplexity int, query *string, category *string, minPrice *int) int
+		HybridInput                      func(childComplexity int, arg HybridInput) int
+		HybridInputNullable              func(childComplexity int, arg *HybridInput) int
 		Infinity                         func(childComplexity int) int
+		InputListField                   func(childComplexity int, arg ListFieldInput) int
 		InputNullableSlice               func(childComplexity int, arg []string) int
 		InputOmittable                   func(childComplexity int, arg OmittableInput) int
 		InputSlice                       func(childComplexity int, arg []string) int
@@ -1593,12 +1599,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.FindProducts(childComplexity, args["query"].(*string), args["category"].(*string), args["minPrice"].(*int)), true
 
+	case "Query.hybridInput":
+		if e.ComplexityRoot.Query.HybridInput == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hybridInput_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.HybridInput(childComplexity, args["arg"].(HybridInput)), true
+
+	case "Query.hybridInputNullable":
+		if e.ComplexityRoot.Query.HybridInputNullable == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hybridInputNullable_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.HybridInputNullable(childComplexity, args["arg"].(*HybridInput)), true
+
 	case "Query.infinity":
 		if e.ComplexityRoot.Query.Infinity == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.Infinity(childComplexity), true
+
+	case "Query.inputListField":
+		if e.ComplexityRoot.Query.InputListField == nil {
+			break
+		}
+
+		args, err := ec.field_Query_inputListField_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.InputListField(childComplexity, args["arg"].(ListFieldInput)), true
 
 	case "Query.inputNullableSlice":
 		if e.ComplexityRoot.Query.InputNullableSlice == nil {
@@ -2360,6 +2402,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDefaultInput,
 		ec.unmarshalInputDirectiveInput,
 		ec.unmarshalInputFieldsOrderInput,
+		ec.unmarshalInputHybridInput,
+		ec.unmarshalInputHybridNested,
 		ec.unmarshalInputInnerDirectives,
 		ec.unmarshalInputInnerInput,
 		ec.unmarshalInputInputDirectives,
@@ -2367,6 +2411,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputInputWithEnumValue,
 		ec.unmarshalInputIssue4053Input1,
 		ec.unmarshalInputIssue4053Input2,
+		ec.unmarshalInputListFieldInput,
 		ec.unmarshalInputMapNestedInput,
 		ec.unmarshalInputMapNestedMapSliceInput,
 		ec.unmarshalInputMapStringInterfaceInput,
@@ -2505,6 +2550,7 @@ directive @queryOnly(reason: String!) on QUERY
 directive @range(min: Int = 0, max: Int) on ARGUMENT_DEFINITION
 directive @subscriptionOnly(reason: String!) on SUBSCRIPTION
 directive @toNull on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+directive @toUpper on INPUT_FIELD_DEFINITION
 directive @unimplemented on FIELD_DEFINITION
 type A {
 	id: ID!
@@ -2657,6 +2703,32 @@ type Horse implements Mammalian & Animal {
 	size: Size!
 	horseBreed: String!
 }
+"""
+HybridInput is bound to a Go type that decodes itself with UnmarshalGQLContext.
+gqlgen still generates an unmarshaler for it, with a hybrid body: the Go method
+decodes plain and defaulted fields, generated code runs the field directive and
+the field resolver.
+"""
+input HybridInput {
+	plain: String!
+	withDefault: String! = "fromDefault"
+	directed: String! @toUpper
+	resolved: String!
+	nested: HybridNested
+	nestedList: [HybridNested!]
+	selfRef: [HybridInput!]
+}
+"""
+HybridNested is reached from HybridInput only through fields that carry no
+directive of their own (nested, nestedList, selfRef). Its own @toUpper directive
+and its ` + "`" + `resolved` + "`" + ` field resolver must still run: a hybrid body that hands those
+fields to UnmarshalGQLContext skips them silently.
+"""
+input HybridNested {
+	gated: String! @toUpper
+	resolved: String!
+	deeper: HybridNested
+}
 input InnerDirectives {
 	message: String! @length(min: 1, message: "not valid")
 }
@@ -2691,6 +2763,9 @@ input Issue4053Input2 {
 }
 type It {
 	id: ID!
+}
+input ListFieldInput {
+	items: [String]
 }
 type LoopA {
 	b: LoopB!
@@ -2862,6 +2937,8 @@ type Query {
 	embeddedCase2: EmbeddedCase2
 	embeddedCase3: EmbeddedCase3
 	enumInInput(input: InputWithEnumValue): EnumTest!
+	hybridInput(arg: HybridInput!): String!
+	hybridInputNullable(arg: HybridInput): String!
 	searchProducts(query: String, category: String, minPrice: Int): [String!]!
 	searchRequired(name: String!, age: Int!): [String!]!
 	searchProductsNormal(filters: SearchFilters): [String!]!
@@ -2878,6 +2955,7 @@ type Query {
 	notAnInterface: BackedByInterface
 	dog: Dog
 	issue896a: [CheckIssue896!]
+	inputListField(arg: ListFieldInput!): String!
 	mapStringInterface(in: MapStringInterfaceInput): MapStringInterfaceType
 	mapNestedStringInterface(in: NestedMapInput): MapStringInterfaceType
 	mapNestedMapSlice(input: MapNestedMapSliceInput): Boolean

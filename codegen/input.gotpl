@@ -4,6 +4,18 @@
 	{{- if .PointersInUnmarshalInput }}
 	  {{- $it = "&it" }}
 	{{- end }}
+	{{- /* Hybrid inputs (Go type has UnmarshalGQLContext): the method decodes
+	       every plain field, and only fields the method cannot handle keep a
+	       generated case arm — those with INPUT_FIELD_DEFINITION directives, a
+	       field resolver, or a type that is an input object needing generated
+	       handling itself (transitively: a nested input with a directive, a
+	       resolver, a field default or an INPUT_OBJECT directive anywhere below
+	       it). See Object.HybridSpecialFields. */}}
+	{{- $hybrid := .HasContextUnmarshal }}
+	{{- $switchFields := .Fields }}
+	{{- if $hybrid }}
+		{{- $switchFields = .HybridSpecialFields }}
+	{{- end }}
 	func {{$.FuncReceiver}}unmarshalInput{{ .Name }}(ctx context.Context, {{$.ECFuncParam}}obj any) ({{ if .PointersInUnmarshalInput }}*{{ end }}{{.Type | ref}}, error) {
 		var it {{.Type | ref}}
 		if obj == nil {
@@ -25,8 +37,30 @@
 				}
 			{{- end}}
 		{{- end }}
+		{{- if $hybrid }}
+		{{- if $switchFields }}
 
-		fieldsInOrder := [...]string{ {{ range .Fields }}{{ quote .Name }},{{ end }} }
+		plain := make(map[string]any, len(asMap))
+		for k, v := range asMap {
+			switch k {
+			case {{ range $i, $field := $switchFields }}{{ if $i }}, {{ end }}{{ $field.Name | quote }}{{ end }}:
+			default:
+				plain[k] = v
+			}
+		}
+		if err := it.UnmarshalGQLContext(ctx, plain); err != nil {
+			return {{$it}}, err
+		}
+		{{- else }}
+
+		if err := it.UnmarshalGQLContext(ctx, asMap); err != nil {
+			return {{$it}}, err
+		}
+		{{- end }}
+		{{- end }}
+		{{- if or (not $hybrid) $switchFields }}
+
+		fieldsInOrder := [...]string{ {{ range $switchFields }}{{ quote .Name }},{{ end }} }
 		{{- if $input.IsMap }}
 			it = make(map[string]any, len(asMap))
 		{{- end }}
@@ -36,7 +70,7 @@
 				continue
 			}
 			switch k {
-			{{- range $field := .Fields }}
+			{{- range $field := $switchFields }}
 			case {{$field.Name|quote}}:
 				{{- $lhs := (printf "it.%s" $field.GoFieldName) }}
 				{{- if $input.IsMap }}
@@ -100,6 +134,7 @@
 			{{- end }}
 			}
 		}
+		{{- end }}
 
 		{{- if $input.InputObjectDirectives }}
 		// Execute INPUT_OBJECT level directives (e.g., @oneOf, @directive3)

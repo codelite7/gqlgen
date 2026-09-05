@@ -158,6 +158,10 @@ type InputWithEnumValue struct {
 	Enum EnumTest `json:"enum"`
 }
 
+type ListFieldInput struct {
+	Items []*string `json:"items,omitempty"`
+}
+
 type LoopA struct {
 	B *LoopB `json:"b"`
 }

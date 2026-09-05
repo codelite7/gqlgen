@@ -35,6 +35,14 @@ type Object struct {
 	Stream                   bool
 	Directives               []*Directive
 	PointersInUnmarshalInput bool
+
+	// needsGeneratedInput is the input-graph classification shared by all inputs,
+	// computed once by Objects.resolveHybridSpecialFields, which also sets
+	// hybridClassified. Unclassified is not a safe default for a hybrid input —
+	// it is the pre-fix, bypass-prone field set — so HybridSpecialFields panics
+	// on it rather than failing open.
+	needsGeneratedInput map[string]bool
+	hybridClassified    bool
 }
 
 func (b *builder) buildObject(typ *ast.Definition) (*Object, error) {
@@ -114,12 +122,124 @@ func (o *Object) HasResolvers() bool {
 	return false
 }
 
+// HasUnmarshal reports whether the bound Go type decodes itself, so gqlgen must
+// emit no unmarshaler for it at all.
 func (o *Object) HasUnmarshal() bool {
+	// A type carrying the full MarshalGQLContext/UnmarshalGQLContext pair binds as
+	// a graphql.ContextMarshaler (config.Binder.TypeReference), so its codec calls
+	// UnmarshalGQLContext directly and never reaches a generated unmarshaler. Say
+	// so here too, or a hybrid body would be generated and silently never called,
+	// dropping every field directive, resolver, default and nested enforcement.
+	if o.hasMethod("MarshalGQLContext") && o.hasMethod("UnmarshalGQLContext") {
+		return true
+	}
+	return o.hasMethod("UnmarshalGQL")
+}
+
+// HasContextUnmarshal reports whether the bound Go type decodes itself via
+// UnmarshalGQLContext but not UnmarshalGQL. Such inputs still get a generated
+// unmarshaler, with a hybrid body: the Go method decodes the plain fields while
+// generated code keeps applying defaults and running field directives and field
+// resolvers. A type with UnmarshalGQL, or with the full
+// MarshalGQLContext/UnmarshalGQLContext pair, keeps upstream semantics instead
+// (no generated function at all — see HasUnmarshal).
+func (o *Object) HasContextUnmarshal() bool {
+	return !o.HasUnmarshal() && o.hasMethod("UnmarshalGQLContext")
+}
+
+// HybridSpecialFields returns the fields a hybrid unmarshaler must still handle
+// itself, because UnmarshalGQLContext cannot: those with INPUT_FIELD_DEFINITION
+// directives, those backed by a field resolver, and those whose type is an input
+// object that itself needs generated handling — handing such a value to the
+// method would skip the nested input's directives and resolvers silently.
+//
+// The nested case needs Objects.resolveHybridSpecialFields to have run over the
+// whole input graph; BuildData does that.
+func (o *Object) HybridSpecialFields() []*Field {
+	if !o.hybridClassified && o.HasContextUnmarshal() {
+		panic(fmt.Errorf(
+			"input %s: HybridSpecialFields called before Objects.resolveHybridSpecialFields; "+
+				"the nested-input classification would fail open and skip nested directives and resolvers",
+			o.Name))
+	}
+	var special []*Field
+	for _, f := range o.Fields {
+		if hybridSpecialField(f, o.needsGeneratedInput) {
+			special = append(special, f)
+		}
+	}
+	return special
+}
+
+func hybridSpecialField(f *Field, needsGenerated map[string]bool) bool {
+	if len(f.ImplDirectives()) > 0 || f.IsResolver {
+		return true
+	}
+	// TypeReference.Definition is the named type behind any list/non-null
+	// wrapping, so [X!]! and X classify alike.
+	if f.TypeReference == nil || f.TypeReference.Definition == nil {
+		return false
+	}
+	def := f.TypeReference.Definition
+	return def.Kind == ast.InputObject && needsGenerated[def.Name]
+}
+
+// resolveHybridSpecialFields classifies the input graph for the hybrid
+// unmarshaler: an input "needs generated handling" when it has a field a custom
+// UnmarshalGQLContext cannot reproduce — one with a directive, a resolver or a
+// default, an INPUT_OBJECT-level directive on the input itself, or a field whose
+// type is an input that needs generated handling. That last clause makes the
+// relation transitive, and the input graph is cyclic (`and: [XWhereInput!]`), so
+// it is computed as a fixpoint rather than by recursion.
+//
+// The result is shared with every input so HybridSpecialFields, which the
+// templates call per input, can see past its own fields.
+func (os Objects) resolveHybridSpecialFields() {
+	// ponytail: plain repeated passes, no worklist — O(passes x inputs x fields),
+	// two or three passes on real schemas. Add a reverse-edge worklist only if a
+	// large schema shows this in a codegen profile.
+	needsGenerated := make(map[string]bool, len(os))
+	for changed := true; changed; {
+		changed = false
+		for _, in := range os {
+			if needsGenerated[in.Name] || !in.requiresGeneratedUnmarshal(needsGenerated) {
+				continue
+			}
+			needsGenerated[in.Name] = true
+			changed = true
+		}
+	}
+	for _, in := range os {
+		in.needsGeneratedInput = needsGenerated
+		in.hybridClassified = true
+	}
+}
+
+func (o *Object) requiresGeneratedUnmarshal(needsGenerated map[string]bool) bool {
+	if len(o.InputObjectDirectives()) > 0 {
+		return true
+	}
+	for _, f := range o.Fields {
+		// A default is applied to the map before the method is called, so it does
+		// not make the field special here — but a parent handing this whole input
+		// to its own decoder would drop it.
+		if f.Default != nil || hybridSpecialField(f, needsGenerated) {
+			return true
+		}
+	}
+	return false
+}
+
+func (o *Object) hasMethod(name string) bool {
 	if o.IsMap() {
 		return false
 	}
-	for method := range o.Type.(*types.Named).Methods() {
-		if method.Name() == "UnmarshalGQL" {
+	named, ok := o.Type.(*types.Named)
+	if !ok {
+		return false
+	}
+	for method := range named.Methods() {
+		if method.Name() == name {
 			return true
 		}
 	}

@@ -620,6 +620,11 @@ func TestSplitInputGeneratesFullUnmarshalBody(t *testing.T) {
 			},
 		},
 	}
+	// Field.ImplDirectives (used by the input template to emit
+	// INPUT_FIELD_DEFINITION directive chains) reads f.Object.
+	for _, f := range input.Fields {
+		f.Object = input
+	}
 	ownership := &splitOwnershipPlanner{
 		InputOwner: map[string]string{
 			input.Name: "alpha",
@@ -658,6 +663,365 @@ func TestSplitInputGeneratesFullUnmarshalBody(t *testing.T) {
 	require.Contains(t, text, `case "name"`)
 	require.Contains(t, text, "graphql.WithPathContext")
 	require.Contains(t, text, "it.Name = data.(string)")
+}
+
+// The plain (non-directive, non-resolver) arm must treat an explicit GraphQL
+// null on a nilable graphql.Omittable[T] field as "set, nil" — mirroring the
+// directive arm of the same template and upstream codegen/input.gotpl. Before
+// the fix, `data` (the `any` ec.UnmarshalCodec returns) is untyped nil for an
+// explicit null, the `data != nil` guard skips the assignment, and the field
+// is left unset.
+func TestSplitInputOmittableNilableExplicitNull(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	input := &Object{
+		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference: &config.TypeReference{
+					Definition:  stringDef,
+					GQL:         ast.NamedType("String", nil),
+					GO:          types.NewPointer(types.Typ[types.String]),
+					IsOmittable: true,
+				},
+			},
+		},
+	}
+	for _, f := range input.Fields {
+		f.Object = input
+	}
+	ownership := &splitOwnershipPlanner{
+		InputOwner: map[string]string{
+			input.Name: "alpha",
+		},
+		InputOwnerKeys: []string{input.Name},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:      &Data{Config: &config.Config{}},
+			ShardName: "alpha",
+			Ownership: ownership,
+			InputByName: map[string]*Object{
+				input.Name: input,
+			},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	text := string(contents)
+	require.Contains(t, text, "it.Name = graphql.OmittableOf(data.(*string))")
+	require.Contains(t, text, "it.Name = graphql.OmittableOf[*string](nil)")
+}
+
+// A non-nilable Omittable field (e.g. graphql.Omittable[string] bound to a
+// nullable String — GO is "string", not "*string") needs no nil guard: for an
+// explicit null, ec.UnmarshalCodec's terminal-type arm calls the scalar
+// unmarshaler (e.g. graphql.UnmarshalString(nil)) which returns a boxed zero
+// value ("", nil), never untyped nil — graphql/string_test.go already pins
+// UnmarshalString(nil) == "". So `data.(string)` cannot panic, and the
+// generated code for this arm must stay the single unconditional assignment
+// (no `if data != nil` guard, no else branch) — mirroring upstream
+// codegen/input.gotpl's non-nilable Omittable arm exactly.
+func TestSplitInputOmittableNonNilableNoGuardNeeded(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	input := &Object{
+		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference: &config.TypeReference{
+					Definition:  stringDef,
+					GQL:         ast.NamedType("String", nil),
+					GO:          types.Typ[types.String],
+					IsOmittable: true,
+				},
+			},
+		},
+	}
+	for _, f := range input.Fields {
+		f.Object = input
+	}
+	ownership := &splitOwnershipPlanner{
+		InputOwner: map[string]string{
+			input.Name: "alpha",
+		},
+		InputOwnerKeys: []string{input.Name},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:      &Data{Config: &config.Config{}},
+			ShardName: "alpha",
+			Ownership: ownership,
+			InputByName: map[string]*Object{
+				input.Name: input,
+			},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	text := string(contents)
+	require.Contains(
+		t,
+		text,
+		"if err != nil {\n\t\t\t\treturn it, err\n\t\t\t}\n\t\t\tit.Name = graphql.OmittableOf(data.(string))",
+	)
+	require.NotContains(t, text, "if data != nil")
+}
+
+// A hybrid input (Go type has UnmarshalGQLContext) delegates its plain fields to
+// the method and keeps generated case arms only for fields the method cannot
+// handle: those with directives or a field resolver.
+func TestSplitInputGeneratesHybridUnmarshalBody(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	modelInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "UserInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	sig := types.NewSignatureType(
+		types.NewVar(0, modelInputType.Obj().Pkg(), "i", types.NewPointer(modelInputType)),
+		nil, nil, nil, nil, false,
+	)
+	modelInputType.AddMethod(
+		types.NewFunc(0, modelInputType.Obj().Pkg(), "UnmarshalGQLContext", sig),
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	stringRef := func() *config.TypeReference {
+		return &config.TypeReference{
+			Definition: stringDef,
+			GQL:        ast.NonNullNamedType("String", nil),
+			GO:         types.Typ[types.String],
+		}
+	}
+	input := &Object{
+		Definition: &ast.Definition{Name: "UserInput", Kind: ast.InputObject},
+		Type:       modelInputType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "name"},
+				GoFieldName:     "Name",
+				TypeReference:   stringRef(),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "computed"},
+				GoFieldName:     "Computed",
+				TypeReference:   stringRef(),
+				IsResolver:      true,
+			},
+		},
+	}
+	for _, f := range input.Fields {
+		f.Object = input
+	}
+	// Hybrid inputs must be classified before the template asks for their special
+	// fields; HybridSpecialFields panics otherwise.
+	Objects{input}.resolveHybridSpecialFields()
+	ownership := &splitOwnershipPlanner{
+		InputOwner:     map[string]string{input.Name: "alpha"},
+		InputOwnerKeys: []string{input.Name},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:        &Data{Config: &config.Config{}},
+			ShardName:   "alpha",
+			Ownership:   ownership,
+			InputByName: map[string]*Object{input.Name: input},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	text := string(contents)
+
+	require.Contains(
+		t,
+		text,
+		`fmt.Errorf("unmarshalInputUserInput: expected map[string]any, got %T", obj)`,
+	)
+	require.Contains(t, text, "it.UnmarshalGQLContext(ctx, plain)")
+	require.Contains(t, text, `case "computed":`)
+	require.Contains(t, text, `ec.InvokeResolver(ctx, "UserInput", "computed"`)
+	// The plain field is the method's job: no generated case arm, and it is not
+	// stripped from the map handed to the method.
+	require.NotContains(t, text, `case "name":`)
+	require.NotContains(t, text, "it.Name =")
+	require.Contains(t, text, `fieldsInOrder := [...]string{"computed"}`)
+}
+
+// The hybrid classification is transitive: a field with no directive of its own
+// whose type is an input object that (transitively) needs generated handling
+// must keep its case arm, or the nested input's directives and resolvers are
+// silently skipped when the custom decoder swallows the whole value.
+func TestSplitInputHybridKeepsNestedInputArms(t *testing.T) {
+	const modelImportPath = "example.com/project/model"
+	pkg := types.NewPackage(modelImportPath, "model")
+	outerType := types.NewNamed(
+		types.NewTypeName(0, pkg, "Outer", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	outerType.AddMethod(types.NewFunc(
+		0,
+		pkg,
+		"UnmarshalGQLContext",
+		types.NewSignatureType(
+			types.NewVar(0, pkg, "i", types.NewPointer(outerType)),
+			nil,
+			nil,
+			nil,
+			nil,
+			false,
+		),
+	))
+	innerType := types.NewNamed(
+		types.NewTypeName(0, pkg, "Inner", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	innerDef := &ast.Definition{Name: "Inner", Kind: ast.InputObject}
+	outerDef := &ast.Definition{Name: "Outer", Kind: ast.InputObject}
+	strRef := func() *config.TypeReference {
+		return &config.TypeReference{
+			Definition: stringDef,
+			GQL:        ast.NonNullNamedType("String", nil),
+			GO:         types.Typ[types.String],
+		}
+	}
+	// TypeReference.Definition is the unwrapped named type, so lists and non-null
+	// need no special handling here.
+	inputRef := func(def *ast.Definition, named *types.Named) *config.TypeReference {
+		return &config.TypeReference{
+			Definition: def,
+			GQL:        ast.NamedType(def.Name, nil),
+			GO:         types.NewPointer(named),
+		}
+	}
+
+	inner := &Object{
+		Definition: innerDef,
+		Type:       innerType,
+		Fields: []*Field{{
+			FieldDefinition: &ast.FieldDefinition{Name: "gated"},
+			GoFieldName:     "Gated",
+			TypeReference:   strRef(),
+			Directives: []*Directive{
+				{
+					Name: "someDirective",
+					DirectiveDefinition: &ast.DirectiveDefinition{
+						Name:      "someDirective",
+						Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
+					},
+				},
+			},
+		}},
+	}
+	outer := &Object{
+		Definition: outerDef,
+		Type:       outerType,
+		Fields: []*Field{
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "plain"},
+				GoFieldName:     "Plain",
+				TypeReference:   strRef(),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "nested"},
+				GoFieldName:     "Nested",
+				TypeReference:   inputRef(innerDef, innerType),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "nestedList"},
+				GoFieldName:     "NestedList",
+				TypeReference:   inputRef(innerDef, innerType),
+			},
+			{
+				FieldDefinition: &ast.FieldDefinition{Name: "selfRef"},
+				GoFieldName:     "SelfRef",
+				TypeReference:   inputRef(outerDef, outerType),
+			},
+		},
+	}
+	for _, in := range []*Object{inner, outer} {
+		for _, f := range in.Fields {
+			f.Object = in
+		}
+	}
+	Objects{inner, outer}.resolveHybridSpecialFields()
+
+	outPath := filepath.Join(t.TempDir(), "inputs.generated.go")
+	err := templates.Render(templates.Options{
+		PackageName: "alpha",
+		Template:    splitInputsTemplate + "\n{{ template \"split_inputs_.gotpl\" . }}",
+		Filename:    outPath,
+		Data: splitShardTemplateData{
+			Data:      &Data{Config: &config.Config{}},
+			ShardName: "alpha",
+			Ownership: &splitOwnershipPlanner{
+				InputOwner:     map[string]string{"Outer": "alpha"},
+				InputOwnerKeys: []string{"Outer"},
+			},
+			InputByName: map[string]*Object{"Outer": outer, "Inner": inner},
+		},
+		Packages: internalcode.NewPackages(),
+	})
+	require.NoError(t, err)
+
+	contents, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	text := string(contents)
+
+	require.Contains(t, text, `fieldsInOrder := [...]string{"nested", "nestedList", "selfRef"}`)
+	require.Contains(t, text, `case "nested":`)
+	require.Contains(t, text, `case "nestedList":`)
+	require.Contains(t, text, `case "selfRef":`)
+	require.NotContains(t, text, `case "plain":`)
+	require.Contains(t, text, "it.UnmarshalGQLContext(ctx, plain)")
 }
 
 func TestSplitRootUsesLookupField(t *testing.T) {
@@ -1361,11 +1725,19 @@ extend type Query {
 		"expected split shard directive emission from split_directives_.gotpl",
 	)
 	require.Contains(t, directiveShard, "directive0 := next")
-	require.Contains(t, directiveShard, "return directive0(ctx)")
-	require.Contains(t, directiveShard, "return directive1(ctx)")
+	require.Contains(
+		t,
+		directiveShard,
+		`return ec.InvokeDirective(ctx, "first", obj, directive0, nil)`,
+	)
+	require.Contains(
+		t,
+		directiveShard,
+		`return ec.InvokeDirective(ctx, "second", obj, directive1, nil)`,
+	)
 
-	firstPos := strings.Index(directiveShard, "// directive first")
-	secondPos := strings.Index(directiveShard, "// directive second")
+	firstPos := strings.Index(directiveShard, `ec.InvokeDirective(ctx, "first"`)
+	secondPos := strings.Index(directiveShard, `ec.InvokeDirective(ctx, "second"`)
 	require.NotEqual(t, -1, firstPos)
 	require.NotEqual(t, -1, secondPos)
 	require.Less(t, firstPos, secondPos)
@@ -1609,6 +1981,10 @@ func splitInputOwnerTestData() *Data {
 				TypeReference:   &config.TypeReference{Definition: nestedInputDef},
 			},
 		},
+	}
+	// Field.ImplDirectives, called by the input template, reads f.Object.
+	for _, f := range sharedInput.Fields {
+		f.Object = sharedInput
 	}
 	nestedInput := &Object{Definition: nestedInputDef}
 	orphanInput := &Object{Definition: orphanInputDef}
@@ -1943,4 +2319,275 @@ func TestSplitArgsTemplateEmitsUnmarshalCodec(t *testing.T) {
 	// Verify path context is set for error reporting
 	require.Contains(t, text, "graphql.WithPathContext")
 	require.Contains(t, text, "graphql.NewPathWithField")
+}
+
+// TestSplitDirectivesAreExecuted pins the split-packages layout to actually
+// invoking schema directives. Before this, __splitDirectives_* wrappers were
+// emitted as no-op chains (`return directive0(ctx)`) and inputs/args ignored
+// directives entirely, silently disabling authorization directives.
+func TestSplitDirectivesAreExecuted(t *testing.T) {
+	workDir := chdirToLocalSplitFixtureWorkspace(t)
+
+	schemaPath := filepath.Join(workDir, "graph", "directives.graphqls")
+	require.NoError(
+		t,
+		os.WriteFile(schemaPath, []byte(`directive @goModel(model: String) on INPUT_OBJECT
+directive @fieldDirective on FIELD_DEFINITION
+directive @argDirective(max: Int!) on ARGUMENT_DEFINITION
+directive @inputFieldDirective on INPUT_FIELD_DEFINITION
+directive @inputObjectDirective on INPUT_OBJECT
+
+input Thing @goModel(model: "map[string]interface{}") @inputObjectDirective {
+  name: String! @inputFieldDirective
+}
+
+extend type Query {
+  guarded(size: Int! @argDirective(max: 10), thing: Thing!): String! @fieldDirective
+}
+`), 0o644),
+	)
+	t.Cleanup(func() {
+		_ = os.Remove(schemaPath)
+	})
+
+	cleanupSplitGeneratedFiles(workDir)
+	snapshot := generateSplitSnapshot(t)
+
+	generated, ok := snapshot[filepath.Join("graph", "generated.go")]
+	require.True(t, ok)
+	require.Contains(
+		t,
+		string(generated),
+		"func (ec *executionContext) InvokeDirective(ctx context.Context, name string, obj any, next graphql.Resolver, args map[string]any) (any, error)",
+		"root package must expose the directive dispatcher shards call into",
+	)
+
+	shardPrefix := filepath.Join("graph", "internal", "gqlgenexec", "shards")
+	var shardText strings.Builder
+	for relPath, contents := range snapshot {
+		if !strings.HasPrefix(relPath, shardPrefix) {
+			continue
+		}
+		require.NotContains(t, string(contents), "return directive0(ctx)",
+			"%s still emits a no-op directive chain", relPath)
+		shardText.Write(contents)
+	}
+	shards := shardText.String()
+	require.NotEmpty(t, shards)
+
+	for _, want := range []string{
+		`ec.InvokeDirective(ctx, "fieldDirective"`,
+		`ec.InvokeDirective(ctx, "argDirective"`,
+		`ec.InvokeDirective(ctx, "inputFieldDirective"`,
+		`ec.InvokeDirective(ctx, "inputObjectDirective"`,
+	} {
+		require.Contains(t, shards, want)
+	}
+
+	// Directive arguments are passed through as the schema-declared values.
+	require.Contains(t, shards, `"max": 10`)
+	// FIELD_DEFINITION directives are wired into the field registration.
+	require.Contains(t, shards, "__splitDirectives_Query_guarded(ctx, ec, obj, next)")
+}
+
+// The split unmarshal codec for a list type must match upstream codegen/type.gotpl:
+// [] -> a non-nil empty slice, [null] -> a one-element slice holding a nil/zero
+// element, built directly (typed make + assertion), never via the reflect path
+// that returns a nil slice when every element happens to be nil.
+func TestSplitCodecSliceUnmarshalMatchesUpstream(t *testing.T) {
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+	intDef := &ast.Definition{Name: "Int", Kind: ast.Scalar}
+	const modelImportPath = "example.com/project/model"
+	someInputType := types.NewNamed(
+		types.NewTypeName(0, types.NewPackage(modelImportPath, "model"), "SomeInput", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	someInputDef := &ast.Definition{Name: "SomeInput", Kind: ast.InputObject}
+
+	cases := []struct {
+		name      string
+		ref       *config.TypeReference
+		wantMake  string
+		wantAssrt string
+	}{
+		{
+			name: "String",
+			ref: &config.TypeReference{
+				Definition: stringDef,
+				GQL:        ast.ListType(ast.NamedType("String", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.String]),
+			},
+			wantMake:  "res := make([]string, len(vSlice))",
+			wantAssrt: "res[i] = elem.(string)",
+		},
+		{
+			name: "Int!]!",
+			ref: &config.TypeReference{
+				Definition: intDef,
+				GQL:        ast.NonNullListType(ast.NonNullNamedType("Int", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.Int]),
+			},
+			wantMake:  "res := make([]int, len(vSlice))",
+			wantAssrt: "res[i] = elem.(int)",
+		},
+		{
+			name: "SomeInput!",
+			ref: &config.TypeReference{
+				Definition: someInputDef,
+				GQL:        ast.ListType(ast.NonNullNamedType("SomeInput", nil), nil),
+				GO:         types.NewSlice(someInputType),
+			},
+			wantMake:  "res := make([]model.SomeInput, len(vSlice))",
+			wantAssrt: "res[i] = elem.(model.SomeInput)",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			unmarshalKey := tc.ref.UnmarshalFunc()
+			ownership := &splitOwnershipPlanner{
+				CodecOwner:     map[string]string{unmarshalKey: "alpha"},
+				CodecOwnerKeys: []string{unmarshalKey},
+			}
+
+			outPath := filepath.Join(t.TempDir(), "alpha.generated.go")
+			err := templates.Render(templates.Options{
+				PackageName: "alpha",
+				Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+				Filename:    outPath,
+				Data: splitShardTemplateData{
+					Data:             &Data{Config: &config.Config{}},
+					Scope:            "scope",
+					ShardName:        "alpha",
+					Ownership:        ownership,
+					FieldByLookupKey: map[string]*Field{},
+					FieldByArgsFunc:  map[string]*Field{},
+					InputByName:      map[string]*Object{},
+					CodecByFunc: map[string]*config.TypeReference{
+						unmarshalKey: tc.ref,
+					},
+				},
+				Packages: internalcode.NewPackages(),
+			})
+			require.NoError(t, err)
+
+			contents, err := os.ReadFile(outPath)
+			require.NoError(t, err)
+			text := string(contents)
+
+			require.Contains(t, text, tc.wantMake)
+			require.Contains(t, text, tc.wantAssrt)
+			require.NotContains(t, text, "len(vSlice) == 0")
+			require.NotContains(t, text, "reflect.MakeSlice")
+		})
+	}
+}
+
+// TestSplitCodecSliceMarshalNilMatchesUpstream guards against a nil Go slice
+// marshaling as `[]` instead of `null`. The marshal codec's `value` parameter
+// is `any`; a nil Go slice boxed into `any` is a non-nil interface, so a bare
+// `value == nil` guard never fires. The generated codec must also check for
+// nil via reflection (mirroring the terminal-type branch's existing
+// `rv.Kind() == reflect.Ptr && rv.IsNil()` pattern in this same file) so a
+// nilable list type still emits `graphql.Null` for a nil slice.
+func TestSplitCodecSliceMarshalNilMatchesUpstream(t *testing.T) {
+	stringDef := &ast.Definition{Name: "String", Kind: ast.Scalar}
+
+	cases := []struct {
+		name       string
+		ref        *config.TypeReference
+		wantNilChk bool
+	}{
+		{
+			name: "nilable [String]",
+			ref: &config.TypeReference{
+				Definition: stringDef,
+				GQL:        ast.ListType(ast.NamedType("String", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.String]),
+			},
+			wantNilChk: true,
+		},
+		{
+			name: "non-null [String!]!",
+			ref: &config.TypeReference{
+				Definition: stringDef,
+				GQL:        ast.NonNullListType(ast.NonNullNamedType("String", nil), nil),
+				GO:         types.NewSlice(types.Typ[types.String]),
+			},
+			wantNilChk: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			marshalKey := tc.ref.MarshalFunc()
+			ownership := &splitOwnershipPlanner{
+				CodecOwner:     map[string]string{marshalKey: "alpha"},
+				CodecOwnerKeys: []string{marshalKey},
+			}
+
+			outPath := filepath.Join(t.TempDir(), "alpha.generated.go")
+			err := templates.Render(templates.Options{
+				PackageName: "alpha",
+				Template:    splitShardTemplate + "\n" + splitFieldsTemplate + "\n" + splitFieldContextTemplate + "\n" + splitArgsTemplate + "\n" + splitDirectivesTemplate + "\n" + splitComplexityTemplate + "\n" + splitInputsTemplate + "\n" + splitCodecsTemplate,
+				Filename:    outPath,
+				Data: splitShardTemplateData{
+					Data:             &Data{Config: &config.Config{}},
+					Scope:            "scope",
+					ShardName:        "alpha",
+					Ownership:        ownership,
+					FieldByLookupKey: map[string]*Field{},
+					FieldByArgsFunc:  map[string]*Field{},
+					InputByName:      map[string]*Object{},
+					CodecByFunc: map[string]*config.TypeReference{
+						marshalKey: tc.ref,
+					},
+				},
+				Packages: internalcode.NewPackages(),
+			})
+			require.NoError(t, err)
+
+			contents, err := os.ReadFile(outPath)
+			require.NoError(t, err)
+			text := string(contents)
+
+			if tc.wantNilChk {
+				require.Contains(t, text, "rv.Kind() == reflect.Slice && rv.IsNil()")
+			} else {
+				require.NotContains(t, text, "rv.Kind() == reflect.Slice && rv.IsNil()")
+			}
+		})
+	}
+}
+
+// Data.Directives() is Data.AllDirectives filtered to the directives declared in
+// Config.Sources, so a directive can be in AllDirectives and not in Directives().
+// Gating on the filtered set fails open: FieldMiddleware compiles to a bare
+// `return next` and the directive is silently skipped, where the monolithic
+// layout would run it. The split root must gate on the same set the monolithic
+// templates do.
+//
+// InvokeDirective's own `range .Directives` is deliberately excluded: DirectiveRoot
+// (.UserDirectives) and the builtInDirectiveX vars (.BuiltInDirectives) both
+// partition .Directives, so ranging the wider set emits cases naming identifiers
+// that were never generated. An unlisted name there fails closed.
+func TestSplitRootDirectiveSelectorMatchesMonolithic(t *testing.T) {
+	directivesTemplate, err := codegenTemplates.ReadFile("directives.gotpl")
+	require.NoError(t, err)
+	fieldTemplate, err := codegenTemplates.ReadFile("field.gotpl")
+	require.NoError(t, err)
+
+	for name, text := range map[string]string{
+		"split_root_.gotpl": splitRootTemplate,
+		"root_.gotpl":       rootTemplate,
+		"directives.gotpl":  string(directivesTemplate),
+		"field.gotpl":       string(fieldTemplate),
+	} {
+		// Compared as booleans so a failure names the template instead of dumping it.
+		require.False(t, strings.Contains(text, ".Directives.LocationDirectives"),
+			"%s must gate on .AllDirectives, not the source-filtered .Directives", name)
+		require.True(t, strings.Contains(text, ".AllDirectives"),
+			"%s should reference .AllDirectives", name)
+	}
 }

@@ -154,17 +154,11 @@ func TestSplitPackagesCompiles(t *testing.T) {
 
 func TestSplitComplexityParity(t *testing.T) {
 	t.Run("uses configured complexity handler", func(t *testing.T) {
-		schema := NewExecutableSchema(Config{
-			Resolvers: &Stub{},
-			Complexity: ComplexityRoot{
-				Query: struct {
-					GoodbyeFromExtras func(childComplexity int, name string) int
-					Hello             func(childComplexity int, name string) int
-				}{
-					Hello: func(childComplexity int, name string) int { return childComplexity + len(name) },
-				},
-			},
-		})
+		var complexity ComplexityRoot
+		complexity.Query.Hello = func(childComplexity int, name string) int {
+			return childComplexity + len(name)
+		}
+		schema := NewExecutableSchema(Config{Resolvers: &Stub{}, Complexity: complexity})
 
 		value, ok := schema.Complexity(
 			context.Background(),
@@ -192,17 +186,9 @@ func TestSplitComplexityParity(t *testing.T) {
 	})
 
 	t.Run("returns false on argument parse failure", func(t *testing.T) {
-		schema := NewExecutableSchema(Config{
-			Resolvers: &Stub{},
-			Complexity: ComplexityRoot{
-				Query: struct {
-					GoodbyeFromExtras func(childComplexity int, name string) int
-					Hello             func(childComplexity int, name string) int
-				}{
-					Hello: func(childComplexity int, name string) int { return childComplexity },
-				},
-			},
-		})
+		var complexity ComplexityRoot
+		complexity.Query.Hello = func(childComplexity int, name string) int { return childComplexity }
+		schema := NewExecutableSchema(Config{Resolvers: &Stub{}, Complexity: complexity})
 
 		value, ok := schema.Complexity(
 			context.Background(),

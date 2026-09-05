@@ -16,6 +16,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Directive).Args, nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -28,6 +31,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Directive).Description(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -38,6 +44,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "isRepeatable", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Directive).IsRepeatable, nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
@@ -50,6 +59,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Directive).Locations, nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__DirectiveLocation2ᚕstringᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -60,6 +72,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Directive", "name", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Directive).Name, nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
@@ -72,6 +87,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.EnumValue).DeprecationReason(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -82,6 +100,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__EnumValue", "description", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.EnumValue).Description(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -94,6 +115,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.EnumValue).IsDeprecated(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -105,6 +129,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.EnumValue).Name, nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
 		PanicHandled: true,
@@ -115,6 +142,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "args", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Field).Args, nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
 		NonNull:      true,
@@ -128,6 +158,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Field).DeprecationReason(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -138,6 +171,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "description", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Field).Description(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -150,6 +186,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Field).IsDeprecated(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -160,6 +199,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Field", "name", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Field).Name, nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
@@ -172,6 +214,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Field).Type, nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      true,
 		PanicHandled: true,
@@ -182,6 +227,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "defaultValue", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.InputValue).DefaultValue, nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -194,6 +242,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.InputValue).DeprecationReason(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -204,6 +255,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "description", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.InputValue).Description(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -216,6 +270,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.InputValue).IsDeprecated(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalNBoolean2bool",
 		NonNull:      true,
 		PanicHandled: true,
@@ -226,6 +283,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__InputValue", "name", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.InputValue).Name, nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalNString2string",
 		NonNull:      true,
@@ -238,6 +298,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.InputValue).Type, nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      true,
 		PanicHandled: true,
@@ -248,6 +311,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "description", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Schema).Description(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -260,6 +326,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Schema).Directives(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -270,6 +339,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "mutationType", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Schema).MutationType(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
@@ -282,6 +354,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Schema).QueryType(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      true,
 		PanicHandled: true,
@@ -292,6 +367,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Schema", "subscriptionType", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Schema).SubscriptionType(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
@@ -304,6 +382,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Schema).Types(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
 		NonNull:      true,
 		PanicHandled: true,
@@ -314,6 +395,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "description", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).Description(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -326,6 +410,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
 			return obj.(*introspection.Type).EnumValues(fc.Args["includeDeprecated"].(bool)), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ",
 		NonNull:      false,
@@ -340,6 +427,9 @@ func init() {
 			fc := graphql.GetFieldContext(ctx)
 			return obj.(*introspection.Type).Fields(fc.Args["includeDeprecated"].(bool)), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -352,6 +442,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).InputFields(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -362,6 +455,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "interfaces", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).Interfaces(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
 		NonNull:      false,
@@ -374,6 +470,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).IsOneOf(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalOBoolean2bool",
 		NonNull:      false,
 		PanicHandled: true,
@@ -384,6 +483,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "kind", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).Kind(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalN__TypeKind2string",
 		NonNull:      true,
@@ -396,6 +498,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).Name(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
 		PanicHandled: true,
@@ -406,6 +511,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "ofType", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).OfType(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
 		NonNull:      false,
@@ -418,6 +526,9 @@ func init() {
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).PossibleTypes(), nil
 		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
 		MarshalCodec: "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ",
 		NonNull:      false,
 		PanicHandled: true,
@@ -428,6 +539,9 @@ func init() {
 	shardruntime.RegisterFieldDef(splitScope, "__Type", "specifiedByURL", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 			return obj.(*introspection.Type).SpecifiedByURL(), nil
+		},
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
 		},
 		MarshalCodec: "marshalOString2ᚖstring",
 		NonNull:      false,
@@ -443,9 +557,6 @@ func init() {
 	shardruntime.RegisterArgs(splitScope, "field___Field_args_args", __splitArgs_field___Field_args_args)
 	shardruntime.RegisterArgs(splitScope, "field___Type_enumValues_args", __splitArgs_field___Type_enumValues_args)
 	shardruntime.RegisterArgs(splitScope, "field___Type_fields_args", __splitArgs_field___Type_fields_args)
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalNBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalNBoolean2bool(ctx, ec, sel, value)
-	})
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, ec, sel, value)
 	})
@@ -482,18 +593,6 @@ func init() {
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalN__TypeKind2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalN__TypeKind2string(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalOBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalOBoolean2bool(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalOBoolean2ᚖbool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalOBoolean2ᚖbool(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalOString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalOString2string(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalOString2ᚖstring", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalOString2ᚖstring(ctx, ec, sel, value)
-	})
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx, ec, sel, value)
 	})
@@ -506,9 +605,6 @@ func init() {
 	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
 		return marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, ec, sel, value)
 	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalNBoolean2bool(ctx, ec, value)
-	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__DirectiveLocation2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalN__DirectiveLocation2string(ctx, ec, value)
 	})
@@ -517,17 +613,5 @@ func init() {
 	})
 	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalN__TypeKind2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
 		return unmarshalN__TypeKind2string(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOBoolean2bool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalOBoolean2bool(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOBoolean2ᚖbool", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalOBoolean2ᚖbool(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalOString2string(ctx, ec, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalOString2ᚖstring", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalOString2ᚖstring(ctx, ec, value)
 	})
 }

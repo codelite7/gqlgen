@@ -23,3 +23,11 @@ models:
     model: "github.com/99designs/gqlgen/codegen/testserver/singlefile.Email"
   StringFromContextFunction:
     model: "github.com/99designs/gqlgen/codegen/testserver/singlefile.StringFromContextFunction"
+  HybridInput:
+    fields:
+      resolved:
+        resolver: true
+  HybridNested:
+    fields:
+      resolved:
+        resolver: true

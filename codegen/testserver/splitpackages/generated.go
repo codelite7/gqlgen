@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/99designs/gqlgen/codegen/testserver/splitpackages/model"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -22,7 +23,7 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 	return &executableSchema{
 		schema:     cfg.Schema,
 		resolvers:  cfg.Resolvers,
-		directives: cfg.Directives,
+		Directives: cfg.Directives,
 		complexity: cfg.Complexity,
 	}
 }
@@ -37,9 +38,31 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
+	HybridInput() HybridInputResolver
+	HybridNested() HybridNestedResolver
 }
 
 type DirectiveRoot struct {
+	Custom            func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	Directive1        func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	Directive2        func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	Directive3        func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	Directive3WithArg func(ctx context.Context, obj any, next graphql.Resolver, inputNamespace string) (res any, err error)
+	FieldOnly         func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
+	Length            func(ctx context.Context, obj any, next graphql.Resolver, min int, max *int, message *string) (res any, err error)
+	Logged            func(ctx context.Context, obj any, next graphql.Resolver, id string) (res any, err error)
+	MutationOnly      func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
+	Noop              func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	Order1            func(ctx context.Context, obj any, next graphql.Resolver, location string) (res any, err error)
+	Order2            func(ctx context.Context, obj any, next graphql.Resolver, location string) (res any, err error)
+	Populate          func(ctx context.Context, obj any, next graphql.Resolver, value string) (res any, err error)
+	QueryOnly         func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
+	Range             func(ctx context.Context, obj any, next graphql.Resolver, min *int, max *int) (res any, err error)
+	SubscriptionOnly  func(ctx context.Context, obj any, next graphql.Resolver, reason string) (res any, err error)
+	ToNull            func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	ToUpper           func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	Unimplemented     func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -48,9 +71,60 @@ type ComplexityRoot struct {
 		PingFromExtras func(childComplexity int) int
 	}
 
+	ObjectDirectives struct {
+		NullableText func(childComplexity int) int
+		Order        func(childComplexity int) int
+		Text         func(childComplexity int) int
+	}
+
+	ObjectDirectivesWithCustomGoModel struct {
+		NullableText func(childComplexity int) int
+	}
+
+	PtrToSliceContainer struct {
+		PtrToSlice func(childComplexity int) int
+	}
+
 	Query struct {
-		GoodbyeFromExtras func(childComplexity int, name string) int
-		Hello             func(childComplexity int, name string) int
+		DirectiveArg                     func(childComplexity int, arg string) int
+		DirectiveDouble                  func(childComplexity int) int
+		DirectiveField                   func(childComplexity int) int
+		DirectiveFieldDef                func(childComplexity int, ret string) int
+		DirectiveInput                   func(childComplexity int, arg model.InputDirectives) int
+		DirectiveInputNullable           func(childComplexity int, arg *model.InputDirectives) int
+		DirectiveInputOuter              func(childComplexity int, arg model.OuterWrapperInput) int
+		DirectiveInputType               func(childComplexity int, arg model.InnerInput) int
+		DirectiveInputWithArgs           func(childComplexity int, arg model.InputDirectivesWithArgs) int
+		DirectiveNullableArg             func(childComplexity int, arg *int, arg2 *int, arg3 *string) int
+		DirectiveObject                  func(childComplexity int) int
+		DirectiveObjectWithCustomGoModel func(childComplexity int) int
+		DirectiveSingleNullableArg       func(childComplexity int, arg1 *string) int
+		DirectiveUnimplemented           func(childComplexity int) int
+		GoodbyeFromExtras                func(childComplexity int, name string) int
+		Hello                            func(childComplexity int, name string) int
+		HybridInput                      func(childComplexity int, arg model.HybridInput) int
+		HybridInputNullable              func(childComplexity int, arg *model.HybridInput) int
+		InputListField                   func(childComplexity int, arg model.ListFieldInput) int
+		InputNullableSlice               func(childComplexity int, arg []string) int
+		InputOmittable                   func(childComplexity int, arg model.OmittableInput) int
+		InputSlice                       func(childComplexity int, arg []string) int
+		PtrToSliceContainer              func(childComplexity int) int
+		ScalarSlice                      func(childComplexity int) int
+		Slices                           func(childComplexity int) int
+	}
+
+	Slices struct {
+		Test1 func(childComplexity int) int
+		Test2 func(childComplexity int) int
+		Test3 func(childComplexity int) int
+		Test4 func(childComplexity int) int
+	}
+
+	Subscription struct {
+		DirectiveArg           func(childComplexity int, arg string) int
+		DirectiveDouble        func(childComplexity int) int
+		DirectiveNullableArg   func(childComplexity int, arg *int, arg2 *int, arg3 *string) int
+		DirectiveUnimplemented func(childComplexity int) int
 	}
 }
 
@@ -60,13 +134,49 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Hello(ctx context.Context, name string) (string, error)
+	DirectiveArg(ctx context.Context, arg string) (*string, error)
+	DirectiveNullableArg(ctx context.Context, arg *int, arg2 *int, arg3 *string) (*string, error)
+	DirectiveSingleNullableArg(ctx context.Context, arg1 *string) (*string, error)
+	DirectiveInputNullable(ctx context.Context, arg *model.InputDirectives) (*string, error)
+	DirectiveInput(ctx context.Context, arg model.InputDirectives) (*string, error)
+	DirectiveInputType(ctx context.Context, arg model.InnerInput) (*string, error)
+	DirectiveInputOuter(ctx context.Context, arg model.OuterWrapperInput) (*string, error)
+	DirectiveInputWithArgs(ctx context.Context, arg model.InputDirectivesWithArgs) (*string, error)
+	DirectiveObject(ctx context.Context) (*model.ObjectDirectives, error)
+	DirectiveObjectWithCustomGoModel(ctx context.Context) (*model.ObjectDirectivesWithCustomGoModel, error)
+	DirectiveFieldDef(ctx context.Context, ret string) (string, error)
+	DirectiveField(ctx context.Context) (*string, error)
+	DirectiveDouble(ctx context.Context) (*string, error)
+	DirectiveUnimplemented(ctx context.Context) (*string, error)
 	GoodbyeFromExtras(ctx context.Context, name string) (string, error)
+	HybridInput(ctx context.Context, arg model.HybridInput) (string, error)
+	HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error)
+	Slices(ctx context.Context) (*model.Slices, error)
+	ScalarSlice(ctx context.Context) ([]byte, error)
+	PtrToSliceContainer(ctx context.Context) (*model.PtrToSliceContainer, error)
+	InputSlice(ctx context.Context, arg []string) (bool, error)
+	InputNullableSlice(ctx context.Context, arg []string) (bool, error)
+	InputListField(ctx context.Context, arg model.ListFieldInput) (string, error)
+	InputOmittable(ctx context.Context, arg model.OmittableInput) (string, error)
+}
+type SubscriptionResolver interface {
+	DirectiveArg(ctx context.Context, arg string) (<-chan *string, error)
+	DirectiveNullableArg(ctx context.Context, arg *int, arg2 *int, arg3 *string) (<-chan *string, error)
+	DirectiveDouble(ctx context.Context) (<-chan *string, error)
+	DirectiveUnimplemented(ctx context.Context) (<-chan *string, error)
+}
+
+type HybridInputResolver interface {
+	Resolved(ctx context.Context, obj *model.HybridInput, data string) error
+}
+type HybridNestedResolver interface {
+	Resolved(ctx context.Context, obj *model.HybridNested, data string) error
 }
 
 type executableSchema struct {
 	schema     *ast.Schema
 	resolvers  ResolverRoot
-	directives DirectiveRoot
+	Directives DirectiveRoot
 	complexity ComplexityRoot
 }
 
@@ -105,6 +215,220 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.PingFromExtras(childComplexity), true
 
+	case "ObjectDirectives.nullableText":
+		if e.complexity.ObjectDirectives.NullableText == nil {
+			break
+		}
+
+		return e.complexity.ObjectDirectives.NullableText(childComplexity), true
+
+	case "ObjectDirectives.order":
+		if e.complexity.ObjectDirectives.Order == nil {
+			break
+		}
+
+		return e.complexity.ObjectDirectives.Order(childComplexity), true
+
+	case "ObjectDirectives.text":
+		if e.complexity.ObjectDirectives.Text == nil {
+			break
+		}
+
+		return e.complexity.ObjectDirectives.Text(childComplexity), true
+
+	case "ObjectDirectivesWithCustomGoModel.nullableText":
+		if e.complexity.ObjectDirectivesWithCustomGoModel.NullableText == nil {
+			break
+		}
+
+		return e.complexity.ObjectDirectivesWithCustomGoModel.NullableText(childComplexity), true
+
+	case "PtrToSliceContainer.ptrToSlice":
+		if e.complexity.PtrToSliceContainer.PtrToSlice == nil {
+			break
+		}
+
+		return e.complexity.PtrToSliceContainer.PtrToSlice(childComplexity), true
+
+	case "Query.directiveArg":
+		if e.complexity.Query.DirectiveArg == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveArg_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveArg(childComplexity, args["arg"].(string)), true
+
+	case "Query.directiveDouble":
+		if e.complexity.Query.DirectiveDouble == nil {
+			break
+		}
+
+		return e.complexity.Query.DirectiveDouble(childComplexity), true
+
+	case "Query.directiveField":
+		if e.complexity.Query.DirectiveField == nil {
+			break
+		}
+
+		return e.complexity.Query.DirectiveField(childComplexity), true
+
+	case "Query.directiveFieldDef":
+		if e.complexity.Query.DirectiveFieldDef == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveFieldDef_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveFieldDef(childComplexity, args["ret"].(string)), true
+
+	case "Query.directiveInput":
+		if e.complexity.Query.DirectiveInput == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveInput_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveInput(childComplexity, args["arg"].(model.InputDirectives)), true
+
+	case "Query.directiveInputNullable":
+		if e.complexity.Query.DirectiveInputNullable == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveInputNullable_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveInputNullable(childComplexity, args["arg"].(*model.InputDirectives)), true
+
+	case "Query.directiveInputOuter":
+		if e.complexity.Query.DirectiveInputOuter == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveInputOuter_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveInputOuter(childComplexity, args["arg"].(model.OuterWrapperInput)), true
+
+	case "Query.directiveInputType":
+		if e.complexity.Query.DirectiveInputType == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveInputType_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveInputType(childComplexity, args["arg"].(model.InnerInput)), true
+
+	case "Query.directiveInputWithArgs":
+		if e.complexity.Query.DirectiveInputWithArgs == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveInputWithArgs_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveInputWithArgs(childComplexity, args["arg"].(model.InputDirectivesWithArgs)), true
+
+	case "Query.directiveNullableArg":
+		if e.complexity.Query.DirectiveNullableArg == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveNullableArg_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveNullableArg(childComplexity, args["arg"].(*int), args["arg2"].(*int), args["arg3"].(*string)), true
+
+	case "Query.directiveObject":
+		if e.complexity.Query.DirectiveObject == nil {
+			break
+		}
+
+		return e.complexity.Query.DirectiveObject(childComplexity), true
+
+	case "Query.directiveObjectWithCustomGoModel":
+		if e.complexity.Query.DirectiveObjectWithCustomGoModel == nil {
+			break
+		}
+
+		return e.complexity.Query.DirectiveObjectWithCustomGoModel(childComplexity), true
+
+	case "Query.directiveSingleNullableArg":
+		if e.complexity.Query.DirectiveSingleNullableArg == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_directiveSingleNullableArg_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DirectiveSingleNullableArg(childComplexity, args["arg1"].(*string)), true
+
+	case "Query.directiveUnimplemented":
+		if e.complexity.Query.DirectiveUnimplemented == nil {
+			break
+		}
+
+		return e.complexity.Query.DirectiveUnimplemented(childComplexity), true
+
 	case "Query.goodbyeFromExtras":
 		if e.complexity.Query.GoodbyeFromExtras == nil {
 			break
@@ -137,6 +461,197 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Hello(childComplexity, args["name"].(string)), true
 
+	case "Query.hybridInput":
+		if e.complexity.Query.HybridInput == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_hybridInput_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.HybridInput(childComplexity, args["arg"].(model.HybridInput)), true
+
+	case "Query.hybridInputNullable":
+		if e.complexity.Query.HybridInputNullable == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_hybridInputNullable_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.HybridInputNullable(childComplexity, args["arg"].(*model.HybridInput)), true
+
+	case "Query.inputListField":
+		if e.complexity.Query.InputListField == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputListField_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputListField(childComplexity, args["arg"].(model.ListFieldInput)), true
+
+	case "Query.inputNullableSlice":
+		if e.complexity.Query.InputNullableSlice == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputNullableSlice_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputNullableSlice(childComplexity, args["arg"].([]string)), true
+
+	case "Query.inputOmittable":
+		if e.complexity.Query.InputOmittable == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputOmittable_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputOmittable(childComplexity, args["arg"].(model.OmittableInput)), true
+
+	case "Query.inputSlice":
+		if e.complexity.Query.InputSlice == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Query_inputSlice_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InputSlice(childComplexity, args["arg"].([]string)), true
+
+	case "Query.ptrToSliceContainer":
+		if e.complexity.Query.PtrToSliceContainer == nil {
+			break
+		}
+
+		return e.complexity.Query.PtrToSliceContainer(childComplexity), true
+
+	case "Query.scalarSlice":
+		if e.complexity.Query.ScalarSlice == nil {
+			break
+		}
+
+		return e.complexity.Query.ScalarSlice(childComplexity), true
+
+	case "Query.slices":
+		if e.complexity.Query.Slices == nil {
+			break
+		}
+
+		return e.complexity.Query.Slices(childComplexity), true
+
+	case "Slices.test1":
+		if e.complexity.Slices.Test1 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test1(childComplexity), true
+
+	case "Slices.test2":
+		if e.complexity.Slices.Test2 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test2(childComplexity), true
+
+	case "Slices.test3":
+		if e.complexity.Slices.Test3 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test3(childComplexity), true
+
+	case "Slices.test4":
+		if e.complexity.Slices.Test4 == nil {
+			break
+		}
+
+		return e.complexity.Slices.Test4(childComplexity), true
+
+	case "Subscription.directiveArg":
+		if e.complexity.Subscription.DirectiveArg == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Subscription_directiveArg_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.DirectiveArg(childComplexity, args["arg"].(string)), true
+
+	case "Subscription.directiveDouble":
+		if e.complexity.Subscription.DirectiveDouble == nil {
+			break
+		}
+
+		return e.complexity.Subscription.DirectiveDouble(childComplexity), true
+
+	case "Subscription.directiveNullableArg":
+		if e.complexity.Subscription.DirectiveNullableArg == nil {
+			break
+		}
+
+		argsHandler, ok := shardruntime.LookupArgs("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "field_Subscription_directiveNullableArg_args")
+		if !ok {
+			return 0, false
+		}
+		args, err := argsHandler(ctx, &ec, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.DirectiveNullableArg(childComplexity, args["arg"].(*int), args["arg2"].(*int), args["arg3"].(*string)), true
+
+	case "Subscription.directiveUnimplemented":
+		if e.complexity.Subscription.DirectiveUnimplemented == nil {
+			break
+		}
+
+		return e.complexity.Subscription.DirectiveUnimplemented(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -157,7 +672,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			if first {
 				first = false
 				ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
-				data = ec._Query(ctx, opCtx.Operation.SelectionSet)
+				data = ec._queryMiddleware(ctx, opCtx.Operation, func(ctx context.Context) (any, error) {
+					return ec._Query(ctx, opCtx.Operation.SelectionSet), nil
+				})
 			} else {
 				if atomic.LoadInt32(&ec.pendingDeferred) > 0 {
 					result := <-ec.deferredResults
@@ -187,8 +704,29 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 			first = false
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
-			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
+			data := ec._mutationMiddleware(ctx, opCtx.Operation, func(ctx context.Context) (any, error) {
+				return ec._Mutation(ctx, opCtx.Operation.SelectionSet), nil
+			})
 			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Subscription:
+		next := ec._subscriptionMiddleware(ctx, opCtx.Operation, func(ctx context.Context) (any, error) {
+			return ec._Subscription(ctx, opCtx.Operation.SelectionSet), nil
+		})
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -306,6 +844,325 @@ func (ec *executionContext) InvokeResolver(ctx context.Context, objectName, fiel
 func (ec *executionContext) LookupFieldContextHandler(objectName, fieldName string) (shardruntime.FieldContextHandler, bool) {
 	return shardruntime.LookupFieldContext("github.com/99designs/gqlgen/codegen/testserver/splitpackages", objectName, fieldName)
 }
+func (ec *executionContext) InvokeDirective(ctx context.Context, name string, obj any, next graphql.Resolver, args map[string]any) (any, error) {
+	switch name {
+	case "custom":
+		if ec.Directives.Custom == nil {
+			return nil, errors.New("directive custom is not implemented")
+		}
+		return ec.Directives.Custom(ctx, obj, next)
+	case "directive1":
+		if ec.Directives.Directive1 == nil {
+			return nil, errors.New("directive directive1 is not implemented")
+		}
+		return ec.Directives.Directive1(ctx, obj, next)
+	case "directive2":
+		if ec.Directives.Directive2 == nil {
+			return nil, errors.New("directive directive2 is not implemented")
+		}
+		return ec.Directives.Directive2(ctx, obj, next)
+	case "directive3":
+		if ec.Directives.Directive3 == nil {
+			return nil, errors.New("directive directive3 is not implemented")
+		}
+		return ec.Directives.Directive3(ctx, obj, next)
+	case "directive3WithArg":
+		var darg0 string
+		if v, ok := args["inputNamespace"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.Directive3WithArg == nil {
+			return nil, errors.New("directive directive3WithArg is not implemented")
+		}
+		return ec.Directives.Directive3WithArg(ctx, obj, next, darg0)
+	case "fieldOnly":
+		var darg0 string
+		if v, ok := args["reason"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.FieldOnly == nil {
+			return nil, errors.New("directive fieldOnly is not implemented")
+		}
+		return ec.Directives.FieldOnly(ctx, obj, next, darg0)
+	case "length":
+		var darg0 int
+		if v, ok := args["min"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNInt2int", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(int)
+		}
+		var darg1 *int
+		if v, ok := args["max"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOInt2ᚖint", v)
+			if err != nil {
+				return nil, err
+			}
+			if data != nil {
+				darg1 = data.(*int)
+			}
+		}
+		var darg2 *string
+		if v, ok := args["message"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOString2ᚖstring", v)
+			if err != nil {
+				return nil, err
+			}
+			if data != nil {
+				darg2 = data.(*string)
+			}
+		}
+		if ec.Directives.Length == nil {
+			return nil, errors.New("directive length is not implemented")
+		}
+		return ec.Directives.Length(ctx, obj, next, darg0, darg1, darg2)
+	case "logged":
+		var darg0 string
+		if v, ok := args["id"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNUUID2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.Logged == nil {
+			return nil, errors.New("directive logged is not implemented")
+		}
+		return ec.Directives.Logged(ctx, obj, next, darg0)
+	case "mutationOnly":
+		var darg0 string
+		if v, ok := args["reason"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.MutationOnly == nil {
+			return nil, errors.New("directive mutationOnly is not implemented")
+		}
+		return ec.Directives.MutationOnly(ctx, obj, next, darg0)
+	case "noop":
+		if ec.Directives.Noop == nil {
+			return nil, errors.New("directive noop is not implemented")
+		}
+		return ec.Directives.Noop(ctx, obj, next)
+	case "order1":
+		var darg0 string
+		if v, ok := args["location"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.Order1 == nil {
+			return nil, errors.New("directive order1 is not implemented")
+		}
+		return ec.Directives.Order1(ctx, obj, next, darg0)
+	case "order2":
+		var darg0 string
+		if v, ok := args["location"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.Order2 == nil {
+			return nil, errors.New("directive order2 is not implemented")
+		}
+		return ec.Directives.Order2(ctx, obj, next, darg0)
+	case "populate":
+		var darg0 string
+		if v, ok := args["value"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.Populate == nil {
+			return nil, errors.New("directive populate is not implemented")
+		}
+		return ec.Directives.Populate(ctx, obj, next, darg0)
+	case "queryOnly":
+		var darg0 string
+		if v, ok := args["reason"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.QueryOnly == nil {
+			return nil, errors.New("directive queryOnly is not implemented")
+		}
+		return ec.Directives.QueryOnly(ctx, obj, next, darg0)
+	case "range":
+		var darg0 *int
+		if v, ok := args["min"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOInt2ᚖint", v)
+			if err != nil {
+				return nil, err
+			}
+			if data != nil {
+				darg0 = data.(*int)
+			}
+		}
+		var darg1 *int
+		if v, ok := args["max"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalOInt2ᚖint", v)
+			if err != nil {
+				return nil, err
+			}
+			if data != nil {
+				darg1 = data.(*int)
+			}
+		}
+		if ec.Directives.Range == nil {
+			return nil, errors.New("directive range is not implemented")
+		}
+		return ec.Directives.Range(ctx, obj, next, darg0, darg1)
+	case "subscriptionOnly":
+		var darg0 string
+		if v, ok := args["reason"]; ok {
+			data, err := ec.UnmarshalCodec(ctx, "unmarshalNString2string", v)
+			if err != nil {
+				return nil, err
+			}
+			darg0 = data.(string)
+		}
+		if ec.Directives.SubscriptionOnly == nil {
+			return nil, errors.New("directive subscriptionOnly is not implemented")
+		}
+		return ec.Directives.SubscriptionOnly(ctx, obj, next, darg0)
+	case "toNull":
+		if ec.Directives.ToNull == nil {
+			return nil, errors.New("directive toNull is not implemented")
+		}
+		return ec.Directives.ToNull(ctx, obj, next)
+	case "toUpper":
+		if ec.Directives.ToUpper == nil {
+			return nil, errors.New("directive toUpper is not implemented")
+		}
+		return ec.Directives.ToUpper(ctx, obj, next)
+	case "unimplemented":
+		if ec.Directives.Unimplemented == nil {
+			return nil, errors.New("directive unimplemented is not implemented")
+		}
+		return ec.Directives.Unimplemented(ctx, obj, next)
+	}
+	return nil, fmt.Errorf("unknown directive %q", name)
+}
+func (ec *executionContext) FieldMiddleware(ctx context.Context, obj any, next graphql.Resolver) graphql.Resolver {
+	fc := graphql.GetFieldContext(ctx)
+	for _, d := range fc.Field.Directives {
+		switch d.Name {
+		case "fieldOnly":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			n := next
+			next = func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, "fieldOnly", obj, n, rawArgs)
+			}
+		case "logged":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			n := next
+			next = func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, "logged", obj, n, rawArgs)
+			}
+		}
+	}
+	return next
+}
+
+func (ec *executionContext) _queryMiddleware(ctx context.Context, obj *ast.OperationDefinition, next func(ctx context.Context) (any, error)) graphql.Marshaler {
+
+	for _, d := range obj.Directives {
+		switch d.Name {
+		case "queryOnly":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			n := next
+			next = func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, "queryOnly", obj, n, rawArgs)
+			}
+		}
+	}
+
+	tmp, err := next(ctx)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if data, ok := tmp.(graphql.Marshaler); ok {
+		return data
+	}
+	graphql.AddErrorf(ctx, `unexpected type %T from directive, should be graphql.Marshaler`, tmp)
+	return graphql.Null
+}
+
+func (ec *executionContext) _mutationMiddleware(ctx context.Context, obj *ast.OperationDefinition, next func(ctx context.Context) (any, error)) graphql.Marshaler {
+
+	for _, d := range obj.Directives {
+		switch d.Name {
+		case "mutationOnly":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			n := next
+			next = func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, "mutationOnly", obj, n, rawArgs)
+			}
+		}
+	}
+
+	tmp, err := next(ctx)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if data, ok := tmp.(graphql.Marshaler); ok {
+		return data
+	}
+	graphql.AddErrorf(ctx, `unexpected type %T from directive, should be graphql.Marshaler`, tmp)
+	return graphql.Null
+}
+
+func (ec *executionContext) _subscriptionMiddleware(ctx context.Context, obj *ast.OperationDefinition, next func(ctx context.Context) (any, error)) func(ctx context.Context) graphql.Marshaler {
+
+	for _, d := range obj.Directives {
+		switch d.Name {
+		case "subscriptionOnly":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			n := next
+			next = func(ctx context.Context) (any, error) {
+				return ec.InvokeDirective(ctx, "subscriptionOnly", obj, n, rawArgs)
+			}
+		}
+	}
+
+	tmp, err := next(ctx)
+	if err != nil {
+		ec.Error(ctx, err)
+		return func(ctx context.Context) graphql.Marshaler {
+			return graphql.Null
+		}
+	}
+	if data, ok := tmp.(func(ctx context.Context) graphql.Marshaler); ok {
+		return data
+	}
+	graphql.AddErrorf(ctx, `unexpected type %T from directive, should be graphql.Marshaler`, tmp)
+	return func(ctx context.Context) graphql.Marshaler {
+		return graphql.Null
+	}
+}
 
 var mutationImplementors = []string{"Mutation"}
 
@@ -340,6 +1197,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	}
 	return out
 }
+func (ec *executionContext) _ObjectDirectives(ctx context.Context, sel ast.SelectionSet, obj *model.ObjectDirectives) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "ObjectDirectives")
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", "ObjectDirectives"))
+	}
+	return handler(ctx, ec, sel, obj)
+}
+func (ec *executionContext) _ObjectDirectivesWithCustomGoModel(ctx context.Context, sel ast.SelectionSet, obj *model.ObjectDirectivesWithCustomGoModel) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "ObjectDirectivesWithCustomGoModel")
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", "ObjectDirectivesWithCustomGoModel"))
+	}
+	return handler(ctx, ec, sel, obj)
+}
+func (ec *executionContext) _PtrToSliceContainer(ctx context.Context, sel ast.SelectionSet, obj *model.PtrToSliceContainer) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "PtrToSliceContainer")
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", "PtrToSliceContainer"))
+	}
+	return handler(ctx, ec, sel, obj)
+}
 
 var queryImplementors = []string{"Query"}
 
@@ -373,6 +1251,31 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		return graphql.Null
 	}
 	return out
+}
+func (ec *executionContext) _Slices(ctx context.Context, sel ast.SelectionSet, obj *model.Slices) graphql.Marshaler {
+	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "Slices")
+	if !ok {
+		panic(fmt.Sprintf("missing object shard handler for %s", "Slices"))
+	}
+	return handler(ctx, ec, sel, obj)
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		graphql.AddErrorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	if fields[0].Name == "__typename" {
+		return func(ctx context.Context) graphql.Marshaler { return graphql.MarshalString("Subscription") }
+	}
+	return ec.ResolveStreamField(ctx, "Subscription", fields[0].Name, fields[0], nil)
 }
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
 	handler, ok := shardruntime.LookupObject("github.com/99designs/gqlgen/codegen/testserver/splitpackages", "__Directive")
@@ -437,11 +1340,173 @@ func init() {
 		_ = fc
 		return ec.resolvers.Query().Hello(ctx, fc.Args["name"].(string))
 	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveArg(ctx, fc.Args["arg"].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveNullableArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveNullableArg(ctx, fc.Args["arg"].(*int), fc.Args["arg2"].(*int), fc.Args["arg3"].(*string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveSingleNullableArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveSingleNullableArg(ctx, fc.Args["arg1"].(*string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveInputNullable", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveInputNullable(ctx, fc.Args["arg"].(*model.InputDirectives))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveInput", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveInput(ctx, fc.Args["arg"].(model.InputDirectives))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveInputType", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveInputType(ctx, fc.Args["arg"].(model.InnerInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveInputOuter", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveInputOuter(ctx, fc.Args["arg"].(model.OuterWrapperInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveInputWithArgs", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveInputWithArgs(ctx, fc.Args["arg"].(model.InputDirectivesWithArgs))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveObject", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveObject(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveObjectWithCustomGoModel", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveObjectWithCustomGoModel(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveFieldDef", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveFieldDef(ctx, fc.Args["ret"].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveField", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveField(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveDouble", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveDouble(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "directiveUnimplemented", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().DirectiveUnimplemented(ctx)
+	})
 	shardruntime.RegisterResolverInvoker(scope, "Query", "goodbyeFromExtras", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
 		fc := graphql.GetFieldContext(ctx)
 		_ = fc
 		return ec.resolvers.Query().GoodbyeFromExtras(ctx, fc.Args["name"].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "hybridInput", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().HybridInput(ctx, fc.Args["arg"].(model.HybridInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "hybridInputNullable", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().HybridInputNullable(ctx, fc.Args["arg"].(*model.HybridInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "slices", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().Slices(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "scalarSlice", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().ScalarSlice(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "ptrToSliceContainer", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().PtrToSliceContainer(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputSlice", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputSlice(ctx, fc.Args["arg"].([]string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputNullableSlice", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputNullableSlice(ctx, fc.Args["arg"].([]string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputListField", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputListField(ctx, fc.Args["arg"].(model.ListFieldInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Query", "inputOmittable", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Query().InputOmittable(ctx, fc.Args["arg"].(model.OmittableInput))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Subscription().DirectiveArg(ctx, fc.Args["arg"].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveNullableArg", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Subscription().DirectiveNullableArg(ctx, fc.Args["arg"].(*int), fc.Args["arg2"].(*int), fc.Args["arg3"].(*string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveDouble", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Subscription().DirectiveDouble(ctx)
+	})
+	shardruntime.RegisterResolverInvoker(scope, "Subscription", "directiveUnimplemented", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		fc := graphql.GetFieldContext(ctx)
+		_ = fc
+		return ec.resolvers.Subscription().DirectiveUnimplemented(ctx)
 	})
 	shardruntime.RegisterResolverInvoker(scope, "Query", "__type", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
 		ec := oec.(*executionContext)
@@ -453,9 +1518,19 @@ func init() {
 		ec := oec.(*executionContext)
 		return ec.IntrospectSchema()
 	})
+	shardruntime.RegisterResolverInvoker(scope, "HybridInput", "resolved", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		args := obj.([]any)
+		return nil, ec.resolvers.HybridInput().Resolved(ctx, args[0].(*model.HybridInput), args[1].(string))
+	})
+	shardruntime.RegisterResolverInvoker(scope, "HybridNested", "resolved", func(ctx context.Context, oec shardruntime.ObjectExecutionContext, obj any) (any, error) {
+		ec := oec.(*executionContext)
+		args := obj.([]any)
+		return nil, ec.resolvers.HybridNested().Resolved(ctx, args[0].(*model.HybridNested), args[1].(string))
+	})
 }
 
-//go:embed "extras.graphql" "schema.graphql"
+//go:embed "directive.graphql" "extras.graphql" "hybrid_input.graphql" "lists.graphql" "omittable_input.graphql" "schema.graphql"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -467,7 +1542,11 @@ func sourceData(filename string) string {
 }
 
 var sources = []*ast.Source{
+	{Name: "directive.graphql", Input: sourceData("directive.graphql"), BuiltIn: false},
 	{Name: "extras.graphql", Input: sourceData("extras.graphql"), BuiltIn: false},
+	{Name: "hybrid_input.graphql", Input: sourceData("hybrid_input.graphql"), BuiltIn: false},
+	{Name: "lists.graphql", Input: sourceData("lists.graphql"), BuiltIn: false},
+	{Name: "omittable_input.graphql", Input: sourceData("omittable_input.graphql"), BuiltIn: false},
 	{Name: "schema.graphql", Input: sourceData("schema.graphql"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

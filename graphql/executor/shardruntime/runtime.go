@@ -49,6 +49,21 @@ type ObjectExecutionContext interface {
 		obj any,
 	) func(context.Context) graphql.Marshaler
 	InvokeResolver(ctx context.Context, objectName, fieldName string, obj any) (any, error)
+	// InvokeDirective runs the user (or built-in) directive implementation named
+	// name, coercing args (keyed by directive argument name, raw schema values)
+	// with the same codecs the monolithic layout uses. Implemented by the
+	// generated root package, which is the only place DirectiveRoot lives.
+	InvokeDirective(
+		ctx context.Context,
+		name string,
+		obj any,
+		next graphql.Resolver,
+		args map[string]any,
+	) (any, error)
+	// FieldMiddleware applies the schema's FIELD-location directives (the ones
+	// written in the query document) around next. It returns next unchanged when
+	// the schema declares no FIELD-location directives.
+	FieldMiddleware(ctx context.Context, obj any, next graphql.Resolver) graphql.Resolver
 	LookupFieldContextHandler(objectName, fieldName string) (FieldContextHandler, bool)
 	ProcessDeferredGroup(dg graphql.DeferredGroup)
 	AddDeferred(delta int32)
@@ -115,9 +130,15 @@ type ObjectChildLookup struct {
 // previously emitted.
 type FieldDef struct {
 	Resolve func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
-	// Directives is the middleware chain passed to graphql.ResolveField; its
-	// signature must match graphql.ResolveField's middlewareChain parameter.
-	Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver
+	// Directives builds the middleware chain passed to graphql.ResolveField.
+	// It takes ec and obj so the shard can reach the root package's directive
+	// implementations (via ec.InvokeDirective) and pass the parent object.
+	Directives func(
+		ctx context.Context,
+		ec ObjectExecutionContext,
+		obj any,
+		next graphql.Resolver,
+	) graphql.Resolver
 	MarshalCodec string
 	NonNull      bool
 	PanicHandled bool
@@ -779,7 +800,7 @@ func resolveFromDef(
 		func(ctx context.Context) (any, error) {
 			return def.Resolve(ctx, ec, obj)
 		},
-		def.Directives,
+		directiveChain(ec, obj, def.Directives),
 		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
 			if def.marshalFn != nil {
 				return def.marshalFn(ctx, ec, sel, v)
@@ -788,6 +809,23 @@ func resolveFromDef(
 		},
 		def.PanicHandled, def.NonNull,
 	)
+}
+
+// directiveChain adapts a FieldDef/StreamFieldDef Directives builder (which
+// needs ec and the parent object) to graphql.ResolveField's middlewareChain
+// parameter. It returns nil when there is no chain, so ResolveField keeps its
+// no-middleware fast path.
+func directiveChain(
+	ec ObjectExecutionContext,
+	obj any,
+	build func(ctx context.Context, ec ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver,
+) func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+	if build == nil {
+		return nil
+	}
+	return func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+		return build(ctx, ec, obj, next)
+	}
 }
 
 func buildFieldContext(
@@ -831,9 +869,14 @@ func buildFieldContext(
 // Mirrors FieldDef but targets graphql.ResolveFieldStream instead of graphql.ResolveField.
 type StreamFieldDef struct {
 	Resolve func(ctx context.Context, ec ObjectExecutionContext, obj any) (any, error)
-	// Directives is the middleware chain passed to graphql.ResolveFieldStream; its
-	// signature must match graphql.ResolveFieldStream's middlewareChain parameter.
-	Directives   func(ctx context.Context, next graphql.Resolver) graphql.Resolver
+	// Directives builds the middleware chain passed to graphql.ResolveFieldStream.
+	// See FieldDef.Directives.
+	Directives func(
+		ctx context.Context,
+		ec ObjectExecutionContext,
+		obj any,
+		next graphql.Resolver,
+	) graphql.Resolver
 	MarshalCodec string
 	NonNull      bool
 	PanicHandled bool
@@ -894,9 +937,10 @@ func resolveStreamFromDef(
 			return buildFieldContext(ctx, ec, &fcDef, scope, objectName, f)
 		},
 		func(ctx context.Context) (any, error) {
-			return def.Resolve(ctx, ec, obj)
+			res, err := def.Resolve(ctx, ec, obj)
+			return adaptStreamChannel(ctx, res, err)
 		},
-		def.Directives,
+		directiveChain(ec, obj, def.Directives),
 		func(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
 			if def.marshalFn != nil {
 				return def.marshalFn(ctx, ec, sel, v)
@@ -905,6 +949,50 @@ func resolveStreamFromDef(
 		},
 		def.PanicHandled, def.NonNull,
 	)
+}
+
+// adaptStreamChannel converts a typed subscription channel (e.g. <-chan *string,
+// as returned by the user's resolver) into <-chan any. The split runtime is
+// type-erased and instantiates graphql.ResolveFieldStream with T = any, so the
+// concrete channel type the resolver returns would otherwise fail the
+// `resTmp.(<-chan any)` assertion inside graphql.resolveField. The conversion
+// happens below the directive middleware chain, so directives that simply pass
+// their result through see (and return) the adapted channel.
+func adaptStreamChannel(ctx context.Context, res any, err error) (any, error) {
+	if err != nil || res == nil {
+		return res, err
+	}
+	if ch, ok := res.(<-chan any); ok {
+		return ch, nil
+	}
+	v := reflect.ValueOf(res)
+	if v.Kind() != reflect.Chan {
+		return res, nil
+	}
+	out := make(chan any)
+	done := reflect.ValueOf(ctx.Done())
+	go func() {
+		defer close(out)
+		// Both the receive and the send must be cancellable: a source channel
+		// that neither sends nor closes would otherwise pin this goroutine
+		// forever after the subscriber disconnects.
+		cases := []reflect.SelectCase{
+			{Dir: reflect.SelectRecv, Chan: v},
+			{Dir: reflect.SelectRecv, Chan: done},
+		}
+		for {
+			i, val, ok := reflect.Select(cases)
+			if i != 0 || !ok {
+				return // ctx done, or source closed
+			}
+			select {
+			case out <- val.Interface():
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return (<-chan any)(out), nil
 }
 
 // RegisterFieldDef registers a FieldHandler + FieldContextHandler pair for the

@@ -116,6 +116,40 @@ func (p *splitOwnershipPlanner) planCodecOwnership(
 		}
 	}
 
+	// Directive arguments are coerced by the root package's InvokeDirective via
+	// ec.UnmarshalCodec, so their codecs must be emitted by some shard even when
+	// no field or input references the type (e.g. a scalar used only by a
+	// directive argument). Attribute them to the shard for the .graphql file
+	// that declares the directive, falling back to the first shard so the codec
+	// always lands somewhere deterministic.
+	fallbackShard := ""
+	for _, shard := range filenameToShard {
+		if shard != "" && (fallbackShard == "" || shard < fallbackShard) {
+			fallbackShard = shard
+		}
+	}
+	directiveNames := make([]string, 0, len(data.AllDirectives))
+	for name := range data.AllDirectives {
+		directiveNames = append(directiveNames, name)
+	}
+	sort.Strings(directiveNames)
+	for _, name := range directiveNames {
+		directive := data.AllDirectives[name]
+		if directive == nil || len(directive.Args) == 0 {
+			continue
+		}
+		shard := ""
+		if directive.DirectiveDefinition != nil {
+			shard = filenameToShard[filename(directive.Position, data.Config)]
+		}
+		if shard == "" {
+			shard = fallbackShard
+		}
+		for _, arg := range directive.Args {
+			addCodecConsumer(codecConsumers, inputCodecToName, arg.TypeReference, shard)
+		}
+	}
+
 	referencedTypeKeys := make([]string, 0, len(data.ReferencedTypes))
 	for key := range data.ReferencedTypes {
 		referencedTypeKeys = append(referencedTypeKeys, key)

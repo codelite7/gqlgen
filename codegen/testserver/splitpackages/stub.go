@@ -4,6 +4,8 @@ package splitpackages
 
 import (
 	"context"
+
+	"github.com/99designs/gqlgen/codegen/testserver/splitpackages/model"
 )
 
 type Stub struct {
@@ -12,8 +14,44 @@ type Stub struct {
 		PingFromExtras func(ctx context.Context) (string, error)
 	}
 	QueryResolver struct {
-		Hello             func(ctx context.Context, name string) (string, error)
-		GoodbyeFromExtras func(ctx context.Context, name string) (string, error)
+		Hello                            func(ctx context.Context, name string) (string, error)
+		DirectiveArg                     func(ctx context.Context, arg string) (*string, error)
+		DirectiveNullableArg             func(ctx context.Context, arg *int, arg2 *int, arg3 *string) (*string, error)
+		DirectiveSingleNullableArg       func(ctx context.Context, arg1 *string) (*string, error)
+		DirectiveInputNullable           func(ctx context.Context, arg *model.InputDirectives) (*string, error)
+		DirectiveInput                   func(ctx context.Context, arg model.InputDirectives) (*string, error)
+		DirectiveInputType               func(ctx context.Context, arg model.InnerInput) (*string, error)
+		DirectiveInputOuter              func(ctx context.Context, arg model.OuterWrapperInput) (*string, error)
+		DirectiveInputWithArgs           func(ctx context.Context, arg model.InputDirectivesWithArgs) (*string, error)
+		DirectiveObject                  func(ctx context.Context) (*model.ObjectDirectives, error)
+		DirectiveObjectWithCustomGoModel func(ctx context.Context) (*model.ObjectDirectivesWithCustomGoModel, error)
+		DirectiveFieldDef                func(ctx context.Context, ret string) (string, error)
+		DirectiveField                   func(ctx context.Context) (*string, error)
+		DirectiveDouble                  func(ctx context.Context) (*string, error)
+		DirectiveUnimplemented           func(ctx context.Context) (*string, error)
+		GoodbyeFromExtras                func(ctx context.Context, name string) (string, error)
+		HybridInput                      func(ctx context.Context, arg model.HybridInput) (string, error)
+		HybridInputNullable              func(ctx context.Context, arg *model.HybridInput) (string, error)
+		Slices                           func(ctx context.Context) (*model.Slices, error)
+		ScalarSlice                      func(ctx context.Context) ([]byte, error)
+		PtrToSliceContainer              func(ctx context.Context) (*model.PtrToSliceContainer, error)
+		InputSlice                       func(ctx context.Context, arg []string) (bool, error)
+		InputNullableSlice               func(ctx context.Context, arg []string) (bool, error)
+		InputListField                   func(ctx context.Context, arg model.ListFieldInput) (string, error)
+		InputOmittable                   func(ctx context.Context, arg model.OmittableInput) (string, error)
+	}
+	SubscriptionResolver struct {
+		DirectiveArg           func(ctx context.Context, arg string) (<-chan *string, error)
+		DirectiveNullableArg   func(ctx context.Context, arg *int, arg2 *int, arg3 *string) (<-chan *string, error)
+		DirectiveDouble        func(ctx context.Context) (<-chan *string, error)
+		DirectiveUnimplemented func(ctx context.Context) (<-chan *string, error)
+	}
+
+	HybridInputResolver struct {
+		Resolved func(ctx context.Context, obj *model.HybridInput, data string) error
+	}
+	HybridNestedResolver struct {
+		Resolved func(ctx context.Context, obj *model.HybridNested, data string) error
 	}
 }
 
@@ -22,6 +60,16 @@ func (r *Stub) Mutation() MutationResolver {
 }
 func (r *Stub) Query() QueryResolver {
 	return &stubQuery{r}
+}
+func (r *Stub) Subscription() SubscriptionResolver {
+	return &stubSubscription{r}
+}
+
+func (r *Stub) HybridInput() HybridInputResolver {
+	return &stubHybridInput{r}
+}
+func (r *Stub) HybridNested() HybridNestedResolver {
+	return &stubHybridNested{r}
 }
 
 type stubMutation struct{ *Stub }
@@ -38,6 +86,102 @@ type stubQuery struct{ *Stub }
 func (r *stubQuery) Hello(ctx context.Context, name string) (string, error) {
 	return r.QueryResolver.Hello(ctx, name)
 }
+func (r *stubQuery) DirectiveArg(ctx context.Context, arg string) (*string, error) {
+	return r.QueryResolver.DirectiveArg(ctx, arg)
+}
+func (r *stubQuery) DirectiveNullableArg(ctx context.Context, arg *int, arg2 *int, arg3 *string) (*string, error) {
+	return r.QueryResolver.DirectiveNullableArg(ctx, arg, arg2, arg3)
+}
+func (r *stubQuery) DirectiveSingleNullableArg(ctx context.Context, arg1 *string) (*string, error) {
+	return r.QueryResolver.DirectiveSingleNullableArg(ctx, arg1)
+}
+func (r *stubQuery) DirectiveInputNullable(ctx context.Context, arg *model.InputDirectives) (*string, error) {
+	return r.QueryResolver.DirectiveInputNullable(ctx, arg)
+}
+func (r *stubQuery) DirectiveInput(ctx context.Context, arg model.InputDirectives) (*string, error) {
+	return r.QueryResolver.DirectiveInput(ctx, arg)
+}
+func (r *stubQuery) DirectiveInputType(ctx context.Context, arg model.InnerInput) (*string, error) {
+	return r.QueryResolver.DirectiveInputType(ctx, arg)
+}
+func (r *stubQuery) DirectiveInputOuter(ctx context.Context, arg model.OuterWrapperInput) (*string, error) {
+	return r.QueryResolver.DirectiveInputOuter(ctx, arg)
+}
+func (r *stubQuery) DirectiveInputWithArgs(ctx context.Context, arg model.InputDirectivesWithArgs) (*string, error) {
+	return r.QueryResolver.DirectiveInputWithArgs(ctx, arg)
+}
+func (r *stubQuery) DirectiveObject(ctx context.Context) (*model.ObjectDirectives, error) {
+	return r.QueryResolver.DirectiveObject(ctx)
+}
+func (r *stubQuery) DirectiveObjectWithCustomGoModel(ctx context.Context) (*model.ObjectDirectivesWithCustomGoModel, error) {
+	return r.QueryResolver.DirectiveObjectWithCustomGoModel(ctx)
+}
+func (r *stubQuery) DirectiveFieldDef(ctx context.Context, ret string) (string, error) {
+	return r.QueryResolver.DirectiveFieldDef(ctx, ret)
+}
+func (r *stubQuery) DirectiveField(ctx context.Context) (*string, error) {
+	return r.QueryResolver.DirectiveField(ctx)
+}
+func (r *stubQuery) DirectiveDouble(ctx context.Context) (*string, error) {
+	return r.QueryResolver.DirectiveDouble(ctx)
+}
+func (r *stubQuery) DirectiveUnimplemented(ctx context.Context) (*string, error) {
+	return r.QueryResolver.DirectiveUnimplemented(ctx)
+}
 func (r *stubQuery) GoodbyeFromExtras(ctx context.Context, name string) (string, error) {
 	return r.QueryResolver.GoodbyeFromExtras(ctx, name)
+}
+func (r *stubQuery) HybridInput(ctx context.Context, arg model.HybridInput) (string, error) {
+	return r.QueryResolver.HybridInput(ctx, arg)
+}
+func (r *stubQuery) HybridInputNullable(ctx context.Context, arg *model.HybridInput) (string, error) {
+	return r.QueryResolver.HybridInputNullable(ctx, arg)
+}
+func (r *stubQuery) Slices(ctx context.Context) (*model.Slices, error) {
+	return r.QueryResolver.Slices(ctx)
+}
+func (r *stubQuery) ScalarSlice(ctx context.Context) ([]byte, error) {
+	return r.QueryResolver.ScalarSlice(ctx)
+}
+func (r *stubQuery) PtrToSliceContainer(ctx context.Context) (*model.PtrToSliceContainer, error) {
+	return r.QueryResolver.PtrToSliceContainer(ctx)
+}
+func (r *stubQuery) InputSlice(ctx context.Context, arg []string) (bool, error) {
+	return r.QueryResolver.InputSlice(ctx, arg)
+}
+func (r *stubQuery) InputNullableSlice(ctx context.Context, arg []string) (bool, error) {
+	return r.QueryResolver.InputNullableSlice(ctx, arg)
+}
+func (r *stubQuery) InputListField(ctx context.Context, arg model.ListFieldInput) (string, error) {
+	return r.QueryResolver.InputListField(ctx, arg)
+}
+func (r *stubQuery) InputOmittable(ctx context.Context, arg model.OmittableInput) (string, error) {
+	return r.QueryResolver.InputOmittable(ctx, arg)
+}
+
+type stubSubscription struct{ *Stub }
+
+func (r *stubSubscription) DirectiveArg(ctx context.Context, arg string) (<-chan *string, error) {
+	return r.SubscriptionResolver.DirectiveArg(ctx, arg)
+}
+func (r *stubSubscription) DirectiveNullableArg(ctx context.Context, arg *int, arg2 *int, arg3 *string) (<-chan *string, error) {
+	return r.SubscriptionResolver.DirectiveNullableArg(ctx, arg, arg2, arg3)
+}
+func (r *stubSubscription) DirectiveDouble(ctx context.Context) (<-chan *string, error) {
+	return r.SubscriptionResolver.DirectiveDouble(ctx)
+}
+func (r *stubSubscription) DirectiveUnimplemented(ctx context.Context) (<-chan *string, error) {
+	return r.SubscriptionResolver.DirectiveUnimplemented(ctx)
+}
+
+type stubHybridInput struct{ *Stub }
+
+func (r *stubHybridInput) Resolved(ctx context.Context, obj *model.HybridInput, data string) error {
+	return r.HybridInputResolver.Resolved(ctx, obj, data)
+}
+
+type stubHybridNested struct{ *Stub }
+
+func (r *stubHybridNested) Resolved(ctx context.Context, obj *model.HybridNested, data string) error {
+	return r.HybridNestedResolver.Resolved(ctx, obj, data)
 }

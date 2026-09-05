@@ -1,0 +1,34 @@
+directive @toUpper on INPUT_FIELD_DEFINITION
+
+"""
+HybridInput is bound to a Go type that decodes itself with UnmarshalGQLContext.
+gqlgen still generates an unmarshaler for it, with a hybrid body: the Go method
+decodes plain and defaulted fields, generated code runs the field directive and
+the field resolver.
+"""
+input HybridInput {
+	plain: String!
+	withDefault: String! = "fromDefault"
+	directed: String! @toUpper
+	resolved: String!
+	nested: HybridNested
+	nestedList: [HybridNested!]
+	selfRef: [HybridInput!]
+}
+
+"""
+HybridNested is reached from HybridInput only through fields that carry no
+directive of their own (nested, nestedList, selfRef). Its own @toUpper directive
+and its `resolved` field resolver must still run: a hybrid body that hands those
+fields to UnmarshalGQLContext skips them silently.
+"""
+input HybridNested {
+	gated: String!  @toUpper
+	resolved: String!
+	deeper: HybridNested
+}
+
+extend type Query {
+	hybridInput(arg: HybridInput!): String!
+	hybridInputNullable(arg: HybridInput): String!
+}

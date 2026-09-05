@@ -4,7 +4,6 @@ package extras
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
@@ -13,41 +12,16 @@ import (
 
 const splitScope = "github.com/99designs/gqlgen/codegen/testserver/splitpackages"
 
-var type___Schema = &shardruntime.ObjectChildLookup{
-	TypeName: "__Schema",
-	Kind:     ast.Object,
-	Children: []string{
-		"description",
-		"types",
-		"queryType",
-		"mutationType",
-		"subscriptionType",
-		"directives",
-	},
-}
-var type___Type = &shardruntime.ObjectChildLookup{
-	TypeName: "__Type",
-	Kind:     ast.Object,
-	Children: []string{
-		"kind",
-		"name",
-		"description",
-		"specifiedByURL",
-		"fields",
-		"interfaces",
-		"possibleTypes",
-		"enumValues",
-		"inputFields",
-		"ofType",
-		"isOneOf",
-	},
+var type_String = &shardruntime.ObjectChildLookup{
+	TypeName: "String",
+	Kind:     ast.Scalar,
 }
 
 func init() {
 }
 
-// split_args_.gotpl — args for Query.__type
-func __splitArgs_field_Query___type_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
+// split_args_.gotpl — args for Query.goodbyeFromExtras
+func __splitArgs_field_Query_goodbyeFromExtras_args(ctx context.Context, ec shardruntime.ObjectExecutionContext, rawArgs map[string]any) (map[string]any, error) {
 	args := map[string]any{}
 	var arg0 string
 	if tmp, ok := rawArgs["name"]; ok {
@@ -60,99 +34,4 @@ func __splitArgs_field_Query___type_args(ctx context.Context, ec shardruntime.Ob
 	}
 	args["name"] = arg0
 	return args, nil
-}
-
-// split_codecs_.gotpl — marshal
-func marshalNString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	_ = sel
-	v := value.(string)
-	res := graphql.MarshalString(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-// split_codecs_.gotpl — marshal
-func marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	handler, ok := shardruntime.LookupObject(splitScope, "__Schema")
-	if !ok {
-		panic("missing object shard handler for __Schema")
-	}
-	{
-		rv := reflect.ValueOf(value)
-		if rv.Kind() == reflect.Struct {
-			ptr := reflect.New(rv.Type())
-			ptr.Elem().Set(rv)
-			value = ptr.Interface()
-		}
-	}
-	return handler(ctx, ec, sel, value)
-}
-
-// split_codecs_.gotpl — marshal
-func marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	if value == nil {
-		return graphql.Null
-	}
-	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
-		return graphql.Null
-	}
-	if rv.Kind() == reflect.Struct {
-		ptr := reflect.New(rv.Type())
-		ptr.Elem().Set(rv)
-		value = ptr.Interface()
-	}
-	handler, ok := shardruntime.LookupObject(splitScope, "__Schema")
-	if !ok {
-		panic("missing object shard handler for __Schema")
-	}
-	return handler(ctx, ec, sel, value)
-}
-
-// split_codecs_.gotpl — marshal
-func marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
-	if !ok {
-		panic("missing object shard handler for __Type")
-	}
-	{
-		rv := reflect.ValueOf(value)
-		if rv.Kind() == reflect.Struct {
-			ptr := reflect.New(rv.Type())
-			ptr.Elem().Set(rv)
-			value = ptr.Interface()
-		}
-	}
-	return handler(ctx, ec, sel, value)
-}
-
-// split_codecs_.gotpl — marshal
-func marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-	if value == nil {
-		return graphql.Null
-	}
-	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
-		return graphql.Null
-	}
-	if rv.Kind() == reflect.Struct {
-		ptr := reflect.New(rv.Type())
-		ptr.Elem().Set(rv)
-		value = ptr.Interface()
-	}
-	handler, ok := shardruntime.LookupObject(splitScope, "__Type")
-	if !ok {
-		panic("missing object shard handler for __Type")
-	}
-	return handler(ctx, ec, sel, value)
-}
-
-// split_codecs_.gotpl — unmarshal
-func unmarshalNString2string(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-	res, err := graphql.UnmarshalString(value)
-	return res, graphql.ErrorOnPath(ctx, err)
 }

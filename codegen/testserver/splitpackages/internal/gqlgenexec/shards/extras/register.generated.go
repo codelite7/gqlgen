@@ -7,53 +7,40 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor/shardruntime"
-	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func init() {
-	shardruntime.RegisterFieldDef(splitScope, "Query", "__schema", shardruntime.FieldDef{
+	shardruntime.RegisterFieldDef(splitScope, "Mutation", "pingFromExtras", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__schema", obj)
+			return ec.InvokeResolver(ctx, "Mutation", "pingFromExtras", obj)
 		},
-		MarshalCodec: "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema",
-		NonNull:      false,
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
 		PanicHandled: true,
 		IsMethod:     true,
-		IsResolver:   false,
-		ReturnType:   type___Schema,
+		IsResolver:   true,
+		ReturnType:   type_String,
 	})
-	shardruntime.RegisterFieldDef(splitScope, "Query", "__type", shardruntime.FieldDef{
+	shardruntime.RegisterFieldDef(splitScope, "Query", "goodbyeFromExtras", shardruntime.FieldDef{
 		Resolve: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any) (any, error) {
-			return ec.InvokeResolver(ctx, "Query", "__type", obj)
+			return ec.InvokeResolver(ctx, "Query", "goodbyeFromExtras", obj)
 		},
-		MarshalCodec: "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType",
-		NonNull:      false,
+		Directives: func(ctx context.Context, ec shardruntime.ObjectExecutionContext, obj any, next graphql.Resolver) graphql.Resolver {
+			return ec.FieldMiddleware(ctx, obj, next)
+		},
+		MarshalCodec: "marshalNString2string",
+		NonNull:      true,
 		PanicHandled: true,
 		IsMethod:     true,
-		IsResolver:   false,
-		ArgsKey:      "field_Query___type_args",
-		ReturnType:   type___Type,
+		IsResolver:   true,
+		ArgsKey:      "field_Query_goodbyeFromExtras_args",
+		ReturnType:   type_String,
 	})
 }
 
 func init() {
-	shardruntime.RegisterArgs(splitScope, "field_Query___type_args", __splitArgs_field_Query___type_args)
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalNString2string(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecMarshal(splitScope, "marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, sel ast.SelectionSet, value any) graphql.Marshaler {
-		return marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, ec, sel, value)
-	})
-	shardruntime.RegisterCodecUnmarshal(splitScope, "unmarshalNString2string", func(ctx context.Context, ec shardruntime.ObjectExecutionContext, value any) (any, error) {
-		return unmarshalNString2string(ctx, ec, value)
-	})
+	shardruntime.RegisterArgs(splitScope, "field_Query_goodbyeFromExtras_args", __splitArgs_field_Query_goodbyeFromExtras_args)
 }
